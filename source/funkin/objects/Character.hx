@@ -15,6 +15,7 @@ import flixel.FlxSprite;
 import openfl.geom.ColorTransform;
 import animate.FlxAnimate;
 import animate.FlxAnimateFrames;
+import flixel.animation.FlxAnimation;
 
 using flixel.util.FlxColorTransformUtil;
 using StringTools;
@@ -141,6 +142,9 @@ class Character extends FlxAnimate
 	/**BLAMMED LIGHTS!! idk not used anymore**/
 	public var colorTween:FlxTween;
 	
+	/** Whether the Character is using texture Atlas or not*/
+	public var isAtlas:Bool = false;
+
 	//Used on Character Editor
 	public var animationsArray:Array<AnimArray> = [];
 	public var imageFile:String = '';
@@ -186,7 +190,6 @@ class Character extends FlxAnimate
 		
 		return super.destroy();
 	}
-	var isAtlas:Bool = false;
 	function loadFromPsychData(json:CharacterFile)
 	{
 		//// some troll engine stuff
@@ -422,12 +425,12 @@ class Character extends FlxAnimate
 				else if (name.endsWith('miss')) {
 					dance();
 				}
-				else if (animation.exists(name + '-loop')) {
+				else if (anim.exists(name + '-loop')) {
 					playAnim(name + '-loop');
 				}
 				else if (name.startsWith("hold") && name.endsWith("Start")) {
 					var newName = name.substring(0, name.length-5);
-					if (animation.exists(newName)) {
+					if (anim.exists(newName)) {
 						playAnim(newName,true);
 					}else {
 						var singName = "sing" + name.substring(3, name.length-5);
@@ -481,7 +484,7 @@ class Character extends FlxAnimate
 			colorOverlay = FlxColor.WHITE;
 
 		specialAnim = false;
-		animation.play(AnimName, Force, Reversed, Frame);
+		anim.play(AnimName, Force, Reversed, Frame);
 
 		var daOffset = animOffsets.get(AnimName);
 		if (daOffset != null)
@@ -527,7 +530,7 @@ class Character extends FlxAnimate
 	}
 
 	public inline function canResetDance(holdingKeys:Bool = false) {
-		var curAnim = animation.name;
+		var curAnim = anim.name;
 		return curAnim==null || (
 			(!holdingKeys || idleWhenHold)
 			&& holdTimer * 1000 > Conductor.stepCrochet * singDuration
@@ -606,7 +609,7 @@ class Character extends FlxAnimate
 	private var settingCharacterUp:Bool = true;
 	public function recalculateDanceIdle() {
 		var lastDanceIdle:Bool = danceIdle;
-		danceIdle = animation.exists('danceLeft' + idleSuffix) && animation.exists('danceRight' + idleSuffix);
+		danceIdle = anim.exists('danceLeft' + idleSuffix) && anim.exists('danceRight' + idleSuffix);
 
 		if (danceIdle)
 			idleSequence = ["danceLeft" + idleSuffix, "danceRight" + idleSuffix];
@@ -624,10 +627,10 @@ class Character extends FlxAnimate
 	/** To be called when this character is used, Used by PlayState Character Change Events **/
 	public function changedIn(prevCharacter:Null<Character>) {
 		inline function canResumeAnim(c:Character):Bool {
-			return c != null && animation.exists(c.animation.name) && (characterId.startsWith(c.characterId) || c.characterId.startsWith(characterId));
+			return c != null && anim.exists(c.anim.name) && (characterId.startsWith(c.characterId) || c.characterId.startsWith(characterId));
 		}
 		if (canResumeAnim(prevCharacter)) {
-			var anim = prevCharacter.animation.curAnim;
+			var anim = prevCharacter.anim.curAnim;
 			playAnim(anim.name, true, anim.reversed, anim.curFrame);
 		}else {
 			dance();
@@ -651,9 +654,10 @@ class Character extends FlxAnimate
 		animOffsets[name] = [x, y];
 	}
 
-	public function quickAnimAdd(name:String, anim:String)
+	public function quickAnimAdd(name:String, animToAdd:String)
 	{
-		animation.addByPrefix(name, anim, 24, false);
+		if(!isAtlas)anim.addByPrefix(name, animToAdd, 24, false);
+		else anim.addBySymbol(name, animToAdd, 24, false);
 	}
 
 	/**
@@ -664,17 +668,17 @@ class Character extends FlxAnimate
 	function cloneAnimation(ogName:String, cloneName:String, ?force:Bool)
 	{
 		//todo: fix htis 
-		/* 
-		var daAnim:FlxAnimation = animation.getByName(ogName);
+		
+		var daAnim:FlxAnimation = anim.getByName(ogName);
 
-		if (daAnim!=null && (force==true || !animation.exists(cloneName)))
+		if (daAnim!=null && (force==true || !anim.exists(cloneName)))
 		{
-			animation.add(cloneName, daAnim.frames, daAnim.frameRate, daAnim.looped, daAnim.flipX, daAnim.flipY);
+			anim.add(cloneName, daAnim.frames, daAnim.frameRate, daAnim.looped, daAnim.flipX, daAnim.flipY);
 
 			camOffsets[cloneName] = camOffsets[ogName];
 			animOffsets[cloneName] = animOffsets[ogName];
 		}
-			*/
+			
 	}
 
 	////

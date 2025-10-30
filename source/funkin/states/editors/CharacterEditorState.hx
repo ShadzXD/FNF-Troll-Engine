@@ -445,8 +445,8 @@ class CharacterEditorState extends MusicBeatState {
 			inline function _reloadImage(char:Character){
 				char.imageFile = imageInputText.text;
 				reloadCharacterImage(char);
-				if (char.animation.curAnim != null) {
-					char.playAnim(char.animation.curAnim.name, true);
+				if (char.anim.curAnim != null) {
+					char.playAnim(char.anim.curAnim.name, true);
 				}
 			}
 

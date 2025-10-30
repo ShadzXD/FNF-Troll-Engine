@@ -4,7 +4,6 @@ import haxe.io.Path;
 import funkin.objects.hud.HealthIcon;
 import funkin.objects.Character;
 import funkin.data.CharacterData;
-import animateatlas.AtlasFrameMaker;
 import flixel.FlxCamera;
 import flixel.FlxG;
 import flixel.FlxObject;
@@ -20,7 +19,6 @@ import flixel.addons.ui.FlxUIInputText;
 import flixel.addons.ui.FlxUINumericStepper;
 import flixel.addons.ui.FlxUITabMenu;
 import flixel.addons.ui.FlxUITooltip.FlxUITooltipStyle;
-import flixel.animation.FlxAnimation;
 import flixel.graphics.FlxGraphic;
 import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.input.keyboard.FlxKey;
@@ -30,6 +28,8 @@ import flixel.ui.FlxButton;
 import flixel.util.FlxColor;
 import haxe.Json;
 import lime.system.Clipboard;
+import animate.FlxAnimate;
+import animate.FlxAnimateFrames;
 
 using StringTools;
 
@@ -611,7 +611,8 @@ class CharacterEditorState extends MusicBeatState {
 				char.animationsArray.sort(animSortFunc);
 
 				if (lastAnim == animationInputText.text) {
-					var leAnim:FlxAnimation = char.animation.getByName(lastAnim);
+					/*
+					//var leAnim:String =;
 					if (leAnim != null && leAnim.frames.length > 0) {
 						char.playAnim(lastAnim, true);
 					} else {
@@ -625,7 +626,9 @@ class CharacterEditorState extends MusicBeatState {
 								}
 							}
 						}
+import flixel.FlxCamera;
 					}
+*/
 				}
 			}
 
@@ -944,7 +947,7 @@ class CharacterEditorState extends MusicBeatState {
 		Paths.removeBitmap(char.frames.parent.key); // is null SOMETIMES idk WHY
 
 		if (Paths.fileExists('images/' + char.imageFile + '/Animation.json', TEXT)) {
-			char.frames = AtlasFrameMaker.construct(char.imageFile);
+			char.frames = FlxAnimateFrames.fromAnimate(Paths.animateAtlasPath(char.imageFile));
 		} else if (Paths.fileExists('images/' + char.imageFile + '.txt', TEXT)) {
 			char.frames = Paths.getPackerAtlas(char.imageFile);
 		} else {

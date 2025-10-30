@@ -1,9 +1,6 @@
 package funkin.scripts;
 
 import haxe.CallStack;
-#if USING_FLXANIMATE
-import funkin.objects.FlxAnimateCompat; // vscode stfu
-#end
 import funkin.scripts.FunkinScript.ScriptType;
 import funkin.objects.IndependentVideoSprite;
 import funkin.scripts.*;
@@ -229,10 +226,6 @@ class FunkinHScript extends FunkinScript
 		set("FlxRuntimeShader", flixel.addons.display.FlxRuntimeShader);
 		#end
 		
-		#if USING_FLXANIMATE
-		set("FlxAnimate", FlxAnimateCompat);
-		#end
-
 		// Enums
 		set("FlxBarFillDirection", flixel.ui.FlxBar.FlxBarFillDirection);
 		set("FlxTextBorderStyle", flixel.text.FlxText.FlxTextBorderStyle);

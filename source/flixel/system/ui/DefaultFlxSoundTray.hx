@@ -68,12 +68,12 @@ class DefaultFlxSoundTray extends FlxSoundTray
 		#end
 
 
-		var dtf:TextFormat = new TextFormat(FlxAssets.FONT_DEFAULT, 8, 0xffffff);
+		var dtf:TextFormat = new TextFormat('vcr.ttf', 8, 0xffffff);
 		dtf.align = TextFormatAlign.CENTER;
 		_text.defaultTextFormat = dtf;
 
 		_text.text = "VOLUME";
-		_text.y = 16;
+		_text.y = 17;
 		addChild(_text);
 
 		var bx:Int = 10;

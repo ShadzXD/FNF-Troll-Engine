@@ -538,11 +538,11 @@ class OptionsSubstate extends MusicBeatSubstate
 		persistentUpdate = true;
 
 		mainCamera = new FlxCamera();
-		mainCamera.bgColor.alpha = 0;
+		mainCamera.bgColor = 0;
 		optionCamera = new FlxCamera();
-		optionCamera.bgColor.alpha = 0;
+		optionCamera.bgColor = 0;
 		overlayCamera = new FlxCamera();
-		overlayCamera.bgColor.alpha = 0;
+		overlayCamera.bgColor = 0;
 		
 		if(optState){
 			FlxG.cameras.reset(mainCamera);

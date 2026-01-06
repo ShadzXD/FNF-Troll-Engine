@@ -144,8 +144,8 @@ class PauseSubState extends MusicBeatSubstate
 		FlxG.mouse.visible = false;
 		persistentUpdate = false;
 
-		var cam:FlxCamera = FlxG.cameras.list[FlxG.cameras.list.length - 1];
-		this.cameras = [cam];
+		if (_cameras == null || _cameras.length == 0) 
+			camera = FlxG.cameras.list[FlxG.cameras.list.length - 1];
 
 		@:privateAccess
 		_bgSprite._cameras = this._cameras;

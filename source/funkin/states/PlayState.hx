@@ -653,6 +653,8 @@ class PlayState extends MusicBeatState
 
 		FlxG.cameras.setDefaultDrawTarget(camGame, true);
 
+		this.camera = camGame;
+
 		camFollow = prevCamFollow ?? new FlxPoint();
 		camFollowPos = prevCamFollowPos ?? new FlxObject();
 
@@ -3793,7 +3795,10 @@ class PlayState extends MusicBeatState
 		persistentUpdate = false;
 		persistentDraw = true;
 		scene.pause();
-		openSubState(new CutscenePauseSubstate(scene));
+
+		var substate = new CutscenePauseSubstate(scene);
+		substate.camera = camOther;
+		openSubState(substate);
 	}
 
 	public function openPauseMenu()
@@ -3805,7 +3810,10 @@ class PlayState extends MusicBeatState
 		pause();
 		persistentUpdate = false;
 		persistentDraw = true;
-		openSubState(new PauseSubState());
+
+		var substate = new PauseSubState();
+		substate.camera = camOther;
+		openSubState(substate);
 	}
 
 	public function doPauseShit()

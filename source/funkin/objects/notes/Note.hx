@@ -8,6 +8,8 @@ import funkin.states.editors.ChartingState;
 import funkin.objects.shaders.NoteColorSwap;
 import funkin.objects.playfields.*;
 import funkin.data.JudgmentManager.Judgment;
+import funkin.data.NoteSkinShit.*;
+import funkin.data.NoteSkinShit;
 
 using StringTools;
 
@@ -43,68 +45,18 @@ class Note extends NoteObject
 {
 	public var holdGlow:Bool = true; // Whether holds should "glow" / increase in alpha when held
 	public var baseAlpha:Float = 1;
-
-	public static var spriteScale:Float = 0.7;
-	public static var swagWidth(default, set):Float = 160 * spriteScale;
-	public static var halfWidth(default, null):Float = swagWidth * 0.5;
-
-	private static var colArray:Array<String> = ['purple', 'blue', 'green', 'red'];
-
-	public static var defaultNoteAnimNames:Array<String> = ['purple0', 'blue0', 'green0', 'red0'];
-	public static var defaultHoldAnimNames:Array<String> = ['purple hold piece', 'blue hold piece', 'green hold piece', 'red hold piece'];
-	public static var defaultTailAnimNames:Array<String> = ['purple hold end', 'blue hold end', 'green hold end', 'red hold end'];
-
-	public static var quants:Array<Int> = [
-		4, // quarter note
-		8, // eight
-		12, // etc
-		16,
-		20,
-		24,
-		32,
-		48,
-		64,
-		96,
-		192
-	];
+	
+	public static var swagWidth(get, set):Float;
+	public static var halfWidth(get, never):Float;
+	@:noCompletion inline static function get_swagWidth() return NoteSkinShit.swagWidth;
+	@:noCompletion inline static function set_swagWidth(v) return NoteSkinShit.swagWidth=v;
+	@:noCompletion inline static function get_halfWidth() return NoteSkinShit.halfWidth;
 
 	public static var defaultNotes = [
 		'No Animation',
 		'GF Sing',
 		''
 	];
-
-	public static final quantShitCache = new Map<String, Null<String>>();
-
-	public static function getQuantTexture(dir:String, fileName:String, textureKey:String):Null<String> {
-		
-		if (quantShitCache.exists(textureKey))
-			return quantShitCache.get(textureKey);
-		
-		var quantKey:Null<String> = dir + "QUANT" + fileName;
-		// trace('$textureKey = "$dir", "$fileName", "$quantKey"');
-		if (!Paths.imageExists(quantKey)) quantKey = null;
-		
-		quantShitCache.set(textureKey, quantKey);
-		return quantKey;
-	}
-
-	inline public static function beatToNoteRow(beat:Float):Int
-		return Math.round(beat * Conductor.ROWS_PER_BEAT);
-
-	public static function getQuant(beat:Float){
-		var row:Int = beatToNoteRow(beat);
-		for (data in quants) {
-			if (row % (Conductor.ROWS_PER_MEASURE/data) == 0)
-				return data;
-		}
-		return quants[quants.length-1]; // invalid
-	}
-
-	@:noCompletion private static function set_swagWidth(val:Float) {
-		halfWidth = val * 0.5;
-		return swagWidth = val;
-	}
 
 	////
 
@@ -501,7 +453,7 @@ class Note extends NoteObject
 			inline function checkFolder(dir:String) {
 				final normalKey:String = dir + fileName;
 				var quantKey:Null<String> = null;
-				this.isQuant = this.canQuant && (null != (quantKey = Note.getQuantTexture(dir, fileName, normalKey)));
+				this.isQuant = this.canQuant && (null != (quantKey = getQuantTexture(dir, fileName, normalKey)));
 				key = (!this.isQuant && Paths.imageExists(normalKey)) ? normalKey : quantKey;
 			}
 
@@ -595,9 +547,9 @@ class Note extends NoteObject
 	function _loadNoteAnims() {		
 		final animName:String = 'default';
 		final animPrefix:String = switch (holdType) {
-			default: defaultNoteAnimNames[column];
-			case PART: defaultHoldAnimNames[column];
-			case END: defaultTailAnimNames[column];
+			default: noteAnimNames[column];
+			case PART: holdAnimNames[column];
+			case END: tailAnimNames[column];
 		}
 
 		if (column == 0) animation.addByPrefix(animName, 'pruple end hold'); // ?????

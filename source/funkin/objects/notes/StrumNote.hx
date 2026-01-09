@@ -3,6 +3,8 @@ package funkin.objects.notes;
 import funkin.states.PlayState;
 import funkin.objects.playfields.PlayField;
 import funkin.scripts.FunkinHScript;
+import funkin.data.NoteSkinShit.*;
+
 #if !macro
 import funkin.objects.shaders.NoteColorSwap;
 
@@ -15,11 +17,6 @@ using StringTools;
 
 class StrumNote extends NoteObject
 {
-	public static var defaultStaticAnimNames:Array<String> = ['arrowLEFT', 'arrowDOWN', 'arrowUP', 'arrowRIGHT'];
-	public static var defaultPressAnimNames:Array<String> = ["left press", "down press", "up press", "right press"];
-	public static var defaultConfirmAnimNames:Array<String> = ["left confirm", "down confirm", "up confirm", "right confirm"];
-
-	////
 	public var texture(default, set):String = null;
 	public var downScroll:Bool = false;
 	public var isQuant:Bool = false;
@@ -91,7 +88,7 @@ class StrumNote extends NoteObject
 			var fileName = split.pop();
 			var folderPath = split.join('/') + '/';
 
-			textureKey = Note.getQuantTexture(folderPath, fileName, texture);
+			textureKey = getQuantTexture(folderPath, fileName, texture);
 			if (textureKey != null) isQuant = true;
 			else textureKey = texture;
 
@@ -103,13 +100,13 @@ class StrumNote extends NoteObject
 
 		frames = Paths.getSparrowAtlas(textureKey);
 
-		animation.addByPrefix('static', defaultStaticAnimNames[column], 24, false);
-		animation.addByPrefix('pressed', defaultPressAnimNames[column], 24, false);
-		animation.addByPrefix('confirm', defaultConfirmAnimNames[column], 24, false);
+		animation.addByPrefix('static', staticAnimNames[column], 24, false);
+		animation.addByPrefix('pressed', pressAnimNames[column], 24, false);
+		animation.addByPrefix('confirm', confirmAnimNames[column], 24, false);
 
 		playAnim(lastAnim, true);
 
-		scale.x = scale.y = Note.spriteScale;
+		scale.x = scale.y = spriteScale;
 		defScale.copyFrom(scale);
 		updateHitbox();
 	}

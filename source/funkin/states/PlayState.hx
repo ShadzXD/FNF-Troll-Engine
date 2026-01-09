@@ -4,6 +4,7 @@ import funkin.objects.cutscenes.Cutscene;
 #if VIDEOS_ALLOWED
 import funkin.objects.cutscenes.VideoCutscene;
 #end
+import funkin.data.NoteSkinShit;
 import funkin.objects.playfields.PlayField.NoteCallback;
 import funkin.data.Cache;
 import funkin.data.Level;
@@ -694,14 +695,7 @@ class PlayState extends MusicBeatState
 		songTrackNames = getChartTrackNames();
 		
 		PlayState.keyCount = SONG.keyCount;
-		StrumNote.defaultStaticAnimNames = ['arrowLEFT', 'arrowDOWN', 'arrowUP', 'arrowRIGHT']; 
-		StrumNote.defaultPressAnimNames = ["left press", "down press", "up press", "right press"];
-		StrumNote.defaultConfirmAnimNames = ["left confirm", "down confirm", "up confirm", "right confirm"];
-		Note.defaultNoteAnimNames = ['purple0', 'blue0', 'green0', 'red0'];
-		Note.defaultHoldAnimNames = ['purple hold piece', 'blue hold piece', 'green hold piece', 'red hold piece'];
-		Note.defaultTailAnimNames = ['purple hold end', 'blue hold end', 'green hold end', 'red hold end'];
-		Note.spriteScale = (4 / (keyCount < 4 ? 4 : keyCount)) * 0.7;
-		Note.swagWidth = Note.spriteScale * 160;
+		NoteSkinShit.resetDefaultAnims(keyCount);
 		/**
 		 * Note texture asset names
 		 * The quant prefix gets handled by the Note class
@@ -3937,7 +3931,7 @@ class PlayState extends MusicBeatState
 
 		stats.changedEvent.removeAll();
 
-		Note.quantShitCache.clear();
+		NoteSkinShit.quantShitCache.clear();
 		FunkinHScript.defaultVars.clear();
 
 		notetypeScripts.clear();

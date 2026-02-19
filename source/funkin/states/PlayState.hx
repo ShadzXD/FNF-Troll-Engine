@@ -497,6 +497,7 @@ class PlayState extends MusicBeatState
 	/**
 	 * Variable used for enabling subdivisions on hold notes.
 	 * Turned off by default as this is only needed for Modcharts.
+	 * This is temporary until hold notes are rewritten.
 	 */
 	public var useHoldSubdivisions:Bool = false;
 	////

@@ -47,7 +47,7 @@ class NoteField extends FieldBase
 	{
 		super(0, 0);
 		this.field = field;
-		this.holdSubdivisions = !game.useSubdivisions ? 1 : Std.int(ClientPrefs.holdSubdivs);
+		this.holdSubdivisions = !game.useHoldSubdivisions ? 1 : Std.int(ClientPrefs.holdSubdivs);
 	}
 	override public function getNotefield() {return this;}
 

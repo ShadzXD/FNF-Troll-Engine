@@ -498,7 +498,7 @@ class PlayState extends MusicBeatState
 	 * Variable used for enabling subdivisions on hold notes.
 	 * Turned off by default as this is only needed for Modcharts.
 	 */
-	public var useSubdivisions:Bool = false;
+	public var useHoldSubdivisions:Bool = false;
 	////
 	@:noCompletion function set_hudSkin(value:String){		
 		hudSkinScript?.call("onSkinUnload");
@@ -1929,7 +1929,7 @@ class PlayState extends MusicBeatState
 		for(field in playfields){
 /* 			field.noteField.optimizeHolds = ClientPrefs.optimizeHolds; */
 			field.noteField.drawDistMod = ClientPrefs.drawDistanceModifier;
-			field.noteField.holdSubdivisions = !useSubdivisions ? 1 : Std.int(ClientPrefs.holdSubdivs) + 1;
+			field.noteField.holdSubdivisions = !useHoldSubdivisions ? 1 : Std.int(ClientPrefs.holdSubdivs) + 1;
 		}
 
 		if (ClientPrefs.controllerMode) {

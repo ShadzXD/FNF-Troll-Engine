@@ -1,6 +1,6 @@
 # Friday Night Funkin': Troll Engine
 
-[Troll Engine](https://github.com/riconuts/troll-engine) is the fork of [Psych Engine](https://github.com/ShadowMario/FNF-PsychEngine) 0.5.2h originally made for the [Tails Gets Trolled mod](https://gamebanana.com/mods/320596).
+[Troll Engine](https://github.com/troll-slaiyers/FNF-Troll-Engine) is a fork of [Psych Engine](https://github.com/ShadowMario/FNF-PsychEngine) 0.5.2h originally made for the [Tails Gets Trolled mod](https://gamebanana.com/mods/320596).
 
 ## NOTE:
 
@@ -30,7 +30,7 @@ Expect bugs, breaking changes and little documentation!!! (You can look at the `
 - [4mbr0s3_2](https://www.youtube.com/@4mbr0s3-2) - Modifier system inspiration
 - [SrtHero278](https://github.com/SrtHero278) - Notefield optimizations
 - [Vortex](https://github.com/Vortex2Oblivion) - Extra keys implementation and a bunch of other improvements
-- [Shadz](https://github.com/ShadzXD) - Flixel-animate implementation
+- [Shadz](https://github.com/ShadzXD) - Basic Dialogue system + [Flixel-animate](https://github.com/MaybeMaru/flixel-animate) implementation
 - [MaybeMaru](https://github.com/MaybeMaru) - Creator of [Flixel-animate](https://github.com/MaybeMaru/flixel-animate) and [Moonchart](https://github.com/MaybeMaru/moonchart)
 - [swordcube](https://bsky.app/profile/swordcube.bsky.social) - Pixel note splashes + [linc_filedialogs](https://github.com/swordcube/linc_filedialogs) implementation
 - [crowplexus](https://github.com/crowplexus) - Countdown class + [hxdiscord_rpc](https://github.com/MAJigsaw77/hxdiscord_rpc/) implementation
@@ -41,7 +41,7 @@ Expect bugs, breaking changes and little documentation!!! (You can look at the `
 - [AllyTS](https://x.com/NewTioSans) - Mine Note texture
 - [Psych Engine](https://github.com/ShadowMario/FNF-PsychEngine) - Dad Engine
 
-## Original Funkin' team
-- [ninjamuffin99](https://twitter.com/ninja_muffin99) - Programmer
+## Original Funkin' Crew
+- [ninjamuffin99](https://twitter.com/ninja_muffin99) - Lead Programmer
 - [PhantomArcade3K](https://twitter.com/phantomarcade3k) and [Evilsk8r](https://twitter.com/evilsk8r) - Art
-- [Kawaisprite](https://twitter.com/kawaisprite) - Musician
+- [Kawaisprite](https://twitter.com/kawaisprite) - Lead Musician

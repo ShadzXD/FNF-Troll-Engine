@@ -41,7 +41,7 @@ class CommonHUD extends BaseHUD
 	{
 		super(songName, stats);
 
-		healthBar = new FNFHealthBar('bf', 'dad');
+		healthBar = new VSliceBar('bf', 'dad');
 		iconP1 = healthBar.iconP1;
 		iconP2 = healthBar.iconP2;
 

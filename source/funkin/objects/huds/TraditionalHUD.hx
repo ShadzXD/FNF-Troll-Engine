@@ -6,6 +6,7 @@ import funkin.objects.hud.JudgementCounter.JudgeCounterSettings;
 import flixel.text.FlxText;
 import flixel.util.FlxColor;
 import flixel.tweens.FlxTween;
+import flixel.util.FlxStringUtil;
 
 import funkin.objects.playfields.PlayField;
 import funkin.data.JudgmentManager.JudgmentData;
@@ -28,7 +29,7 @@ class TraditionalHUD extends CommonHUD
 	var hiscoreString = Paths.getString("highscore") ?? "Hi-Score";
 	var ratingString = Paths.getString("rating") ?? "Rating";
 	var rankString = Paths.getString("rank") ?? "Rank";
-	var cbString = Paths.getString("cbplural") ?? "Combo Breaks";
+	var cbString = Paths.getString("cbplural") ?? "Misses";
 	var npsString = Paths.getString("nps") ?? "NPS";
 	var botplayString = Paths.getString("botplayMark") ?? "[BOTPLAY]";
 
@@ -50,7 +51,6 @@ class TraditionalHUD extends CommonHUD
 		showJudgeCounter = ClientPrefs.judgeCounter != "Off";
 		////
 		scoreTxt = new FlxText(0, healthBarBG.y + 48, FlxG.width, "", 20);
-		scoreTxt.antialiasing = true;
 		scoreTxt.scrollFactor.set();
 
 
@@ -149,7 +149,7 @@ class TraditionalHUD extends CommonHUD
 	var isHighscore:Bool = false;
 
 	function onScoreUpdate(){
-		shownScore = Std.string(score);
+		shownScore =  Std.string(FlxStringUtil.formatMoney(score,false, true));
 		isHighscore = songHighscore != 0 && score > songHighscore;
 	}
 	function onWifeScoreUpdate(){

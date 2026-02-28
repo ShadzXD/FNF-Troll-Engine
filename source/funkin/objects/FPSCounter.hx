@@ -40,7 +40,7 @@ class FPSCounter extends TextField {
 
 		multiline = true;
 		embedFonts = false;
-		defaultTextFormat = new TextFormat("_sans", 12, color);
+		defaultTextFormat = new TextFormat(Paths.font("aller.ttf"), 12, color);
 
 		////
 		addEventListener(Event.ADDED_TO_STAGE, (e:Event) -> {

@@ -110,7 +110,7 @@ class CreditsState extends MusicBeatState
 		hintBg.scale.set(FlxG.width - 100, 120);
 		hintBg.updateHitbox();
 		hintBg.screenCenter(X);
-		hintBg.color = 0xFF000000;
+		hintBg.color = 0xFF480024;
 		hintBg.alpha = 0.6;
 		hintBg.scrollFactor.set();
 		add(hintBg);
@@ -140,7 +140,6 @@ class CreditsState extends MusicBeatState
 		{
 			var difference = Math.abs(curSelected - id);
 			var br = 1 - (difference * 0.15 + (difference > 0 ? 0.05 : 0.0));
-			
 			var title:Alphabet = titleArray[id];
 			if (title != null) {
 				var data:CreditsOption = dataArray[title.ID];
@@ -170,10 +169,11 @@ class CreditsState extends MusicBeatState
 	var margin = 240;
 	public function createOption(data:CreditsOption) {
 		var id = realLength++;
+
 		var songTitle = new Alphabet(0, margin * id, data.text, data.bold);
 		songTitle.ID = id;
 		titleArray[id] = songTitle;
-		
+
 		if (data.centered) {
 			songTitle.screenCenter(X);
 			songTitle.targetX = songTitle.x;
@@ -181,14 +181,22 @@ class CreditsState extends MusicBeatState
 		else {
 			songTitle.x = 90 + (1 + Math.abs(curSelected - id)) * 30;
 			songTitle.targetX = 90;
+			//ripped this from the psych engine server, because it was crashing with my implementation
+			//credits to sword_352
+			songTitle.forEach(char -> char.colorTransform.redOffset = char.colorTransform.greenOffset = char.colorTransform.blueOffset = 255);
+
+			var bgBar:FlxSprite = new FlxSprite(songTitle.targetX - 50, songTitle.y - 20).makeGraphic(FlxG.width, 110, FlxColor.BLACK);
+			bgBar.updateHitbox();
+			bgBar.alpha = 0.7;
+			add(bgBar);
 		}
 
 		var iconPath = "credits/" + data.icon;
 		if (Paths.image(iconPath) != null){
 			var songIcon = new AttachedSprite(iconPath);
 
-			songIcon.xAdd = songTitle.width + 15; 
-			songIcon.yAdd = (-songIcon.height / 2) + 15;
+			songIcon.xAdd = songTitle.width + 10; 
+			songIcon.yAdd = (-songIcon.height / 2) + 40;
 			songIcon.sprTracker = songTitle;
 
 			iconArray[id] = songIcon;

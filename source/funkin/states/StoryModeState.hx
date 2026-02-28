@@ -306,18 +306,22 @@ class StoryModeState extends MusicBeatState {
 		}
 		add(difficultyRight);
 
-		for(idx in 0...levels.length){
-			var level:Level = levels[idx];
+		for (idx => level in levels) {
+			Paths.currentModDirectory = level.folder;
+
 			var title = level.createTitle();
 			title.alpha = idx==selectedLevel ? 1 : 0;
 			title.ID = idx;
 			levelTitles.add(title);
+			
 			var backgroundGroup = new FlxSpriteGroup();
 			backgroundGroup.ID = idx;
 			backgroundGroup.y = 56;
+
 			var propGroup = new FlxSpriteGroup();
 			propGroup.ID = idx;
 			propGroup.y = 56;
+			
 			// todo bg group
 			level.populateGroup(propGroup, backgroundGroup);
 			levelBGGroups.push(backgroundGroup);
@@ -456,6 +460,8 @@ class StoryModeState extends MusicBeatState {
 			newLevel = 0;
 
 		selectedLevel = newLevel;
+
+		Paths.currentModDirectory = levels[selectedLevel].folder;
 
 		if (!silent)
 			FlxG.sound.play(Paths.sound("scrollMenu"));

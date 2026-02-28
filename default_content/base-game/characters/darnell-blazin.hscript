@@ -1,0 +1,15 @@
+
+		function setupCharacter(){
+			super();
+			this.positionArray[0] -= this.width / 2;
+			this.positionArray[1] -= this.height;
+		}
+
+		function getCamera(){
+			return [
+				x + width * 0.5 + cameraPosition[0] * xFacing,
+				y + height * 0.5 + cameraPosition[1]
+			];
+		}
+			
+		

@@ -59,6 +59,18 @@
 				"guns",
 				"stress"
 			]
+		},
+		{
+			"name": "Weekend 1",
+			"category": "main",
+			"freeplayCategory": "basefnf",
+			"unlockCondition": true,
+			"songs": [
+				"darnell",
+				"lit-up",
+				"2hot",
+				"blazin"
+			]
 		}
 	],
 	"freeplaySongs": [],

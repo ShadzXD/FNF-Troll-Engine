@@ -17,7 +17,6 @@ import funkin.data.CharacterData;
 import funkin.objects.notes.Note;
 import funkin.objects.notes.NoteSplash;
 import funkin.objects.notes.StrumNote;
-import funkin.objects.Fish;
 import funkin.objects.Stage;
 import funkin.objects.Character;
 import funkin.objects.huds.*;
@@ -375,8 +374,6 @@ class PlayState extends MusicBeatState
 
 	public var ratingGroup:RatingGroup;
 	public var timingTxt:FlxText;
-
-	public var fish:Fish;
 
 	/** debugPrint text container **/
 	#if(HSCRIPT_ALLOWED)

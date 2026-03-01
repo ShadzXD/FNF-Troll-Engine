@@ -11,7 +11,7 @@ import openfl.display.Sprite;
 import openfl.text.TextField;
 import openfl.text.TextFormat;
 import openfl.text.TextFormatAlign;
-
+import funkin.Paths;
 /**
  * The flixel sound tray, the little volume meter that pops down sometimes.
  * Accessed via `FlxG.game.soundTray` or `FlxG.sound.soundTray`.
@@ -68,7 +68,7 @@ class DefaultFlxSoundTray extends FlxSoundTray
 		#end
 
 
-		var dtf:TextFormat = new TextFormat(FlxAssets.FONT_DEFAULT, 8, 0xffffff);
+		var dtf:TextFormat = new TextFormat(Paths.font('vcr.ttf'), 10, 0xffffff);
 		dtf.align = TextFormatAlign.CENTER;
 		_text.defaultTextFormat = dtf;
 

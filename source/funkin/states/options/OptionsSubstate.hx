@@ -148,7 +148,7 @@ class OptionsSubstate extends MusicBeatSubstate
 		],
 		"video" => [
 			["video", ["shaders", "fpsBG"]],
-			["display", ["framerate", #if FUNNY_ALLOWED "bread", "fish" #end]],
+			["display", ["framerate"]],
 			[
 				"performance",
 				[
@@ -351,11 +351,6 @@ class OptionsSubstate extends MusicBeatSubstate
 			case 'fpsBG':
 				if (Main.fpsVar != null)
 					Main.fpsVar.background = val;
-			#if FUNNY_ALLOWED
-			case 'bread':
-				if (Main.bread != null)
-					Main.bread.visible = val;
-			#end
 			case 'globalAntialiasing':
 				Main.game.set_antialiasing(val);
 				

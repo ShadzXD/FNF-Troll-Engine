@@ -385,15 +385,6 @@ class ClientPrefs {
 				value: false,
 				data: []
 			},
-			#if FUNNY_ALLOWED
-			"middleScroll" => {
-				display: "Middlescroll",
-				desc: "When toggled, notes will move towards the center of the screen.",
-				type: Toggle,
-				value: false,
-				data: []
-			},
-			#end
 			"centerNotefield" => {
 				display: "Centered Notefield",
 				desc: "When toggled, the player's notefield will be centered horizontally on the screen.",
@@ -644,24 +635,6 @@ class ClientPrefs {
 				value: false,
 				data: []
 			},
-			/*
-				"modcharts" => {
-					display: "Modcharts",
-					desc: "When toggled, modcharts will be used on some songs.\nWARNING: Disabling modcharts on modcharted songs will disable scoring!",
-					type: Toggle,
-					value: true,
-					data: ["requiresRestart" => true]
-				},
-			 */
-			#if FUNNY_ALLOWED
-			"ruin" => {
-				display: "Ruin The Mod",
-				desc: "Makes the mod really good! improves the mod alot!! the name is a joke guys it makes the mod REALLY REALLY good its not blammed lights i swear",
-				type: Toggle,
-				value: false,
-				data: ["recommendsRestart" => true]
-			},
-			#end
 			"customizeKeybinds" => {
 				display: "Customize Key Bindings",
 				desc: "Lets you change your controls. Pretty straight forward, huh?",
@@ -961,11 +934,6 @@ class ClientPrefs {
 		if (Main.fpsVar != null) {
 			Main.fpsVar.background = ClientPrefs.fpsBG;
 		}
-
-		#if FUNNY_ALLOWED
-		if (Main.bread != null)
-			Main.bread.visible = ClientPrefs.bread;
-		#end
 
 		FlxG.sound.volume = ClientPrefs.masterVolume;
 		FlxG.autoPause = ClientPrefs.autoPause;

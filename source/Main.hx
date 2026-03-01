@@ -169,12 +169,6 @@ class Main extends Sprite
 		fpsVar = new FPSCounter(10, 3, 0xFFFFFF);
 		fpsVar.visible = false;
 		addChild(fpsVar);
-
-		#if FUNNY_ALLOWED
-		bread = new Bitmap();
-		bread.visible = false;
-		addChild(bread);
-		#end
 	}
 
 	public static function getTime():Float {

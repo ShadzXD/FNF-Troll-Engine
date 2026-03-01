@@ -980,12 +980,6 @@ class PlayState extends MusicBeatState
 		luaDebugGroup.cameras = [camOther];
 		add(luaDebugGroup);
 
-		#if FUNNY_ALLOWED
-		fish = new Fish(this);
-		fish.cameras = [camOther];
-		add(fish);
-		#end
-
 		////
 		#if !tgt
 		if (prevCamFollowPos != null)

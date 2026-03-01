@@ -74,22 +74,6 @@ class StartupState extends FlxTransitionableState
 
 		FlxTransitionableState.defaultTransIn = FadeTransition;
 		FlxTransitionableState.defaultTransOut = FadeTransition;
-
-		#if FUNNY_ALLOWED
-		var bread = Main.bread;
-		bread.bitmapData = Paths.image("Garlic-Bread-PNG-Images").bitmap;
-		
-		function onGameResize(stageWidth, stageHeight){
-			var scaleFactor = stageHeight / FlxG.initialHeight;
-			bread.scaleX = scaleFactor;
-			bread.scaleY = scaleFactor;
-			bread.x = (stageWidth - bread.width) / 2;
-			bread.y = (stageHeight - bread.height) / 2;
-		}
-		
-		onGameResize(FlxG.width, FlxG.height);
-		FlxG.signals.gameResized.add(onGameResize);
-		#end
 	}
 
 	override function create()

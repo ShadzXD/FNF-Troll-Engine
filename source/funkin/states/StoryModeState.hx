@@ -104,9 +104,9 @@ class LevelStageProp extends FlxSprite
 		else 
 		#end
 		if (Paths.fileExists('images/${propData.graphic}.txt', TEXT))
-			prop.frames = Paths.getPackerAtlas(propData.graphic);
+			prop.frames = Paths.packerAtlas(propData.graphic);
 		else if (Paths.fileExists('images/${propData.graphic}.xml', TEXT))
-			prop.frames = Paths.getSparrowAtlas(propData.graphic);
+			prop.frames = Paths.sparrowAtlas(propData.graphic);
 		else
 			prop.loadGraphic(Paths.image(propData.graphic));
 
@@ -283,7 +283,7 @@ class StoryModeState extends MusicBeatState {
 		add(difficultySpr);
 
 		difficultyLeft = new FlxSprite();
-		difficultyLeft.frames = Paths.getSparrowAtlas('storymenu/ui/arrows');
+		difficultyLeft.frames = Paths.sparrowAtlas('storymenu/ui/arrows');
 		difficultyLeft.animation.addByPrefix("idle", "leftIdle", 24);
 		difficultyLeft.animation.addByPrefix("press", "leftConfirm", 24, false);
 		difficultyLeft.animation.play("idle");
@@ -295,7 +295,7 @@ class StoryModeState extends MusicBeatState {
 		add(difficultyLeft);
 
 		difficultyRight = new FlxSprite();
-		difficultyRight.frames = Paths.getSparrowAtlas('storymenu/ui/arrows');
+		difficultyRight.frames = Paths.sparrowAtlas('storymenu/ui/arrows');
 		difficultyRight.animation.addByPrefix("idle", "rightIdle", 24);
 		difficultyRight.animation.addByPrefix("press", "rightConfirm", 24, false);
 		difficultyRight.animation.play("idle");
@@ -366,10 +366,10 @@ class StoryModeState extends MusicBeatState {
 
 			var ang:Float = (relativeIndex / levels.length) * (Math.PI * 2);
 			
-			title.scale.x = FlxMath.lerp(title.scale.x, (relativeIndex == 0 ? 1.1 : 0.9) + (((FlxMath.fastCos(ang) - 1) * radius) / 1280), lerpVal);
+			title.scale.x = FlxMath.lerp(title.scale.x, (relativeIndex == 0 ? 1.1 : 0.9) + (((Math.cos(ang) - 1) * radius) / 1280), lerpVal);
 				
-			title.y = FlxMath.lerp(title.y, levelTitles.y + ((FlxMath.fastSin(ang) * radius)), lerpVal);
-			title.alpha = FlxMath.lerp(title.alpha, FlxMath.fastCos(ang) * (relativeIndex == 0 ? 1 : 0.6), lerpVal);
+			title.y = FlxMath.lerp(title.y, levelTitles.y + ((Math.sin(ang) * radius)), lerpVal);
+			title.alpha = FlxMath.lerp(title.alpha, Math.cos(ang) * (relativeIndex == 0 ? 1 : 0.6), lerpVal);
 			title.scale.y = title.scale.x;
 
 			if(title.alpha < 0)title.alpha = 0;

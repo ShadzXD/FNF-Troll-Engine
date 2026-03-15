@@ -29,8 +29,12 @@
 			},
 			{
 				"name": "hscript",
-				"link": "https://github.com/nebulazorua/t-hscript",
+				"link": "https://github.com/troll-slaiyers/t-hscript",
 				"branch": "master"
+			},
+			{
+				"name": "no-spoon",
+				"version": "0.2.0"
 			},
 			{
 				"name": "hxvlc",

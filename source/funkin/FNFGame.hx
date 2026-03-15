@@ -28,9 +28,6 @@ class FNFGame extends FlxGame
 		startFullscreen = startFullscreen ?? FlxG.save.data.fullscreen;
 
 		super(gameWidth, gameHeight, initialState, updateFramerate, drawFramerate, skipSplash, startFullscreen);
-		#if FLX_SOUND_TRAY
-		_customSoundTray = flixel.system.ui.DefaultFlxSoundTray;
-		#end
 
 		FlxG.sound.volume = FlxG.save.data.volume;
 		FlxG.mouse.useSystemCursor = true;
@@ -52,11 +49,6 @@ class FNFGame extends FlxGame
 			openfl.events.FullScreenEvent.FULL_SCREEN, 
 			(e) -> FlxG.save.data.fullscreen = e.fullScreen
 		);
-
-		////
-		#if CRASH_HANDLER
-		CrashHandler.init();
-		#end
 	}
 
 	private function _onKeyPress(e:KeyboardEvent) {

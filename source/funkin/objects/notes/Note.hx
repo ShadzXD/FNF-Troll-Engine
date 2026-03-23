@@ -109,30 +109,35 @@ class Note extends NoteObject {
 	/**note type script*/
 	public var noteScript:FunkinHScript;
 
-	// editor stuff for hit sounds
-	public var editorHitBeat:Float = 0;
-
 	// basic stuff
 	public var beat:Float = 0;
 	public var strumTime:Float = 0;
 
 	public var visualTime:Float = 0;
-	public var ignoreNote:Bool = false;
 	public var prevNote:Note;
 	public var nextNote:Note;
 
 	// hold shit
 	public var holdType:SustainPart = TAP;
-	public var isSustainNote:Bool = false;
-	public var isSustainEnd:Bool = false;
 	public var sustainLength:Float = 0;
 	public var isRoll:Bool = false;
-	public var isHeld:Bool = false;
-	public var parent:Note;
+
+	/** Whether this note is a hold segment **/
+	public var isSustainNote:Bool = false;
+	/** Whether this note is the last segment of a hold **/
+	public var isSustainEnd:Bool = false;
+
+	public var parent:Note = null;
 	public var tail:Array<Note> = [];
 	public var unhitTail:Array<Note> = [];
-	public var holdingTime:Float = 0;
-	public var tripProgress:Float = 1;
+
+	/**
+		Used to denote which PlayField to be placed into.  
+		Holds automatically have this set to their parent's fieldIndex
+	**/
+	public var fieldIndex:Int = -1;
+
+	public var field:PlayField; // same as fieldIndex but lets you set the field directly incase you wanna do that i  guess
 
 	// quant shit
 	public var row:Int = 0;
@@ -145,10 +150,13 @@ class Note extends NoteObject {
 	public var spawned:Bool = false;
 	public var tooLate:Bool = false;
 	public var wasGoodHit:Bool = false;
-	public var hitByOpponent:Bool = false;
-	public var noteWasHit:Bool = false;
 	public var causedMiss:Bool = false;
 	public var canBeHit(get, never):Bool;
+	public var ignoreNote:Bool = false;
+
+	public var isHeld:Bool = false;
+	public var holdingTime:Float = 0;
+	public var tripProgress:Float = 1;
 
 	public var hitResult:HitResult = {judgment: UNJUDGED, hitDiff: 0}
 	public var rating:String = 'unknown';
@@ -159,20 +167,50 @@ class Note extends NoteObject {
 	public var noteType(default, set):String = null; // the note type
 	public var texture(default, set):String; // texture for the note
 	public var canQuant:Bool = true; // whether a quant texture should be searched for or not
-	public var usesDefaultColours:Bool = true; // whether this note uses the default note colours (lets you change colours in options menu)
-	// This automatically gets set if a notetype changes the ColorSwap values
+	
+	/**
+		Whether this note uses the default note colours (lets you change colours in options menu)  
+		This gets set to `false` if a notetype changes the ColorSwap values
+	**/
+	public var usesDefaultColours:Bool = true;
 
-	//// note 
-	public var defaultJudgement:Judgment;
-	public var breaksCombo:Bool = false; // hitting this will cause a combo break
-	public var blockHit:Bool = false; // whether you can hit this note or not
-	public var hitCausesMiss:Bool = false; // hitting this causes a miss
-	public var missHealth:Float = 0; // damage when hitCausesMiss = true and you hit this note
-	public var ratingDisabled:Bool = false; // hitting or missing this note shouldn't affect stats, this doesn't prevent sing/miss animations and sounds from playing!
-	public var hitsoundDisabled:Bool = false; // hitting this does not cause a hitsound when user turns on hitsounds
+	/** 
+		Judgement to be used when judging this note.  
+		If `null`, default judgements are used instead.
+	**/
+	public var defaultJudgement:Judgment = null;
+	
+	/** Whether hitting this note causes a combo break **/
+	public var breaksCombo:Bool = false;
+	
+	/** Prevents this note from being hit **/
+	public var blockHit:Bool = false;
+	
+	/** hitting this causes a miss **/ 
+	public var hitCausesMiss:Bool = false;
 
-	//// characters
+	/** Health to be subtracted when `hitCausesMiss` is `true` and you hit this note **/
+	public var missHealth:Float = 0;
 
+	/**
+		Whether hitting or missing this note shouldn't affect stats.
+		NOTE: This doesn't prevent sing/miss animations and sounds from playing!
+	**/
+	public var ratingDisabled:Bool = false;
+
+	/** Prevents the hitsound from being played if the user turned on hitsounds **/
+	public var hitsoundDisabled:Bool = false;
+
+	/**
+		If you need to tap the note to hit it, or just have the direction be held when it can be judged to hit.  
+		An example is Stepmania mines
+	**/
+	public var requiresTap:Bool = true;
+
+	/** The maximum amount of time you can release a hold before it counts as a miss **/
+	public var maxReleaseTime:Float = 0.25;
+
+	#if true
 	/** Which characters sing this note, if it's blank then the playfield's characters are used **/
 	public var characters:Array<Character> = [];
 
@@ -196,23 +234,9 @@ class Note extends NoteObject {
 
 	/** Suffix to be added to the **default** sing animation names (resulting name would be 'singLEFT'+'suffix') **/
 	public var characterMissAnimSuffix:String = "miss";
+	#end
 
 	////
-
-	/** If you need to tap the note to hit it, or just have the direction be held when it can be judged to hit.
-	 * An example is Stepmania mines **/
-	public var requiresTap:Bool = true;
-
-	/** The maximum amount of time you can release a hold before it counts as a miss**/
-	public var maxReleaseTime:Float = 0.25;
-
-	/**Used to denote which PlayField to be placed into.
-	 * Holds automatically have this set to their parent's fieldIndex
-	 */
-	public var fieldIndex:Int = -1;
-
-	public var field:PlayField; // same as fieldIndex but lets you set the field directly incase you wanna do that i  guess
-
 	public var noteSplashBehaviour:SplashBehaviour = DEFAULT;
 	public var noteSplashDisabled(get, set):Bool; // shortcut, disables the notesplash when you hit this note
 	public var noteSplashTexture:String = null; // spritesheet for the notesplash
@@ -229,8 +253,9 @@ class Note extends NoteObject {
 	// editor stuff
 	public var inEditor:Bool = false;
 	public var chartData:Dynamic = null;
-	public var mustPress:Bool = true; // perhaps make this a getter for field.isPlayer
 	public var realColumn:Int;
+	public var mustPress:Bool = true; // perhaps make this a getter for field.isPlayer
+	public var editorHitBeat:Float = 0;
 
 	// mod manager
 	public var garbage:Bool = false; // if this is true, the note will be removed in the next update cycle
@@ -292,12 +317,13 @@ class Note extends NoteObject {
 	}
 
 	/**
+		Set this note's HSB values to the user defined column / quant colors.  
+
 		@param force If `true`, forces the colours to update even if `usesDefaultColours` is `false`
 	**/
 	public function updateColours(force:Bool = false){
 		if (!force && !usesDefaultColours) return;
-		if (colorSwap==null) return;
-		if (column == -1) return; // FUCKING PSYCH EVENT NOTES!!!
+		if (colorSwap == null) return;
 		
 		var hsb = isQuant ? ClientPrefs.quantHSV[quants.indexOf(quant)] : getNoteColours(currentAnimations);
 		colorSwap.setHSBIntArray(hsb);
@@ -564,30 +590,14 @@ class Note extends NoteObject {
 		}
 
 		// because phantomarcade cant spell
-		var hasThatStupidAssTypo:Bool = false;
 		if (holdType == END && animPrefix.contains("purple")) {
-			hasThatStupidAssTypo = attemptToAddAnimationByPrefix(animName, 'pruple end hold', 24, true); // ?????
+			animation.addByPrefix(animName, 'pruple end hold', 24, true); // ?????
 		}
 		// this is autistic wtf
 
-		if (!hasThatStupidAssTypo) {
-			animation.addByPrefix(animName, animPrefix);
-		}
+		animation.addByPrefix(animName, animPrefix);
 		animation.play(animName, true);
 		scale.set(spriteScale, spriteScale);
-	}
-
-	// I stole this from psych lmao
-	// Modified to return if it was added or not.
-	function attemptToAddAnimationByPrefix(name:String, prefix:String, framerate:Float = 24, doLoop:Bool = true):Bool {
-		var animFrames = [];
-		@:privateAccess
-		animation.findByPrefix(animFrames, prefix); // adds valid frames to animFrames
-		if (animFrames.length < 1)
-			return false;
-
-		animation.addByPrefix(name, prefix, framerate, doLoop);
-		return true;
 	}
 
 	override function draw() {
@@ -610,9 +620,6 @@ class Note extends NoteObject {
 
 		noteScript?.executeFunc("onNoteUpdate", [this, elapsed]);
 		genScript?.executeFunc("onNoteUpdate", [this, elapsed]);
-
-		if (hitByOpponent)
-			wasGoodHit = true;
 
 		var diff = (strumTime - Conductor.songPosition);
 		if (diff < -ClientPrefs.hitWindow && !wasGoodHit)

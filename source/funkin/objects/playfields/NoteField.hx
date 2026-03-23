@@ -152,7 +152,7 @@ class NoteField extends FieldBase
 
 			if (songSpeed != 0)
 			{
-				if (daNote.wasGoodHit && daNote.sustainLength > 0)
+				if (daNote.holdingTime > 0)
 					continue;
 				
 				var speed:Float = modManager.getNoteSpeed(daNote, modNumber, songSpeed);
@@ -416,25 +416,33 @@ class NoteField extends FieldBase
 		var useSpiralHolds = modManager.getValue("spiralHolds", modNumber) != 0;
 
 
+		var strumSub = (crotchet / holdSubdivisions);
 		for (sub in 0...holdSubdivisions)
 		{
 			var prog = sub / (holdSubdivisions + 1);
 			var nextProg = (sub + 1) / (holdSubdivisions + 1);
-			var strumSub = (crotchet / holdSubdivisions);
-			var strumOff = (strumSub * sub);
-			strumSub *= sv;
-			strumOff *= sv;
+			var strumSub = strumSub;
+			var strumOff = strumSub * sub;
 			
 			if ((hold.wasGoodHit || hold.parent.wasGoodHit) && !hold.tooLate) {
-				var scale:Float = 1 - ((strumDiff + crotchet) / crotchet);
+				var scale:Float = -strumDiff / crotchet;
 				if (scale <= 0.0) {
 					strumSub = 0;
 					strumOff = 0;
 				}else if (scale < 1) {
+					scale *= sv;
 					strumSub *= scale;
 					strumOff *= scale;
 				}
+			}else { 
+				strumOff *= sv;
+				strumSub *= sv;
 			}
+
+			var vDiff = visualDiff + (strumOff * Note.pixelsPerMS);
+			var vDiff2 = vDiff + (strumSub * Note.pixelsPerMS);
+			var diff = strumDiff + strumOff;
+			var diff2 = diff + strumSub;
 
 			scalePoint.set(1, 1);
 
@@ -446,10 +454,7 @@ class NoteField extends FieldBase
 			};
 
 			if (hold.copyAlpha)
-				info = modManager.getExtraInfo((visualDiff + ((strumOff + strumSub) * Note.pixelsPerMS)) * -speed, strumDiff + strumOff + strumSub, curDecBeat, info, hold, modNumber, hold.column);
-
-			var topWidth = scalePoint.x * FlxMath.lerp(tWid, bWid, prog);
-			var botWidth = scalePoint.x * FlxMath.lerp(tWid, bWid, nextProg);
+				info = modManager.getExtraInfo(vDiff2 * -speed, diff2, curDecBeat, info, hold, modNumber, hold.column);
 
 			var alphaMult = hold.baseAlpha;
 
@@ -458,15 +463,17 @@ class NoteField extends FieldBase
 			
 			info.alpha *= FlxMath.lerp(alphaMult, 1, info.glow);
 
-			if(lastMe == null) // first sexment
-			{
-				var basePos = modManager.getPos(-(visualDiff + ((strumOff + strumSub) * Note.pixelsPerMS)) * speed, strumDiff + strumOff + strumSub, curDecBeat, hold.column, modNumber, hold, this,
-					perspectiveArrDontUse, hold.vec3Cache);
-
+			if (lastMe == null) { // first sexment
+				var basePos = modManager.getPos(vDiff2 * -speed, diff2, curDecBeat, hold.column, modNumber, hold, this, perspectiveArrDontUse, hold.vec3Cache);
 				zIndex = basePos.z;
 			}
-			var top = lastMe ?? getPoints(hold, topWidth, speed, (visualDiff + (strumOff * Note.pixelsPerMS)), strumDiff + strumOff, useSpiralHolds, lookAheadTime);
-			var bot = getPoints(hold, botWidth, speed, (visualDiff + ((strumOff + strumSub) * Note.pixelsPerMS)), strumDiff + strumOff + strumSub, useSpiralHolds, lookAheadTime);
+
+			var topWidth = scalePoint.x * FlxMath.lerp(tWid, bWid, prog);
+			var botWidth = scalePoint.x * FlxMath.lerp(tWid, bWid, nextProg);
+
+			var top = lastMe ?? getPoints(hold, topWidth, speed, vDiff, diff, useSpiralHolds, lookAheadTime);
+			var bot = getPoints(hold, botWidth, speed, vDiff2, diff2, useSpiralHolds, lookAheadTime);
+
 			if (!hold.copyY) {
 				var a:Float = (crotchet + 1) * Note.pixelsPerMS * speed;
 				
@@ -549,42 +556,42 @@ class NoteField extends FieldBase
 		var bottom = 0.0;
 		switch (sprite.frame.angle) {
 			case ANGLE_0:
-				var height = frameRect.bottom - frameRect.top;
-				top = frameRect.top + (uvSub + uvOffset) * height;
-				bottom = frameRect.top + uvOffset * height;
+				var height = frameRect.height - frameRect.y;
+				top = frameRect.y + (uvSub + uvOffset) * height;
+				bottom = frameRect.y + uvOffset * height;
 			case ANGLE_90:
-				var width = frameRect.right - frameRect.left;
-				top = frameRect.left + (uvSub + uvOffset) * width;
-				bottom = frameRect.left + uvOffset * width;
+				var width = frameRect.width - frameRect.x;
+				top = frameRect.x + (uvSub + uvOffset) * width;
+				bottom = frameRect.x + uvOffset * width;
 			case ANGLE_270:
-				var width = frameRect.left - frameRect.right;
-				top = frameRect.right + uvOffset * width;
-				bottom = frameRect.right + (uvSub + uvOffset) * width;
+				var width = frameRect.x - frameRect.width;
+				top = frameRect.width + uvOffset * width;
+				bottom = frameRect.width + (uvSub + uvOffset) * width;
 		}
 
 		if (flipY)
 		{
 			var ogTop = top;
 			top = bottom;
-			bottom = top;
+			bottom = ogTop;
 		}
 
 		switch (sprite.frame.angle) {
 			case ANGLE_0:
-				uv[subIndex] = uv[subIndex + 4] = frameRect.left;
-				uv[subIndex + 2] = uv[subIndex + 6] = frameRect.right;
+				uv[subIndex] = uv[subIndex + 4] = frameRect.x;
+				uv[subIndex + 2] = uv[subIndex + 6] = frameRect.width;
 				uv[subIndex + 1] = uv[subIndex + 3] = top;
 				uv[subIndex + 5] = uv[subIndex + 7] = bottom;
 			case ANGLE_90:
 				uv[subIndex] = uv[subIndex + 4] = top;
 				uv[subIndex + 2] = uv[subIndex + 6] = bottom;
-				uv[subIndex + 1] = uv[subIndex + 3] = frameRect.bottom;
-				uv[subIndex + 5] = uv[subIndex + 7] = frameRect.top;
+				uv[subIndex + 1] = uv[subIndex + 3] = frameRect.height;
+				uv[subIndex + 5] = uv[subIndex + 7] = frameRect.y;
 			case ANGLE_270:
 				uv[subIndex] = uv[subIndex + 2] = bottom;
 				uv[subIndex + 4] = uv[subIndex + 6] = top;
-				uv[subIndex + 1] = uv[subIndex + 5] = frameRect.top;
-				uv[subIndex + 3] = uv[subIndex + 7] = frameRect.bottom;
+				uv[subIndex + 1] = uv[subIndex + 5] = frameRect.y;
+				uv[subIndex + 3] = uv[subIndex + 7] = frameRect.height;
 		}
 	}
 
@@ -733,10 +740,10 @@ class NoteField extends FieldBase
 				]);
 		}
 		var uvData = new Vector<Float>(8, false, [
-			frameRect.left,		frameRect.top,
-			frameRect.right,	frameRect.top,
-			frameRect.left,		frameRect.bottom,
-			frameRect.right,	frameRect.bottom
+			frameRect.x,		frameRect.y,
+			frameRect.width,	frameRect.y,
+			frameRect.x,		frameRect.height,
+			frameRect.width,	frameRect.height
 		]);
 		var shader = sprite.shader != null ? sprite.shader : defaultShader;
 		if (shader != sprite.shader)

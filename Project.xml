@@ -146,9 +146,10 @@
 	<assets path="flixel/flixel-ui/img" embed="true"/>
 
 	<section if="CRASH_HANDLER">
-		<haxedef name="HXCPP_STACK_TRACE" />
 		<haxedef name="HXCPP_CHECK_POINTER" />
 		<haxedef name="HXCPP_STACK_LINE" />
+		<haxedef name="HXCPP_STACK_TRACE" />
+		<haxedef name="HXCPP_CATCH_SEGV" />
 		<haxedef name="openfl-enable-handle-error" />
 	</section>
 		

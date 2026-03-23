@@ -272,38 +272,29 @@ class JudgmentManager {
 
 		var diff:Float = Math.abs(note.strumTime - hitTime);
 
-		switch(note.noteType){
-			case 'Hurt Note':
-				if (diff <= getWindow(HIT_MINE)) 
-					return HIT_MINE;
-
-			default:
-				if (note.noteScript != null){
-					var judge = note.noteScript.executeFunc("judgeNote", [note, diff], note);
-					if (judge != null) return judge;
-				}
-
-				if (note.defaultJudgement != null) {
-					if (diff <= getWindow(note.defaultJudgement))
-						return note.defaultJudgement;
-
-					return UNJUDGED;
-				}
-
-
-				if (note.hitCausesMiss) {
-					if (diff <= getWindow(MISS_MINE))
-						return MISS_MINE;
-
-					return UNJUDGED;
-				}
-				
-				return judgeTimeDiff(diff);
-		}
 		// did you know if you always return UNJUDGED a note won't be hittable?
 		// i thought that was interesting
-		return UNJUDGED;
 		// (aka fake notes when)
+		if (note.noteScript != null) {
+			var judge = note.noteScript.executeFunc("judgeNote", [note, diff], note);
+			if (judge != null) return judge;
+		}
+
+		if (note.defaultJudgement != null) {
+			if (diff <= getWindow(note.defaultJudgement))
+				return note.defaultJudgement;
+			else
+				return UNJUDGED;
+		}
+
+		if (note.hitCausesMiss) {
+			if (diff <= getWindow(MISS_MINE))
+				return MISS_MINE;
+			else
+				return UNJUDGED;
+		}
+
+		return judgeTimeDiff(diff);		
 	}
 }
 

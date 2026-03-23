@@ -650,8 +650,24 @@ class ScriptingMacro
 
 		////
 		var superClass:ClassType = cl.superClass?.t.get();
-		if (superClass == null)
+		if (superClass == null) {
 			Context.fatalError('$classFullName doesn\'t extend a class!', macroCallPos);
+			return fields;
+		}
+		
+		inline function hasInterface(name:String):Bool {
+			var hasInterface = false;
+			for (i in cl.interfaces) {
+				if (i.t.get().name == name) {
+					hasInterface = true;
+					break;
+				}
+			}
+			return hasInterface;
+		}
+
+		if (!hasInterface("IScriptedClass"))
+			return fields;
 
 		#if !display
 		if (Sys.args().indexOf("--no-output") != -1) return fields; // code completion

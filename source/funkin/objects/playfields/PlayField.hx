@@ -198,10 +198,10 @@ class PlayField extends FlxTypedGroup<FlxBasic>
 				removeNote(daNote.unhitTail.shift());
 		
 
-		if (daNote.parent != null && daNote.parent.tail.contains(daNote))
+		if (daNote.parent != null)
 			daNote.parent.tail.remove(daNote);
 
- 		if (daNote.parent != null && daNote.parent.unhitTail.contains(daNote))
+ 		if (daNote.parent != null)
 			daNote.parent.unhitTail.remove(daNote); 
 
 		if (noteQueue[daNote.column] != null)
@@ -501,12 +501,16 @@ class PlayField extends FlxTypedGroup<FlxBasic>
 						noteMissed.dispatch(daNote, this);
 				} 
 
-				if((
-					(daNote.holdingTime>=daNote.sustainLength) && daNote.sustainLength>0 ||
-					daNote.isSustainNote && daNote.strumTime - Conductor.songPosition < -350 ||
-					!daNote.isSustainNote
-					&& (daNote.sustainLength == 0 || daNote.tooLate)
-					&& daNote.strumTime - Conductor.songPosition < -(200 + judgeManager.getWindow(TIER1) + daNote.sustainLength)) && (daNote.tooLate || daNote.wasGoodHit))
+				if (
+					(
+						(!daNote.isSustainNote) ||
+						(daNote.sustainLength > 0 && daNote.holdingTime >= daNote.sustainLength) ||
+						(daNote.isSustainNote && daNote.strumTime - Conductor.songPosition < -350)
+					) && (
+						(daNote.sustainLength == 0 || daNote.tooLate || daNote.wasGoodHit)
+						&& daNote.strumTime - Conductor.songPosition < -(200 + judgeManager.getWindow(TIER1) + daNote.sustainLength)
+					)
+				)
 				{
 					daNote.garbage = true;
 					garbage.push(daNote);

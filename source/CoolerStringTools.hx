@@ -1,3 +1,5 @@
+import flixel.FlxG;
+
 class CoolerStringTools {
 	static public function isAlpha(s:String):Bool
 		return s.toLowerCase() != s.toUpperCase();
@@ -16,5 +18,11 @@ class CoolerStringTools {
 				}
 				buf.toString();
 		}
+	}
+	
+	static public function shuffle(s:String):String {
+		var characters:Array<String> = s.split("");
+		FlxG.random.shuffle(characters);
+		return characters.join("");
 	}
 }

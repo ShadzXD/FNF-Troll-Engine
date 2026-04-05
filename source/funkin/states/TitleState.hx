@@ -3,7 +3,6 @@ package funkin.states;
 import funkin.data.StageData;
 import funkin.Conductor;
 import openfl.filters.BlurFilter;
-import flixel.addons.transition.FlxTransitionableState;
 import flixel.group.FlxGroup;
 import flixel.input.keyboard.FlxKey;
 import flixel.input.gamepad.FlxGamepad;
@@ -60,8 +59,8 @@ class TitleState extends MusicBeatState
 		if (initialized)
 			Paths.clearStoredMemory();
 
-		FlxTransitionableState.skipNextTransIn = true;
 		persistentUpdate = true;
+		transIn = null; // No in transition it looks bad
 
 		////
 		camFollow = new FlxPoint(640, 360);
@@ -517,11 +516,6 @@ class IntroSequence extends FlxTypedGroup<FlxBasic> {
 		bg.scale.set(FlxG.width, FlxG.height);
 		bg.updateHitbox();
 		add(bg);
-		
-		FlxTween.tween(bg, {alpha: 0.86}, Conductor.crochet * 0.005, {
-			ease: FlxEase.quadInOut,
-			songBased: true,
-		});
 
 		//
 		textGroup = new FlxTypedGroup<Alphabet>();
@@ -599,6 +593,9 @@ class IntroSequence extends FlxTypedGroup<FlxBasic> {
 	}
 
 	override function update(e) {
+		var prog = Math.min(1.0, Conductor.curDecBeat / 5);
+		bg.alpha = FlxMath.lerp(1.0, 0.86, FlxEase.quadInOut(prog));
+
 		super.update(e);
 		updateIntro();
 	}

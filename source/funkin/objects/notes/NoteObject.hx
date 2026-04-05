@@ -27,8 +27,9 @@ class NoteObject extends FlxSprite {
 	public var offsetY:Float = 0;
 	public var defScale:FlxPoint = FlxPoint.get(); // for modcharts to keep the scaling
 
+	/** Prevents the default FlxSprite `draw` function from being called. **/
 	public var handleRendering:Bool = true;
-	public var vec3Cache:Vector3 = new Vector3(); // for vector3 operations in modchart code
+	public var vec3Cache:Vector3 = Vector3.get(); // for vector3 operations in modchart code
 
 	#if ALLOW_DEPRECATION
 	@:deprecated("noteData is deprecated! Use `column` instead.")
@@ -55,13 +56,14 @@ class NoteObject extends FlxSprite {
 			return super.draw();
 	}
 
-	override function drawComplex(camera:FlxCamera):Void {
-		prepareMatrix(camera);
-		camera.drawPixels(_frame, framePixels, _matrix, colorTransform, blend, antialiasing, shader, colorSwap);
+	override function drawFrameComplex(frame, camera:FlxCamera):Void {
+		prepareFrameMatrix(frame, camera);
+		camera.drawPixels(frame, framePixels, _matrix, colorTransform, blend, antialiasing, shader, colorSwap);
 	}
 
 	override function destroy() {
 		defScale = FlxDestroyUtil.put(defScale);
+		vec3Cache = FlxDestroyUtil.put(vec3Cache);
 		super.destroy();
 	}
 

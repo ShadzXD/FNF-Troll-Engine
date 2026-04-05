@@ -16,6 +16,8 @@ class FadeTransition extends Transition
 		gradient.pixels.setPixel32(0,1,0);
 		//gradient.antialiasing = true;
 		add(gradient);
+
+		Paths.graphicDumpExclusions.push(gradient.graphic);
 	}
 
 	override public function start(status:TransitionStatus)
@@ -47,5 +49,10 @@ class FadeTransition extends Transition
 				new FlxTimer().start(0.0, _ -> finish()); // force one last render call before exiting
 			}
 		});
+	}
+
+	override function destroy() {
+		Paths.graphicDumpExclusions.remove(gradient.graphic);
+		super.destroy();
 	}
 }

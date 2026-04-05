@@ -31,6 +31,8 @@ typedef JudgmentData = {
 	var health:Float;
 	/** Whether this judge should cause a note splash **/
 	var noteSplash:Bool;
+	/** If this is true then this judge wont show a judgment image **/
+	var ?hideJudge:Bool;
 	/** Where in the judgment sheet this judgment lies **/
 	//var frame:Int;
 
@@ -41,8 +43,6 @@ typedef JudgmentData = {
 	/** if this isn't null, then PBOT wont do any calculations and will instead just add these to the pbot score/accuracy**/
 	var ?pbotPoints:Float;
 	
-	/** If this is true then this judge wont show a judgment image **/
-	var ?hideJudge:Bool;
 	/** How this judge affects your combo (IGNORE, INCREMENT or BREAK). Default behaviour is INCREMENT **/
 	var ?comboBehaviour:ComboBehaviour;
 	/** Used for mines, etc. makes it so the window isnt scaled by the judge difficulty. Defaults behaviour is false **/
@@ -50,6 +50,38 @@ typedef JudgmentData = {
 	/** False for stuff like hold drops **/
 	var ?countAsHit:Bool;
 
+}
+
+@:structInit
+class HitResult {
+	/** Resulting judgment based on how late you hit the note **/
+	public var judgment:Judgment = UNJUDGED;
+
+	/** How late the note was hit **/
+	public var hitDiff:Float = 0.0;
+
+	/** Time at which the note was hit **/
+	public var hitTime:Float = 0.0;
+
+	/** Whether the note was hit by botplay **/
+	public var bot:Bool = false;
+
+	/** `strumTime` of the `Note` that should have produced this `HitResult` **/
+	public var strumTime(get, never):Float;
+
+	// You could probably get it from the Note itself, but if not then here ya go.
+	@:noCompletion inline function get_strumTime():Float
+		return hitTime - hitDiff;
+
+	inline public function set(judgment:Judgment, hitDiff:Float, hitTime:Float, bot:Bool = false) {
+		this.judgment = judgment;
+		this.hitDiff = hitDiff;
+		this.hitTime = hitTime;
+		this.bot = bot;
+	}
+
+	inline public function fromTimes(judgment:Judgment, strumTime:Float, hitTime:Float, bot:Bool = false)
+		set(judgment, hitTime - strumTime, hitTime, bot);
 }
 
 /**

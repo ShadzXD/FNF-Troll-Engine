@@ -29,7 +29,7 @@ import flixel.util.FlxGradient;
 import flixel.addons.display.FlxGridOverlay;
 import flixel.addons.ui.*;
 import flixel.addons.ui.FlxUIDropDownMenu.FlxUIDropDownHeader;
-import flixel.addons.transition.FlxTransitionableState;
+import funkin.states.base.TransitionableState;
 import flixel.math.FlxMath;
 import flixel.math.FlxPoint;
 import flixel.text.FlxText;
@@ -343,7 +343,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		instance = this;
 		updateSongPos = false;
 		
-		FlxTransitionableState.skipNextTransOut = true;
+		TransitionableState.skipNextTransOut = true;
 		MusicBeatState.stopMenuMusic();
 
 		plrHitsound = new FlxSound().loadEmbedded(Paths.sound("monoHitsound"));
@@ -1326,7 +1326,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			if (copyIdx < 0) return;
 
 			////
-			copySection(curSection, copyIdx, true, true);
+			copySection(curSection, copyIdx, check_notesSec.checked, check_eventsSec.checked);
 		});
 		copyLastButton.resize(60, 30);
 		
@@ -1782,8 +1782,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		// TODO: freeplay data shit idunno
 
 		////
-		final fileDialog = new FileDialog();
-		fileDialog.onOpen.add(function(resource) {
+		function onOpenMetadata(resource) {
 			var str:String = (resource:Bytes).toString();
 			if (str != null && str.length > 0) {
 				var data:Dynamic = Json.parse(str);
@@ -1796,10 +1795,10 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 				modcharterInputText.text = data.modcharter;
 				extraInfoInputText.text = (data.extraInfo?.join(',') ?? "");
 			}
-		});
+		}
 
 		var loadButton = newFlxUIButton(10, extraInfoInputText.y + 30, "Load Metadata", function() {			
-			fileDialog.open('json', getSongPath("metadata.json"), 'Load Metadata');
+			CoolUtil.showOpenDialog("Load Metadata", getSongPath("metadata.json"), ["JSON file", "*.json"], onOpenMetadata);
 		});
 
 		////
@@ -1812,7 +1811,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			_song.metadata.extraInfo = extraInfoInputText.text.split(',');
 
 			var data:String = Json.stringify(_song.metadata, "\t");
-			fileDialog.save(data, 'json', getSongPath("metadata.json"), 'Save Metadata');
+			CoolUtil.showSaveDialog(data, "Save Metadata", getSongPath("metadata.json"), ["JSON file", "*.json"]);
 		});
 
 		////
@@ -2096,7 +2095,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 		inline function createMusicTrack() {
 			var newTrack = new FlxSound();
-			newTrack.context = MUSIC;
 			newTrack.exists = true;
 			FlxG.sound.list.add(newTrack);
 			return newTrack;
@@ -2396,6 +2394,31 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		}
 				
 		Conductor.songPosition = lastMixPos + lastMixTimer;
+	}
+
+	override function updateSteps() {
+		var oldStep:Int = Conductor.curStep;
+		Conductor.updateSteps();
+		var curStep:Int = Conductor.curStep;
+
+		if (oldStep != curStep) {
+			if (curStep > 0) {
+				stepHit();
+				if (curStep % 4 == 0)
+					beatHit();
+			}
+
+			/*
+			if (PlayState.SONG != null) {
+				if (oldStep < curStep)
+					updateSection();
+				else
+					rollbackSection();
+			}
+			*/
+
+			tryResync();
+		}
 	}
 
 	var inputBlocked = false;

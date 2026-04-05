@@ -35,6 +35,9 @@ class ClientPrefs {
 	public static inline final epicWindow:Float = -1;
 	#end
 
+	// rip bro
+	public static inline final sfxVolume:Float = 1;
+
 	#if !MULTICORE_LOADING
 	public static inline final multicoreLoading:Bool = false;
 	#end
@@ -605,7 +608,7 @@ class ClientPrefs {
 				type:Number,
 				value:#if !macro FlxG.stage != null ? FlxG.stage.application.window.displayMode.refreshRate : #end
 				60,
-				data:["suffix" => " FPS", "min" => 5, "max" => 360, "step" => 1,]
+				data:["suffix" => " FPS", "min" => 0, "max" => 360, "step" => 1,]
 			},
 			"lowQuality" => {
 				display: "Low Quality",
@@ -937,6 +940,9 @@ class ClientPrefs {
 
 		FlxG.sound.volume = ClientPrefs.masterVolume;
 		FlxG.autoPause = ClientPrefs.autoPause;
+		FlxG.sound.volume = ClientPrefs.masterVolume;
+		FlxG.sound.defaultMusicGroup.volume = ClientPrefs.songVolume;
+		FlxG.sound.defaultSoundGroup.volume = ClientPrefs.sfxVolume;
 
 		Main.game.set_antialiasing(globalAntialiasing);
 		Main.game.set_framerate(framerate);

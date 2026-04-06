@@ -846,7 +846,19 @@ class FlxText extends FlxSprite
 
 	override function updateColorTransform():Void
 	{
-		colorTransform.alphaMultiplier = alpha;
+		if (colorTransform == null)
+			colorTransform = new ColorTransform();
+
+		if (alpha != 1)
+		{
+			colorTransform.alphaMultiplier = alpha;
+			useColorTransform = true;
+		}
+		else
+		{
+			colorTransform.alphaMultiplier = 1;
+			useColorTransform = false;
+		}
 
 		dirty = true;
 	}
@@ -856,11 +868,14 @@ class FlxText extends FlxSprite
 		if (textField == null || !_regen)
 			return;
 
-		final oldGraphic:FlxGraphic = graphic;
-		final oldBorderPixels:BitmapData = _borderPixels;
+		var oldWidth:Int = 0;
+		var oldHeight:Int = VERTICAL_GUTTER;
 
-		final oldWidth:Int = graphic != null ? graphic.width : 0;
-		final oldHeight:Int = graphic != null ? graphic.height : VERTICAL_GUTTER;
+		if (graphic != null)
+		{
+			oldWidth = graphic.width;
+			oldHeight = graphic.height;
+		}
 
 		var newWidth:Int = Math.ceil(textField.width);
 		var textfieldHeight = _autoHeight ? textField.textHeight : textField.height;

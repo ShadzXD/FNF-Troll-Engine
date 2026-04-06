@@ -426,6 +426,7 @@ class OptionsSubstate extends MusicBeatSubstate
 	function playPreviewSound(name:String, volume:Float = 1){
 		if (previewSound != null) previewSound.stop().destroy();
 		previewSound = FlxG.sound.play(Paths.sound(name), volume, false, null, true, ()->{previewSound = null;});
+		previewSound.context = MISC;
 	}
 
 	private var lastFlixelVolume:Float = CoolMath.snap(FlxG.sound.volume, 0.1);
@@ -442,25 +443,23 @@ class OptionsSubstate extends MusicBeatSubstate
 			case 'masterVolume':
 				if (ignoreVolumeChange) return;
 
-				var prevVol = FlxG.sound.logToLinear(FlxG.sound.volume);
+				var prevVol = FlxG.sound.volume;
 				var newVol = newVal * 0.01;
 				var snappedVol = CoolMath.snap(newVol, 0.1);
 
 				ignoreVolumeChange = true;
-				FlxG.sound.volume = FlxG.sound.linearToLog(newVol);
+				FlxG.sound.volume = newVol;
 				ignoreVolumeChange = false;
 
 				if (lastFlixelVolume != snappedVol) {
 					lastFlixelVolume = snappedVol;
 					FlxG.sound.showSoundTray(snappedVol > prevVol);
 				}
-			case 'songVolume':
-				FlxG.sound.defaultMusicGroup.volume = newVal * 0.01;
+
 			case 'sfxVolume':
-				FlxG.sound.defaultSoundGroup.volume = newVal * 0.01;
-				playPreviewSound("scrollMenu", 1.0);
+				playPreviewSound("scrollMenu", newVal * 0.01);
 			case 'missVolume':
-				playPreviewSound('missnote' + FlxG.random.int(1, 3), newVal * 0.01);
+				playPreviewSound('missnote${1+Std.random(3)}', newVal * 0.01);
 			case 'hitsoundVolume':
 				playPreviewSound("hitsound", newVal * 0.01);
 		}
@@ -516,7 +515,7 @@ class OptionsSubstate extends MusicBeatSubstate
 
 		forceWidgetUpdate = true;
 		ignoreVolumeChange = true;
-		changeNumber("masterVolume", Math.ffloor(FlxG.sound.logToLinear(val) * 100), true);
+		changeNumber("masterVolume", Math.ffloor(val * 100), true);
 		ignoreVolumeChange = false;
 	}
 
@@ -950,7 +949,7 @@ class OptionsSubstate extends MusicBeatSubstate
 					}
 				}
 
-				text.text = checkbox.toggled ? "on" : "off";
+				text.text = checkbox.toggled ? "On" : "Off";
 				text.x = object.x + 450;
 				text.y = object.y + ((object.height - text.height) / 2);
 

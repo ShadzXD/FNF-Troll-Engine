@@ -95,6 +95,10 @@ class Main extends Sprite
 		CrashHandler.init();
 		#end
 
+		#if (windows && cpp)
+		funkin.api.Darkfriend.setDarkMode(!funkin.api.Darkfriend.isLightTheme());
+		#end
+
 		#if linux
 		stage.window.setIcon(Image.fromFile("icon.png"));
 		#end

@@ -18,6 +18,7 @@ import funkin.data.Song;
 
 import funkin.objects.notes.*;
 import funkin.objects.ui.CustomFlxUI;
+import funkin.objects.CoolMenuBG;
 
 import math.CoolMath;
 import math.CoolMath.floorDecimal;
@@ -68,6 +69,10 @@ typedef ChartingStateOptions = {
 	var playSoundEvents:Bool;
 	var panHitSounds:Bool;
 	var metronome:Bool;
+	var vsliceMouseMode:Bool;
+	var bgColor1:FlxColor;
+	var bgTexture:String;
+	var bgIsCool:Bool;
 	var gridColor1:FlxColor;
 	var gridColor2:FlxColor;
 }
@@ -109,6 +114,10 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		playSoundEvents: false,
 		panHitSounds: false,
 		metronome: false,
+		vsliceMouseMode: false,
+		bgColor1: FlxColor.fromHSB(Std.random(64) * 5.625, 0.15, 0.15),
+		bgTexture: 'menuDesat',
+		bgIsCool: false,
 		gridColor1: 0xffe7e6e6,
 		gridColor2: 0xffd9d5d5,
 	}
@@ -166,6 +175,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		return hudSkin;
 	}
 
+	var bg:CoolMenuBG;
+
 	var UI_box:FlxUITabMenu;
 
 	var txtGroup:FlxTypedGroup<FlxText>;
@@ -206,9 +217,9 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 	var _song:SwagSong;
 
-	/* WILL BE THE CURRENT / LAST PLACED NOTE */
-	var curSelectedNote:NoteData = null;
-	var curSelectedEvent:PsychEventNote = null;
+	var selectedNotes = new NoteSelection();
+
+	var curSelectedEvent(default, set):PsychEventNote = null;
 	var subEventIdx:Int = 0;
 
 	/** HELD NOTE FROM CLICKING **/
@@ -301,6 +312,10 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		return playbackSpeed = val;
 	}
 
+	var doUpdateGridLayer = false;
+	var doUpdateGridObjects = false;
+	var doUpdateNoteUI = false;
+
 	public function new(data:SwagSong = null) {
 		super();
 		this._song = data ?? (PlayState.SONG ??= {
@@ -332,12 +347,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		});
 	}
 
-	inline function formatTime(ms:Float) {
-		var mins = '' + Math.floor(ms / 60000);
-		var secs = '' + Math.floor((ms % 60000) / 1000);
-		return '$mins:${secs.length < 2 ? '0' + secs : secs}';
-	}
-
 	override function create()
 	{
 		instance = this;
@@ -366,11 +375,9 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		FlxG.camera.follow(camPos);
 
 		////
-		var bg:FlxSprite = new FlxSprite(0, 0, Paths.image('menuDesat'));
-		bg.color = FlxColor.fromHSB(Std.random(64) * 5.625, 0.15, 0.15);
+		bg = new CoolMenuBG(null);
 		bg.scrollFactor.set();
-		bg.scale.x = bg.scale.y = SpriteTools.getFillScale(bg);
-		bg.screenCenter();
+		reloadBG();
 		add(bg);
 
 		////
@@ -409,6 +416,11 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		nextRenderedSustains = new FlxTypedGroup<FlxSprite>();
 		nextRenderedNotes = new FlxTypedGroup<Note>();
 
+		selectionBoxSpr = new FlxSprite();
+		selectionBoxSpr.makeGraphic(1, 1, 0xFF87BDD9);
+		selectionBoxSpr.alpha = 0.4;
+		selectionBoxSpr.exists = false;
+
 		gridGroup.add(gridLayer);
 		gridGroup.add(waveformSprite);
 		gridGroup.add(beatSeparators);
@@ -425,28 +437,30 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		gridGroup.add(nextRenderedSustains);
 		gridGroup.add(nextRenderedNotes);
 
+		gridGroup.add(selectionBoxSpr);
+
 		////
 		txtGroup = new FlxTypedGroup<FlxText>();
 
-		bpmTxt = new FlxText(12, 50, 0, "", 20);
+		bpmTxt = new FlxText(12, 58, 0, "", 20);
 		bpmTxt.setFormat(null, 18, 0xFFFFFFFF, LEFT, FlxTextBorderStyle.OUTLINE, 0xFF000000);
 		bpmTxt.borderSize = 2;
 		bpmTxt.scrollFactor.set();
 		txtGroup.add(bpmTxt);
 
-		zoomTxt = new FlxText(10, 220, 0, "Zoom: 1 / 1", 16);
+		zoomTxt = new FlxText(10, 228, 0, 'Zoom: ${zoomList[curZoom] * 100}%', 16);
 		zoomTxt.setFormat(null, 18, 0xFFFFFFFF, LEFT, FlxTextBorderStyle.OUTLINE, 0xFF000000);
 		zoomTxt.borderSize = 2;
 		zoomTxt.scrollFactor.set();
 		txtGroup.add(zoomTxt);
 
-		quantTxt = new FlxText(10, 240, 0, "Beat Snap: null" , 16);
+		quantTxt = new FlxText(10, 248, 0, "Beat Snap: null" , 16);
 		quantTxt.setFormat(null, 18, 0xFFFFFFFF, LEFT, FlxTextBorderStyle.OUTLINE, 0xFF000000);
 		quantTxt.borderSize = 2;
 		quantTxt.scrollFactor.set();
 		txtGroup.add(quantTxt);
 
-		var tipTxt:FlxText = new FlxText(12, 300,0, "F1 - Show help", 20);
+		var tipTxt:FlxText = new FlxText(12, 308,0, "F1 - Show help", 20);
 		tipTxt.setFormat(null, 18, 0xFFFFFFFF, LEFT, FlxTextBorderStyle.OUTLINE, 0xFF000000);
 		tipTxt.borderSize = 2;
 		tipTxt.scrollFactor.set();
@@ -456,6 +470,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		iconDisplay = new FlxTypedGroup<FlxSprite>();
 
 		iconBG = FlxGradient.createGradientFlxSprite(1, 45 + 5 * 2, [0xFF535353, 0x00535353]);
+		iconBG.blend = ADD;
 		iconBG.scale.x = FlxG.width;
 		iconBG.updateHitbox();
 		iconBG.scrollFactor.set(0, 0);
@@ -531,7 +546,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		}
 
 		////
-		progressBG = FlxGradient.createGradientFlxSprite(1, GRID_SIZE, [0xFF535353, 0xFF414040]);
+		progressBG = FlxGradient.createGradientFlxSprite(1, GRID_SIZE, [0xFF474951, 0xFF37393F]);
 		progressBG.scale.x = FlxG.width;
 		progressBG.updateHitbox();
 		progressBG.scrollFactor.set(0, 0);
@@ -681,7 +696,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		addNoteUI();
 		addEventsUI();
 		addChartingUI();
-		addCustomizeUI();
+		addPreferencesUI();
 		addTracksUI();
 		
 		////
@@ -705,6 +720,22 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		_song.metadata.modcharter ??= "";
 
 		updateDiscordRPC();
+	}
+
+	function reloadBG(?key:String, ?cool:Bool):Bool {
+		key ??= options.bgTexture;
+		cool ??= options.bgIsCool;
+		var graphic = Paths.image(key, null, false);
+		if (graphic == null) return false;
+
+		bg.color = options.bgColor1;
+		bg.isCool = cool;
+
+		bg.loadGraphic(graphic);
+		bg.scale.x = bg.scale.y = SpriteTools.getFillScale(bg);
+		bg.screenCenter();
+
+		return true;
 	}
 
 	function updateStrumline() {		
@@ -867,7 +898,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			section.sectionNotes.push(note); 
 		}
 
-		updateGrid();
+		doUpdateGridObjects = true;
 	}
 
 	function fixEvents(){
@@ -903,7 +934,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		if (onAccept != null)
 			openSubState(new Prompt(text, 0, onAccept));
 		else
-			openSubState(new Prompt(text, 0, onAccept, null, false, "OK", "OK"));
+			openSubState(new Prompt(text, 0, onAccept, null, "OK", "OK"));
 	}
 
 	function showWarning(text:String, ?onAccept:Void->Void) {
@@ -917,38 +948,16 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	function addSongUI():Void
 	{
 		var selectSongButton = newFlxUIButton(10, 20, "Select Song", openSongSelect);
-
-		var saveButton:FlxUIButton = newFlxUIButton(110, 20, "Save Chart", saveLevel);
-
-		var saveEventJson:FlxUIButton = newFlxUIButton(110, saveButton.y + 30, 'Save Events', function() {
-			if (_song.events != null && _song.events.length > 1)
-				_song.events.sort(sortEventsByTime);
-
-			var json = {"song": {"events": _song.events}}
-			var data:String = Json.stringify(json, "\t");
-			CoolUtil.showSaveDialog(data, 'Save Events', getSongPath('events.json'), ["JSON file", '*.json']);
-		});
-
-		var saveZipButton = newFlxUIButton(110, saveEventJson.y + 30, 'Save as ZIP', function() {
-			var zip = new funkin.data.FuckingZip();
-			zip.addString(encodeChartJson(), getChartFileName());
-			zip.addString(Json.stringify(_song.metadata), 'metadata.json');
-
-			for (name in soundTracksMap.keys()) {
-				name += "." + Paths.SOUND_EXT;
-				var p = getSongPath(name);
-				var b = Paths.getBytes(p);
-				if (b != null) zip.addBytes(b, name);
-			}
-
-			CoolUtil.showSaveDialog(zip.finalize(), "Save File", getSongPath(_song.song + ".zip"), ["ZIP File", "*.zip"]);
-		});
+		var saveButton = newFlxUIButton(110, 20, "Save Chart", saveChartFile);
+		var saveEventJson = newFlxUIButton(110, saveButton.y + 30, 'Save Events', saveEventsFile);
+		var saveZipButton = newFlxUIButton(110, saveEventJson.y + 30, 'Save as ZIP', saveSongZIP);
 
 		///
 		var reloadSongJson:FlxUIButton = newFlxUIButton(saveButton.x + 90, saveButton.y, "Reload JSON", function()
 		{
 			showWarning('This action will clear current progress.\n\nProceed?', loadJson.bind(_song.song));
 		});
+		reloadSongJson.color = 0xFFFF0000;
 
 		var loadAutosaveBtn:FlxUIButton = newFlxUIButton(reloadSongJson.x, reloadSongJson.y + 30, 'Load Autosave', function()
 		{
@@ -982,7 +991,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 				return;
 
 			_song.events = events;
-			updateGrid();
+			doUpdateGridObjects = true;
 		}
 
 		var loadEventJson:FlxUIButton = newFlxUIButton(loadAutosaveBtn.x, loadAutosaveBtn.y + 30, 'Open Events', function() {
@@ -1127,7 +1136,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		tab_group_song.add(new FlxText(skinDropdown.x, skinDropdown.y - 15, 0, 'HUD Skin:'));
 		tab_group_song.add(new FlxText(player2DropDown.x, player2DropDown.y - 15, 0, 'Opponent:'));
 		tab_group_song.add(new FlxText(gfVersionDropDown.x, gfVersionDropDown.y - 15, 0, 'Girlfriend:'));
-		tab_group_song.add(new FlxText(player1DropDown.x, player1DropDown.y - 15, 0, 'Boyfriend:'));
+		tab_group_song.add(new FlxText(player1DropDown.x, player1DropDown.y - 15, 0, 'Player:'));
 		tab_group_song.add(new FlxText(stageDropDown.x, stageDropDown.y - 15, 0, 'Stage:'));
 		
 		tab_group_song.add(new FlxText(noteSkinInputText.x, noteSkinInputText.y - 15, 0, 'Note Texture:'));
@@ -1149,7 +1158,13 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	var stepperSectionBPM:CustomFlxUINumericStepper;
 	var check_altAnim:FlxUICheckBox;
 
+	var lastSectionLabel:FlxText;
+	var stepperCopy:CustomFlxUINumericStepper;
+
 	var sectionToCopy:Int = -1;
+
+	inline function updateLastSectionLabel()
+		lastSectionLabel.text = '(Section ${curSection - stepperCopy.value})';
 
 	inline function getEventsInRange(startTime:Float, endTime:Float):Array<PsychEventNote> {
 		return _song.events.filter(function(event:PsychEventNote) {
@@ -1164,7 +1179,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 		if (clearNotes) {
 			_song.notes[sectionIndex].sectionNotes.resize(0);
-			updateNoteUI();
+			doUpdateNoteUI = true;
 		}
 
 		if (clearEvents) {
@@ -1180,7 +1195,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 				_song.events.remove(event);
 			}
 		}
-		updateGrid();
+		doUpdateGridObjects = true;
 	}
 
 	function copySection(destIdx:Int, copyIdx:Int, copyNotes:Bool = true, copyEvents:Bool = true) {
@@ -1215,14 +1230,14 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 		// the user can't copy to a section that isn't the current one but why not check anyway
 		if (Math.abs(curSection - destIdx) <= 1)
-			updateGrid();
+			doUpdateGridObjects = true;
 	}
 
 	function section_swapSides() {
 		for (note in _song.notes[curSection].sectionNotes)
 			note.column = (note.column + _song.keyCount) % (_song.keyCount * 2);
 
-		updateGrid();
+		doUpdateGridObjects = true;
 	}
 	function section_duetNotes() {
 		var copiedNotes:Array<NoteData> = [for (note in _song.notes[curSection].sectionNotes) note.clone()];
@@ -1239,7 +1254,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		copiedNotes.resize(0);
 		copiedNotes = null;
 
-		updateGrid();
+		doUpdateGridObjects = true;
 	}
 	function section_mirrorNotes() {
 		for (note in _song.notes[curSection].sectionNotes)
@@ -1251,7 +1266,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			note.column = boob;
 		}
 
-		updateGrid();
+		doUpdateGridObjects = true;
 	}
 
 	function addSectionUI():Void
@@ -1315,7 +1330,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		//
 		var x:Float = x + 100 + 20;
 
-		var stepperCopy:CustomFlxUINumericStepper = null;
 		var copyLastButton:FlxUIButton = null;
 
 		copyLastButton = newFlxUIButton(x, y, "Copy last Section", function() {
@@ -1331,7 +1345,11 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		copyLastButton.resize(60, 30);
 		
 		stepperCopy = newFlxUINumericStepper(x, y + 40, 1, 1, -999, 999, 0);
+		stepperCopy.callback = (_, _) -> updateLastSectionLabel();
 		blockPressWhileTypingOnStepper.push(stepperCopy);
+		
+		lastSectionLabel = new FlxText(stepperCopy.x, stepperCopy.y + stepperCopy.height + 5, 0);
+		updateLastSectionLabel();
 
 		////
 		var y:Float = clearSectionButton.y + 20;
@@ -1377,6 +1395,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		tab_group_section.add(clearSectionButton);
 		tab_group_section.add(check_notesSec);
 		tab_group_section.add(check_eventsSec);
+		tab_group_section.add(lastSectionLabel);
 		tab_group_section.add(stepperCopy);
 		tab_group_section.add(copyLastButton);
 		tab_group_section.add(swapSection);
@@ -1425,10 +1444,10 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		{
 			var typeIdx = Std.parseInt(character);
 			currentNoteType = noteTypeList[typeIdx];
-			if (curSelectedNote != null) {
-				curSelectedNote.noteType = currentNoteType;
-				updateGrid();
-			}
+			new GroupAction('Change Note Type to $currentNoteType', [
+				for (note in selectedNotes)
+					new ChangeNoteTypeAction(note, currentNoteType)
+			]);
 			if (typeIdx == 0) {
 				noteTypeInput.text = '';
 				noteTypeInput.exists = true;
@@ -1467,10 +1486,11 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			}
 
 			currentNoteType = noteType;
-			if (curSelectedNote != null) {
-				curSelectedNote.noteType = currentNoteType;
-				updateGrid();
-			}
+
+			new GroupAction('Change Note Type to $currentNoteType', [
+				for (note in selectedNotes)
+					new ChangeNoteTypeAction(note, currentNoteType)
+			]);
 		}
 		noteTypeInput.callback = (input:String, action:String) -> {
 			if (action == FlxInputText.ENTER_ACTION)
@@ -1500,7 +1520,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		if (curSelectedEvent != null) {
 			curSelectedEvent.subEventsData[subEventIdx][0] = typeName;
 
-			updateGrid();
+			doUpdateGridObjects = true;
 		}
 	}
 
@@ -1872,45 +1892,23 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		blockScrollWhileHovering.push(trackVolumeSlider);
 
 		////////
-
+		var xPos = col2X;
 		var startY = 140;
 
-		var check_warnings = new FlxUICheckBox(10, startY, null, null, "Ignore Progress Warnings", 100);
-		check_warnings.callback = function()
-		{
-			options.ignoreWarnings = check_warnings.checked;
-		};
-		check_warnings.checked = options.ignoreWarnings;
+		var sliderHitVol = new CustomFlxUISlider(this, 'hitsoundVolume', xPos, startY, 0, 1, 115, 15, 5, FlxColor.WHITE, FlxColor.BLACK);
+		sliderHitVol.nameLabel.text = 'Hitsound Volume';
+		sliderHitVol.value = hitsoundVolume;
+		blockScrollWhileHovering.push(sliderHitVol);
 
-
-		var check_vortex = new FlxUICheckBox(10, startY + 30, null, null, "Vortex Editor", 100);
-		check_vortex.callback = function()
-		{
-			options.vortex = check_vortex.checked;
-		};
-		check_vortex.checked = options.vortex == true;
-
-
-		var mouseScrollingQuant = new FlxUICheckBox(10, startY + 60, null, null, "Mouse Scrolling Quantization", 100);
-		mouseScrollingQuant.callback = function()
-		{
-			options.mouseScrollingQuant = mouseScrollingQuant.checked;
-		};
-		mouseScrollingQuant.checked = options.mouseScrollingQuant == true;
-
-		var disableAutoScrolling = new FlxUICheckBox(10, startY + 90, null, null, "Disable Section Autoscroll", 120);
-		disableAutoScrolling.callback = () -> {options.noAutoScroll = disableAutoScrolling.checked;}
-		disableAutoScrolling.checked = options.noAutoScroll == true;
-
-		var sliderRate = new CustomFlxUISlider(this, 'playbackSpeed', 10, startY + 120 + 15, 0.5, 3, 115, 15, 5, FlxColor.WHITE, FlxColor.BLACK);
+		var sliderRate = new CustomFlxUISlider(this, 'playbackSpeed', xPos, startY + 65, 0.5, 3, 115, 15, 5, FlxColor.WHITE, FlxColor.BLACK);
 		sliderRate.nameLabel.text = 'Playback Rate';
 		sliderRate.value = playbackSpeed;
 		blockScrollWhileHovering.push(sliderRate);
 
 		////////
-		var xPos = col2X;
+		var xPos = col1X;
 
-		var playSoundBf = new FlxUICheckBox(xPos, startY, null, null, 'Play Hitsound (Boyfriend notes)', 100);
+		var playSoundBf = new FlxUICheckBox(xPos, startY, null, null, 'Play Hitsound (Player notes)', 100);
 		playSoundBf.callback = () -> options.playSoundBf = playSoundBf.checked;
 		playSoundBf.checked = options.playSoundBf == true;
 
@@ -1926,10 +1924,19 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		panHitSounds.callback = () -> options.panHitSounds = panHitSounds.checked;
 		panHitSounds.checked = options.panHitSounds == true;
 
-		var sliderHitVol = new CustomFlxUISlider(this, 'hitsoundVolume', xPos, startY + 120 + 15, 0, 1, 115, 15, 5, FlxColor.WHITE, FlxColor.BLACK);
-		sliderHitVol.nameLabel.text = 'Hitsound Volume';
-		sliderHitVol.value = hitsoundVolume;
-		blockScrollWhileHovering.push(sliderHitVol);
+		////
+		var yPos = startY + 120 + 30;
+
+		var check_warnings = new FlxUICheckBox(col1X, yPos, null, null, "Ignore Progress Warnings", 100);
+		check_warnings.callback = function()
+		{
+			options.ignoreWarnings = check_warnings.checked;
+		};
+		check_warnings.checked = options.ignoreWarnings;
+
+		var disableAutoScrolling = new FlxUICheckBox(col2X, yPos, null, null, "Disable Section Autoscroll", 120);
+		disableAutoScrolling.callback = () -> {options.noAutoScroll = disableAutoScrolling.checked;}
+		disableAutoScrolling.checked = options.noAutoScroll == true;
 
 		////////
 		var metronome = new FlxUICheckBox(10, 24, null, null, "Enabled", 100);
@@ -1943,18 +1950,16 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		blockPressWhileTypingOnStepper.push(metronomeOffsetStepper);
 
 		////
-		var customizeButton:FlxUIButton = newFlxUIButton(300 / 2, 400 - 20, 'Customize', function() {
-			UI_box.selected_tab_id = "Customize";
+		var preferencesButton:FlxUIButton = newFlxUIButton(300 / 2, 400 - 20, 'Preferences', function() {
+			UI_box.selected_tab_id = "Preferences";
 		});
-		customizeButton.x -= customizeButton.width / 2;
-		customizeButton.y -= customizeButton.height + 16;
+		preferencesButton.x -= preferencesButton.width / 2;
+		preferencesButton.y -= preferencesButton.height + 16;
 
 		////
 		tab_group_chart.add(sliderHitVol);
 		tab_group_chart.add(sliderRate);
 
-		tab_group_chart.add(mouseScrollingQuant);
-		tab_group_chart.add(check_vortex);
 		tab_group_chart.add(check_warnings);
 
 		tab_group_chart.add(playSoundEvents);
@@ -1976,14 +1981,14 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		tab_group_chart.add(waveformTrackDropDown);
 		tab_group_chart.add(trackVolumeSlider);
 
-		tab_group_chart.add(customizeButton);
+		tab_group_chart.add(preferencesButton);
 
 		UI_box.addGroup(tab_group_chart);
 	}
 
-	function addCustomizeUI() {
+	function addPreferencesUI() {
 		var tab_group = new FlxUI(null, UI_box);
-		tab_group.name = 'Customize';
+		tab_group.name = 'Preferences';
 
 		function color1Changed(v:FlxColor) {
 			options.gridColor1 = v;
@@ -1997,10 +2002,19 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			saveOptions();
 		}
 
-		var changeColor1 = new ColorPicker(0, 0, "Color 1", color1Changed, options.gridColor1);
-		var changeColor2 = new ColorPicker(0, 0, "Color 2", color2Changed, options.gridColor2);
+		function bgColor1Changed(v:FlxColor) {
+			options.bgColor1 = v;
+			saveOptions();
+			reloadBG();
+		}
+
+		var changeColor1 = new ColorPicker(0, 0, "Grid Color 1", color1Changed, options.gridColor1);
+		var changeColor2 = new ColorPicker(0, 0, "Grid Color 2", color2Changed, options.gridColor2);
+
+		var bgColor1 = new ColorPicker(0, 0, "BG Color", bgColor1Changed, options.bgColor1);
 
 		var resetButt = newFlxUIButton('Reset');
+		resetButt.color = 0xFFFF0000;
 		resetButt.allowSwiping = false;
 		resetButt.onUp.callback = function() {
 			options.gridColor1 = 0xffe7e6e6;
@@ -2012,14 +2026,74 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			reloadGridLayer(false);
 		}
 
+		////
+
+		var bgTextureInput = newFlxUIInputText(0, 0, 120, options.bgTexture);
+		bgTextureInput.callback = function(text:String, action:String) {
+			if (action != "enter" && action != "focuslost")
+				return;
+
+			if (reloadBG(text)) {
+				options.bgTexture = text;
+				saveOptions();
+			}else {
+				bgTextureInput.text = options.bgTexture;
+			}
+		}
+		bgTextureInput.focusLost = () -> bgTextureInput.callback(bgTextureInput.text, "focuslost");
+		blockPressWhileTypingOn.push(bgTextureInput);
+
+		var check_coolBG = new FlxUICheckBox(0, 0, null, null, "Cool BG", 100);
+		check_coolBG.callback = function() {
+			options.bgIsCool = check_coolBG.checked;
+			reloadBG();
+		};
+		check_coolBG.checked = options.bgIsCool == true;
+
+		////
+		var check_vsliceMouseMode = new FlxUICheckBox(0, 0, null, null, "V-Slice Mouse Mode", 100);
+		check_vsliceMouseMode.callback = function() {
+			options.vsliceMouseMode = check_vsliceMouseMode.checked;
+		};
+		check_vsliceMouseMode.checked = options.vsliceMouseMode == true;
+
+
+		var check_mouseScrollingQuant = new FlxUICheckBox(0, 0, null, null, "Mouse Scrolling Quantization", 100);
+		check_mouseScrollingQuant.callback = function() {
+			options.mouseScrollingQuant = check_mouseScrollingQuant.checked;
+		};
+		check_mouseScrollingQuant.checked = options.mouseScrollingQuant == true;
+
+
+		var check_vortex = new FlxUICheckBox(0, 0, null, null, "Vortex Editor", 100);
+		check_vortex.callback = function() {
+			options.vortex = check_vortex.checked;
+		};
+		check_vortex.checked = options.vortex == true;
+
+		////
 		changeColor1.setPosition(10, 26);
 		changeColor2.setPosition(10, changeColor1.y + 20);
-		resetButt.setPosition(10, changeColor2.y + 24);
+		bgColor1.setPosition(10, changeColor2.y + 20);
+		resetButt.setPosition(10, bgColor1.y + 24);
+		bgTextureInput.setPosition(changeColor1.x + 150, changeColor1.y);
+		check_coolBG.setPosition(bgTextureInput.x, bgTextureInput.y + 20);
+		check_vsliceMouseMode.setPosition(10, resetButt.y + 40);
+		check_mouseScrollingQuant.setPosition(10, check_vsliceMouseMode.y + 30);
+		check_vortex.setPosition(10, check_mouseScrollingQuant.y + 30);
 
-		tab_group.add(new FlxText(10, changeColor1.y - 16, 'Grid color'));
+		////
+		tab_group.add(new FlxText(changeColor1.x, changeColor1.y - 16, 'Colors'));
 		tab_group.add(changeColor1);
 		tab_group.add(changeColor2);
 		tab_group.add(resetButt);
+		tab_group.add(new FlxText(bgTextureInput.x, bgTextureInput.y - 16, 'BG Texture'));
+		tab_group.add(bgTextureInput);
+		tab_group.add(check_coolBG);
+		tab_group.add(bgColor1);
+		tab_group.add(check_vsliceMouseMode);
+		tab_group.add(check_mouseScrollingQuant);
+		tab_group.add(check_vortex);
 
 		UI_box.addGroup(tab_group);
 	}
@@ -2095,6 +2169,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 		inline function createMusicTrack() {
 			var newTrack = new FlxSound();
+			newTrack.context = MUSIC;
 			newTrack.exists = true;
 			FlxG.sound.list.add(newTrack);
 			return newTrack;
@@ -2142,7 +2217,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		NoteAnimations.refreshKeyAnimations(_song.keyCount);
 		NoteAnimations.remap4KArray(_song.keyCount, defaultNoteColours, noteColours);
 
-		reloadGridLayer();
+		doUpdateGridLayer = true;
+		doUpdateGridObjects = true;
 		updateStrumline();
 		adjustCamPos();
 		updateHeads();
@@ -2198,19 +2274,19 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 				case 'check_mustHit':
 					new ChangeMustHitSectionAction(curSection, FlxG.keys.pressed.CONTROL);
 
-					updateGrid();
+					doUpdateGridObjects = true;
 					updateHeads();
 				case 'check_gf':
 					_song.notes[curSection].gfSection = check.checked;
 
-					updateGrid();
+					doUpdateGridObjects = true;
 					updateHeads();
 				case 'check_changeBPM':
 					_song.notes[curSection].bpm = stepperSectionBPM.value;
 					_song.notes[curSection].changeBPM = check.checked;
 					
 					Conductor.mapBPMChanges(_song);
-					updateGrid();
+					doUpdateGridObjects = true;
 					updateNoteSteps();
 					updateEventSteps();
 
@@ -2227,7 +2303,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 				case 'section_beats':
 					_song.notes[curSection].sectionBeats = nums.value;
-					reloadGridLayer();
+					doUpdateGridLayer = true;
+					doUpdateGridObjects = true;
 					updateNoteSteps();
 					updateEventSteps();
 				
@@ -2239,7 +2316,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 				case 'song_bpm':
 					_song.bpm = nums.value;
 					Conductor.mapBPMChanges(_song);
-					updateGrid();
+					doUpdateGridObjects = true;
 					updateNoteSteps();
 					updateEventSteps();
 
@@ -2247,25 +2324,32 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 					if (curSelectedEvent != null) {
 						// TODO: make an action for this
 						curSelectedEvent.strumTime = nums.value;
-						updateGrid();
+						doUpdateGridObjects = true;
 						updateEventSteps();
 					} else {
 						sender.value = 0;
 					}
 
 				case 'note_strumTime':
-					if (curSelectedNote != null) {
-						// TODO: make an action for this
-						curSelectedNote.strumTime = nums.value;
-						updateGrid();
+					if (selectedNotes.length > 0) {
+						var prev = selectedNotes.strumTime;
+						new DynamicAction(() -> selectedNotes.strumTime=nums.value, () -> selectedNotes.strumTime=prev);
+						doUpdateGridObjects = true;
 						updateNoteSteps();
 					} else {
 						sender.value = 0;
 					}
 				
 				case 'note_susLength':
-					if(curSelectedNote != null) {
-						new ChangeSustainAction(curSelectedNote, nums.value, true);
+					if (selectedNotes.length > 0) {
+						// Length can't go below 0, so if you're changing the length of multiple notes with differing initial lengths then yeah, hard to reverse.
+						new GroupAction(
+							"Change Hold Length",
+							[for (note in selectedNotes)
+								new ChangeSustainAction(note, nums.value, true)
+							]
+						);
+						
 					} else {
 						sender.value = 0;
 					}
@@ -2273,7 +2357,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 				case 'section_bpm':
 					_song.notes[curSection].bpm = nums.value;
 					Conductor.mapBPMChanges(_song);
-					updateGrid();
+					doUpdateGridObjects = true;
 					updateNoteSteps();
 			}
 		}
@@ -2292,13 +2376,13 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 				case 'event_value1':
 					if (curSelectedEvent != null) {
 						curSelectedEvent.subEventsData[subEventIdx][1] = sender.text;
-						updateGrid();
+						doUpdateGridObjects = true;
 					}
 
 				case 'event_value2':
 					if (curSelectedEvent != null) {
 						curSelectedEvent.subEventsData[subEventIdx][2] = sender.text;
-						updateGrid();
+						doUpdateGridObjects = true;
 					}
 
 				case 'metadata_songName':
@@ -2362,13 +2446,15 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		curQuant = isAbs ? value : CoolUtil.updateIndex(curQuant, value, quantizations.length);
 		quantizationMult = 16 / quantizations[curQuant];
 		
-		quantTxt.text = "Beat Snap: " + quantizations[curQuant] + "th";
+		quantTxt.text = "Beat Snap: 1 / " + quantizations[curQuant];
 		quantArrowColorSwap.setHSBIntArray(ClientPrefs.quantHSV[curQuant]);
 	}
 
 	var lastMetroBeat:Int = -1;
 	var metroInterval:Float = 0;
 
+	var selectionBoxSpr:FlxSprite;
+	var selectionOrigin:FlxPoint;
 	var colorSine:Float = 0;
 	//// sustain note dragging 
 	var startDummyY:Null<Float> = null;
@@ -2473,136 +2559,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			return;
 		}
 
-		colorSine += elapsed;
-		var sineColor:Float = 0.7 + 0.3 * Math.sin(Math.PI * colorSine);
-		var sineColor:Int = Math.round(sineColor * 255);
-		var sineColor = FlxColor.fromRGB(sineColor, sineColor, sineColor, 255);
-
-		FlxG.mouse.visible = true; //cause reasons. trust me
-
-		var movedDummyY:Bool = false;
-		var onIcons:Bool = FlxG.mouse.overlaps(iconBG);
-		var onGrid:Bool = !onIcons && !FlxG.mouse.overlaps(progressBG)
-						&&	FlxG.mouse.x >= gridBG.x
-						&&	FlxG.mouse.x <	gridBG.x + gridBG.width
-						&&	FlxG.mouse.y >= gridBG.y
-						&&	FlxG.mouse.y <	gridBG.y + gridBG.height;
-
-		if (onIcons && FlxG.mouse.justPressed) {
-			var mhs = _song.notes[curSection].mustHitSection;
-			if (FlxG.mouse.overlaps(mhs ? rightIcon : leftIcon))
-				new ChangeMustHitSectionAction(curSection, FlxG.keys.pressed.CONTROL);
-		}
-
-		if (onGrid){
-			dummyArrow.visible = true;
-			dummyArrow.x = Math.floor(FlxG.mouse.x / GRID_SIZE) * GRID_SIZE;
-
-			var gridMult = GRID_SIZE * quantizationMult;
-			var rawGridY = FlxG.mouse.y / gridMult;
-			var gridY = Math.floor(rawGridY);
-
-			dummyArrow.y = (FlxG.keys.pressed.SHIFT) ? FlxG.mouse.y : (gridY * gridMult);
-
-			if (FlxG.mouse.pressed){
-				movedDummyY = (curDummyY != (curDummyY = (FlxG.keys.pressed.SHIFT) ? rawGridY : gridY * quantizationMult)); // wtf
-
-				if (startDummyY == null) startDummyY = curDummyY;
-			}
-
-		}else{
-			dummyArrow.visible = false;
-
-			curDummyY = null;
-		}
-
-		if (FlxG.mouse.justPressed)
-		{
-			var clickedNote = false;
-			for (note in curRenderedNotes)
-			{
-				if (FlxG.mouse.overlaps(note))
-				{
-					clickedNote = true;
-					if (FlxG.keys.pressed.CONTROL) 
-					{
-						selectNote(note);
-					}
-					else if (FlxG.keys.pressed.ALT)
-					{
-						if (note.column > -1) {
-							curSelectedNote = note.chartData;
-							curSelectedNote.noteType = currentNoteType;
-							updateNoteUI();
-							updateGrid();
-						}
-					}
-					else
-					{
-						deleteNote(note);
-					}
-					break;
-				}
-			}
-			if (!clickedNote && onGrid) {
-				var noteTime:Float = sectionStartTime() + getStrumTime(dummyArrow.y * (getSectionBeats(curSection) / 4), false);
-				var column:Int = Math.floor(FlxG.mouse.x / GRID_SIZE) - 1;
-				(column < 0) ? addEvent(noteTime) : addNote(noteTime, column, null, true);
-			}
-		}else if(FlxG.mouse.pressed){
-
-			if (movedDummyY)
-			{
-				var doUpdate:Bool = false;
-
-				for (note in heldNotesClick){
-					if (note == null) continue;
-				
-					// how much time does a grid block occupy
-					var gridTime:Float = Conductor.stepCrochet / zoomList[curZoom];
-					// time at which the mouse is standing on the grid
-					var clickTime:Float = sectionStartTime() + curDummyY * gridTime;
-					
-					var len:Float = Math.max(0, clickTime - note.strumTime);
-					note.sustainLength = FlxG.keys.pressed.SHIFT ? len : CoolMath.snap(len, gridTime);
-					doUpdate = true;
-				}
-
-				if (doUpdate) {
-					updateNoteUI();
-					updateGrid();
-				}
-			}
-
-		}else {
-			heldNotesClick.resize(0);
-			startDummyY = null;
-			curDummyY = null;
-		}
-
-		if (checkIsTyping() != inputBlocked) {
-			inputBlocked = !inputBlocked;
-			FNFGame.specialKeysEnabled = !inputBlocked;
-		}
-
-		if (!inputBlocked) {
-			updateKeys(elapsed);
-		}else if (FlxG.keys.justPressed.ENTER) {
-			for (typebox in blockPressWhileTypingOn) {
-				if (typebox.hasFocus)
-					typebox.hasFocus = false;
-			}
-		}
-
-		if (checkCanMouseScroll() && FlxG.mouse.wheel != 0) {
-			var snap = Conductor.stepCrochet;
-			if (options.mouseScrollingQuant) snap *= quantizationMult;
-			Conductor.songPosition = getSnappedTime(snap) - (snap * FlxG.mouse.wheel);
-
-			pauseTracks();
-		}
-
-		////
 		if (Conductor.playing)
 			updateSongPosition();
 
@@ -2639,15 +2595,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		}
 
 		updateSteps();
-		strumLineUpdateY();
-
-		if (strumLineNotes.visible = quantArrow.visible = options.vortex) {
-			var alpha = Conductor.playing ? 1 : 0.35;
-			for (receptor in strumLineNotes){
-				receptor.y = strumLine.y;
-				receptor.alpha = alpha;
-			}
-		}
 
 		bpmTxt.text =
 		"Time: " + FlxMath.roundDecimal(Conductor.songPosition / 1000, 2) + " / " + FlxMath.roundDecimal(songLength / 1000, 2) +
@@ -2659,9 +2606,56 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 		progressBar.minLabel.text = formatTime(Conductor.songPosition);
 
+		////
+		if (doUpdateGridLayer) {
+			doUpdateGridLayer = false;
+			reloadGridLayer();
+		}
+		if (doUpdateGridObjects) {
+			doUpdateGridObjects = false;
+			updateGridObjects();
+		}
+		if (doUpdateNoteUI) {
+			doUpdateNoteUI = false;
+			updateNoteUI();
+		}
+
+		strumLineUpdateY();
+
+		updateMouse(elapsed);
+
+		if (checkIsTyping() != inputBlocked) {
+			inputBlocked = !inputBlocked;
+			FNFGame.specialKeysEnabled = !inputBlocked;
+		}
+
+		if (!inputBlocked) {
+			updateKeys(elapsed);
+		}else if (FlxG.keys.justPressed.ENTER) {
+			for (typebox in blockPressWhileTypingOn) {
+				if (typebox.hasFocus)
+					typebox.hasFocus = false;
+			}
+		}
+
+		////
+		if (strumLineNotes.visible = quantArrow.visible = options.vortex) {
+			var alpha = Conductor.playing ? 1 : 0.35;
+			for (receptor in strumLineNotes){
+				receptor.y = strumLine.y;
+				receptor.alpha = alpha;
+			}
+		}
+
+		////
+		var sineColor:Float = 0.7 - 0.3 * Math.cos(Math.PI * colorSine);
+		var sineColor:Int = Math.round(sineColor * 255);
+		var sineColor = FlxColor.fromRGB(sineColor, sineColor, sineColor);
+		colorSine += elapsed;
+
 		playedSound.resize(0);
 		curRenderedNotes.forEachAlive(function(note:Note) {
-			if (note.chartData == curSelectedNote || note.chartData == curSelectedEvent)
+			if (selectedNotes.contains(note.chartData) || note.chartData == curSelectedEvent)
 				note.color = sineColor;
 			else
 				note.color = 0xFFFFFFFF;
@@ -2720,12 +2714,12 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 				redo();
 			}
 			if (FlxG.keys.justPressed.S) {
-				saveLevel();
+				saveChartFile();
 			}
 			if (FlxG.keys.justPressed.Q) {
 				// hudskins broke this
 				useQuantNotes = !useQuantNotes;
-				updateGrid();
+				doUpdateGridObjects = true;
 			}
 			if (FlxG.keys.justPressed.O) {
 				openSongSelect();
@@ -2740,11 +2734,20 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			new ChangeMustHitSectionAction(curSection, false);
 		}	
 
-		if (curSelectedNote != null) {
+		if (selectedNotes.length > 0) {
+			var change = 0;
 			if (FlxG.keys.justPressed.E)
-				new ChangeSustainAction(curSelectedNote, Conductor.stepCrochet, false);
+				change++;
 			if (FlxG.keys.justPressed.Q)
-				new ChangeSustainAction(curSelectedNote, -Conductor.stepCrochet, false);
+				change--;
+			if (change != 0) {
+				new GroupAction(
+					"Change Hold Length",
+					[for (note in selectedNotes)
+						new ChangeSustainAction(note, change * Conductor.stepCrochet, false)
+					]
+				);
+			}
 		}
 
 		if(FlxG.keys.justPressed.Z && curZoom > 0) {
@@ -2818,8 +2821,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 				}
 
 				if (doUpdate) {
-					updateNoteUI();
-					updateGrid();
+					doUpdateNoteUI = true;
+					doUpdateGridObjects = true;
 				}
 			}
 
@@ -2903,13 +2906,237 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			LoadingState.loadAndSwitchState(new PlayState());
 		}
 		else if (FlxG.keys.justPressed.ESCAPE) {
-			openSubState(new Prompt('Go back to the menus?\n\nUnsaved progress will be lost', 0, function() {
+			showWarning('Go back to the menus?\n\nUnsaved progress will be lost', function() {
 				PlayState.chartingMode = false;
 				MusicBeatState.switchState(new funkin.states.editors.MasterEditorMenu());
 				MusicBeatState.playMenuMusic(true);
-	
-				FlxG.mouse.visible = false;
-			}, null, options.ignoreWarnings));
+			});
+		}
+	}
+
+	function updateMouse(elapsed:Float) {
+		FlxG.mouse.visible = true; //cause reasons. trust me
+
+		var movedDummyY:Bool = false;
+		var onIcons:Bool = FlxG.mouse.overlaps(iconBG);
+		var onGrid:Bool = !onIcons && !FlxG.mouse.overlaps(progressBG)
+			&& FlxG.mouse.x >= gridBG.x
+			&& FlxG.mouse.x < gridBG.x + gridBG.width
+			&& FlxG.mouse.y >= gridBG.y
+			&& FlxG.mouse.y < gridBG.y + gridBG.height;
+
+		if (onIcons && FlxG.mouse.justPressed) {
+			var mhs = _song.notes[curSection].mustHitSection;
+			if (FlxG.mouse.overlaps(mhs ? rightIcon : leftIcon))
+				new ChangeMustHitSectionAction(curSection, FlxG.keys.pressed.CONTROL);
+		}
+
+		if (onGrid){
+			dummyArrow.visible = true;
+			dummyArrow.x = Math.floor(FlxG.mouse.x / GRID_SIZE) * GRID_SIZE;
+
+			var gridMult = GRID_SIZE * quantizationMult;
+			var rawGridY = FlxG.mouse.y / gridMult;
+			var gridY = Math.floor(rawGridY);
+
+			dummyArrow.y = (FlxG.keys.pressed.SHIFT) ? FlxG.mouse.y : (gridY * gridMult);
+
+			if (FlxG.mouse.pressed){
+				movedDummyY = (curDummyY != (curDummyY = (FlxG.keys.pressed.SHIFT) ? rawGridY : gridY * quantizationMult)); // wtf
+				startDummyY ??= curDummyY;
+			}
+
+		}else{
+			dummyArrow.visible = false;
+			curDummyY = null;
+		}
+
+		if(FlxG.mouse.pressed) {
+			if (movedDummyY && heldNotesClick.length > 0) {
+				var doUpdate:Bool = false;
+
+				// how much time does a grid block occupy
+				var gridTime:Float = Conductor.stepCrochet / zoomList[curZoom];
+				// time at which the mouse is standing on the grid
+				var clickTime:Float = sectionStartTime() + curDummyY * gridTime;
+
+				for (note in heldNotesClick){
+					if (note == null) continue;
+									
+					var len:Float = Math.max(0, clickTime - note.strumTime);
+					note.sustainLength = FlxG.keys.pressed.SHIFT ? len : CoolMath.snap(len, gridTime);
+					doUpdate = true;
+				}
+
+				if (doUpdate) {
+					doUpdateNoteUI = true;
+					doUpdateGridObjects = true;
+				}
+			}
+
+		}else {
+			heldNotesClick.resize(0);
+			startDummyY = null;
+			curDummyY = null;
+		}
+
+		var overlappedObj:Note = null;
+		var startSelectionBox:Bool = false;
+
+		inline function getOverlappedNote():Note {
+			var note:Note = null;
+			for (obj in curRenderedNotes) {
+				if (FlxG.mouse.overlaps(obj)) {
+					note = obj;
+					break;
+				}
+			}
+			return note;
+		}
+
+		inline function setNoteNoteType(note:Note, noteType:String) {
+			if (note.column < 0)
+				return;
+			new ChangeNoteTypeAction(note.chartData, noteType);
+		}
+
+		inline function selectObject(obj:Note, additional:Bool = false) {
+			if (obj.column < 0) {
+				curSelectedEvent = obj.chartData;
+				subEventIdx = Std.int(curSelectedEvent.subEventsData.length) - 1;
+				changeEventSelected();
+			}
+
+			if (additional)
+				new SelectNoteAction(obj.chartData);
+			else {
+				new SelectNotesAction([obj.chartData]);
+				startSelectionBox = true;
+			}
+		}
+
+		inline function placeGridObject() {
+			var noteTime:Float = sectionStartTime() + getStrumTime(dummyArrow.y * (getSectionBeats(curSection) / 4), false);
+			var column:Int = Math.floor(FlxG.mouse.x / GRID_SIZE) - 1;
+			(column < 0) ? addEvent(noteTime) : addNote(noteTime, column, null, true);
+		}
+
+		function vsliceModeInput() {
+			if (FlxG.mouse.justPressed) {
+				if (FlxG.keys.pressed.CONTROL || FlxG.keys.pressed.ALT)
+					startSelectionBox = true;
+				else if ((overlappedObj = getOverlappedNote()) != null)
+					selectObject(overlappedObj);
+				else if (onGrid)
+					placeGridObject();
+				else if (!FlxG.mouse.overlaps(UI_box)) 
+					startSelectionBox = true;
+			}else if (FlxG.mouse.justPressedRight) {
+				if ((overlappedObj = getOverlappedNote()) != null)
+					deleteNote(overlappedObj);
+				else
+					new SelectNotesAction([]);
+			}
+		}
+
+		function classicModeInput() {
+			if (FlxG.mouse.justPressed) {
+				if ((overlappedObj = getOverlappedNote()) != null) {
+					if (FlxG.keys.pressed.CONTROL) 
+						selectObject(overlappedObj, true);
+					else if (FlxG.keys.pressed.ALT)
+						setNoteNoteType(overlappedObj, currentNoteType);
+					else
+						deleteNote(overlappedObj);
+				}
+				else if (onGrid)
+					placeGridObject();
+				else if (!FlxG.mouse.overlaps(UI_box)) {
+					//new SelectNotesAction([]);
+					startSelectionBox = true;
+				}
+			}
+		}
+
+		if (options.vsliceMouseMode) 
+			vsliceModeInput();
+		else
+			classicModeInput();
+
+		////
+		if (startSelectionBox) {
+			var mousePos = FlxG.mouse.getWorldPosition(FlxG.camera);
+			selectionOrigin = mousePos.clone();
+		}
+
+		if (selectionOrigin == null) {
+			// No selection has been initiated
+		}
+		else if (FlxG.mouse.pressed) {
+			// Update selection boxxx
+			var mousePos = FlxG.mouse.getWorldPosition(FlxG.camera);			
+			
+			if (mousePos.x > selectionOrigin.x) {
+				selectionBoxSpr.x = selectionOrigin.x;
+				selectionBoxSpr.scale.x = mousePos.x - selectionOrigin.x;
+			}else {
+				selectionBoxSpr.x = mousePos.x;
+				selectionBoxSpr.scale.x = selectionOrigin.x - mousePos.x;
+			}
+
+			if (mousePos.y > selectionOrigin.y) {
+				selectionBoxSpr.y = selectionOrigin.y;
+				selectionBoxSpr.scale.y = mousePos.y - selectionOrigin.y;
+			}else {
+				selectionBoxSpr.y = mousePos.y;
+				selectionBoxSpr.scale.y = selectionOrigin.y - mousePos.y;
+			}
+
+			selectionBoxSpr.exists = true;
+			selectionBoxSpr.updateHitbox();
+			mousePos.put();
+
+		}else {
+			// Finish selection
+			var overlapped:Array<NoteData> = [];
+			for (obj in curRenderedNotes) {
+				if (FlxG.overlap(selectionBoxSpr, obj))
+					overlapped.push(obj.chartData);
+			}
+			
+			if (overlapped.length > 0) {
+				var list:NoteSelection;
+
+				if (FlxG.keys.pressed.CONTROL) {
+					// Add
+					list = selectedNotes.copy();
+					for (data in overlapped) list.add(data);
+				}
+				else if (FlxG.keys.pressed.ALT) {
+					// Subtract
+					list = selectedNotes.copy();
+					for (data in overlapped) list.remove(data);
+				}
+				else {
+					// Replace
+					list = new NoteSelection(overlapped);
+				}
+
+				new SelectNotesAction(list);
+			}
+
+			selectionOrigin.put();
+			selectionOrigin = null;
+			selectionBoxSpr.exists = false;
+		}
+
+		////
+		if (checkCanMouseScroll() && FlxG.mouse.wheel != 0) {
+			var snap = Conductor.stepCrochet;
+			if (options.mouseScrollingQuant) snap *= quantizationMult;
+			Conductor.songPosition = getSnappedTime(snap) - (snap * FlxG.mouse.wheel);
+
+			pauseTracks();
 		}
 	}
 
@@ -2928,11 +3155,9 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	}
 
 	function updateZoom() {
-		var daZoom:Float = zoomList[curZoom];
-		var zoomThing:String = '1 / ' + daZoom;
-		if(daZoom < 1) zoomThing = Math.round(1 / daZoom) + ' / 1';
-		zoomTxt.text = 'Zoom: ' + zoomThing;
-		reloadGridLayer();
+		zoomTxt.text = 'Zoom: ${zoomList[curZoom] * 100}%';
+		doUpdateGridLayer = true;
+		doUpdateGridObjects = true;
 	} 
 
 	var currentSectionBeats:Float = 0;
@@ -3006,11 +3231,21 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 		// beat separators
 		beatSeparators.killMembers();
+
+		var beatColor = {
+			var hsb = ClientPrefs.quantHSV[0];
+			var hue = hsb[0] % 360;
+			if (hue < 0) hue += 360;
+			var sat = (1.0 + hsb[1] / 100);
+			var brt = (1.0 + hsb[2] / 100);
+			FlxColor.fromHSB(hue, sat, brt);
+		}
+
 		var totalBeats:Float = previousSectionBeats + currentSectionBeats + nextSectionBeats;
 		for (i in 1...Math.floor(totalBeats)) {
 			var beatsep1:FlxSprite = beatSeparators.recycle();
 			if (beatsep1 == null) {
-				beatsep1 = CoolUtil.blankSprite(gridBG.width, 4, 0xFFFF0000);
+				beatsep1 = CoolUtil.blankSprite(gridBG.width, 4, beatColor);
 				beatsep1.alpha = 0.25;
 				beatSeparators.add(beatsep1);
 			}else {
@@ -3036,10 +3271,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			fieldSeparators.add(gridBlackLine);
 		}
 
-		if (updateObjects) {
+		if (updateObjects)
 			updateWaveform();
-			updateGrid();
-		}
 	}
 
 	function strumLineUpdateY()
@@ -3254,7 +3487,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	}
 
 	function onSectionChange() {
-		reloadGridLayer();
+		doUpdateGridLayer = true;
+		doUpdateGridObjects = true;
 		updateSectionUI();
 		eventStepperStrumTime.stepSize = Conductor.stepCrochet;
 		stepperStrumTime.stepSize = Conductor.stepCrochet;
@@ -3271,6 +3505,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		check_altAnim.checked = sec.altAnim;
 		check_changeBPM.checked = sec.changeBPM;
 		stepperSectionBPM.value = sec.changeBPM ? sec.bpm : Conductor.bpm;
+
+		updateLastSectionLabel();
 
 		updateHeads();
 	}
@@ -3300,19 +3536,23 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 	function updateNoteSteps():Void
 	{
-		if (curSelectedNote == null) {
+		if (selectedNotes.length == 0) {
 			labelSusLength.text = '';
 			labelStrumTime.text = '';
 			return;
 		}
 
-		var strumStep:Float = Conductor.getStep(curSelectedNote.strumTime);
+		var strumTime = selectedNotes.strumTime;
+		var strumStep:Float = Conductor.getStep(strumTime);
 		var endStep:Float = strumStep;
 		var sustainSteps:Float = 0;
 
-		if (curSelectedNote.sustainLength > 0) {
-			endStep = Conductor.getStep(curSelectedNote.strumTime + curSelectedNote.sustainLength);
-			sustainSteps = endStep - strumStep;
+		if (selectedNotes.length > 0) {
+			var endTime = selectedNotes.endTime;
+			if (endTime != strumTime) {
+				endStep = Conductor.getStep(selectedNotes.endTime);
+				sustainSteps = endStep - strumStep;
+			}
 		}
 
 		labelSusLength.text = 'Sustain Length: (${Math.round(sustainSteps)} Steps)';
@@ -3321,17 +3561,19 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 	function updateNoteUI():Void
 	{
-		if (curSelectedNote != null) {
+		if (selectedNotes.length > 0) {
 			updateNoteSteps();
 
-			stepperStrumTime.value = curSelectedNote.strumTime;
-			stepperSusLength.value = curSelectedNote.sustainLength;
+			stepperStrumTime.value = selectedNotes.strumTime;
+			if (selectedNotes.commonSustainLength != null)
+				stepperSusLength.value = selectedNotes.commonSustainLength;
 
-			var typeIdx = noteTypeList.indexOf(curSelectedNote.noteType);
+			var noteType = selectedNotes.noteType;
+			var typeIdx = noteType == null ? -1 : noteTypeList.indexOf(noteType);
 			if (typeIdx < 0) @:privateAccess {
 				noteTypeDropDown._selectedId = "";
 				noteTypeDropDown._selectedLabel = "";
-				noteTypeDropDown.header.text.text = curSelectedNote.noteType;
+				noteTypeDropDown.header.text.text = noteType ?? "---";
 			}else {
 				noteTypeDropDown.selectedId = Std.string(typeIdx);
 			}
@@ -3384,6 +3626,12 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	inline function fuckFloatingPoints(n:Float):Float // haha decimals
 		return CoolMath.snap(n, Conductor.jackLimit);
 
+	inline function formatTime(ms:Float) {
+		var mins = '' + Math.floor(ms / 60000);
+		var secs = '' + Math.floor((ms % 60000) / 1000);
+		return '$mins:${secs.length < 2 ? '0' + secs : secs}';
+	}
+
 	inline function wipeGroup(group:FlxTypedGroup<Dynamic>)
 	{
 		for (obj in group) obj.destroy();
@@ -3393,7 +3641,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	var curBPMChangeIndex:Int = 0;
 
 	/** Creates the notes and event sprites from the currently visible sections **/
-	function updateGrid():Void
+	function updateGridObjects():Void
 	{
 		wipeGroup(curRenderedNotes);
 		wipeGroup(curRenderedSustains);
@@ -3678,19 +3926,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		_song.notes.insert(idx, sec);
 	}
 
-	function selectNote(note:Note):Void
-	{		
-		if (note.column > -1) {
-			curSelectedNote = note.chartData;
-			currentNoteType = note.noteType;
-			updateNoteUI();
-		}else {
-			curSelectedEvent = note.chartData;
-			subEventIdx = Std.int(curSelectedEvent.subEventsData.length) - 1;
-			changeEventSelected();
-		}
-	}
-
 	function deleteNote(note:Note):Void
 	{
 		if (note.column > -1) {
@@ -3710,7 +3945,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			}
 		}
 
-		updateGrid();
+		doUpdateGridObjects = true;
 	}
 
 	private function addNote(strumTime:Float, column:Int, ?noteType:String, ?click:Bool):Void
@@ -3755,7 +3990,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 	@:noCompletion function pushAction(action:ChartingAction) {
 		action.redo(); // doing this first so that in the case it throws an exception it'll basically just not happen
-		trace(action);
+		//trace(action);
 
 		utIdx += 1;
 		utRay.resize(utIdx);
@@ -3768,8 +4003,11 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		var action = utRay[nidx]; 
 		if (action == null) return;
 		action.redo();
-		trace('REDO: $action');
+		//trace('REDO: $action');
 		utIdx = nidx;
+
+		if (action.silent)
+			redo();
 	}
 
 	function undo()
@@ -3778,8 +4016,11 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		var action = utRay[utIdx];
 		if (action == null) return;
 		action.undo();
-		trace('UNDO: $action');
+		//trace('UNDO: $action');
 		utIdx -= 1;
+
+		if (utRay[utIdx]?.silent)
+			undo();
 	}
 
 	////
@@ -3801,12 +4042,12 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	function clearNotes() {
 		for (sec in 0..._song.notes.length)
 			_song.notes[sec].sectionNotes.resize(0);
-		updateGrid();
+		doUpdateGridObjects = true;
 	}
 
 	function clearEvents() {
 		_song.events.resize(0);
-		updateGrid();
+		doUpdateGridObjects = true;
 	}
 
 	function autosaveSong():Void
@@ -3870,13 +4111,37 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			return _song.song + ".json";
 	}
 
-	private function saveLevel()
+	function saveChartFile()
 	{		
 		var fileName:String = getChartFileName();
 		var data:String = encodeChartJson();
 		if (data != null && data.length > 0) {
 			CoolUtil.showSaveDialog(data.trim(), "Save Chart", getSongPath(fileName), ["JSON file", "*.json"], onSaveComplete, onSaveCancel);
 		}
+	}
+
+	function saveEventsFile() {
+		if (_song.events != null && _song.events.length > 1)
+			_song.events.sort(sortEventsByTime);
+
+		var json = {"song": {"events": _song.events}}
+		var data:String = Json.stringify(json, "\t");
+		CoolUtil.showSaveDialog(data, 'Save Events', getSongPath('events.json'), ["JSON file", '*.json']);
+	}
+
+	function saveSongZIP() {
+		var zip = new funkin.data.FuckingZip();
+		zip.addString(encodeChartJson(), getChartFileName());
+		zip.addString(Json.stringify(_song.metadata), 'metadata.json');
+
+		for (name in soundTracksMap.keys()) {
+			name += "." + Paths.SOUND_EXT;
+			var p = getSongPath(name);
+			var b = Paths.getBytes(p);
+			if (b != null) zip.addBytes(b, name);
+		}
+
+		CoolUtil.showSaveDialog(zip.finalize(), "Save File", getSongPath(_song.song + ".zip"), ["ZIP File", "*.zip"]);
 	}
 
 	function onSaveComplete(_):Void
@@ -3975,6 +4240,118 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		ddm.header.text.color = FlxColor.WHITE;
 		return ddm;
 	}
+
+	////
+	function set_curSelectedEvent(v) {
+		colorSine = 0.0;
+		return curSelectedEvent = v;
+	}
+}
+
+private abstract NoteSelection(Array<NoteData>) to Array<NoteData> {
+	public var array(get, never):Array<NoteData>;
+	
+	public var length(get, never):Int;
+
+	/**
+		Earliest strum time between selected notes.
+		Setting this will move all selected notes by the given amount of time, relative to their current position.
+	**/
+	public var strumTime(get, set):Float;
+
+	/**
+		`lastNote.strumTime + lastNote.sustainLength`
+	**/
+	public var endTime(get, never):Float;
+
+	public var commonSustainLength(get, never):Null<Float>;
+
+	/** 
+		Common note type between selected notes.  
+		If the selected notes dont have a note type in common, this will be null.  
+	**/
+	public var noteType(get, never):Null<String>;
+
+	#if true
+	public function new(?arr:Array<NoteData>) {
+		this = arr ?? [];
+		sort();
+	}
+
+	public inline function add(note:NoteData) {
+		var i:Int = 0;
+		while (i < this.length && this[i].strumTime < note.strumTime) i++;
+		this.insert(i, note);
+	}
+
+	public inline function remove(note:NoteData)
+		this.remove(note);
+
+	public inline function contains(note:NoteData):Bool
+		return this.indexOf(note) >= 0;
+
+	public inline function copy():NoteSelection
+		return cast this.copy();
+
+	public inline function iterator()
+		return this.iterator();
+
+	public inline function sort()
+		this.sort(_sort);
+	#end
+
+	#if true
+	inline function get_array():Array<NoteData>
+		return this;
+
+	inline function get_length():Int
+		return this.length;
+
+	inline function get_strumTime():Float
+		return this[0].strumTime; // ARRAY SHOULD BE SORTED BY TIME
+
+	inline function set_strumTime(v:Float):Float {
+		var delta:Float = v - this[0].strumTime;
+		for (note in this)
+			note.strumTime += delta;
+		return v;
+	}
+
+	inline function get_commonSustainLength():Null<Float> {
+		var common:Null<Float> = this[0]?.sustainLength;
+
+		for (note in this) {
+			if (note.sustainLength != common) {
+				common = null;
+				break;
+			}
+		}
+
+		return common;
+	}
+
+	inline function get_endTime():Float {
+		var lastNote = this[this.length - 1];
+		return lastNote.strumTime + lastNote.sustainLength;
+	}
+
+	inline function get_noteType():Null<String> {
+		var common:Null<String> = this[0]?.noteType;
+
+		for (note in this) {
+			if (note.noteType != common) {
+				common = null;
+				break;
+			}
+		}
+
+		return common;
+	}
+	#end
+
+	////
+	function _sort(a:NoteData, b:NoteData):Int
+		return FlxSort.byValues(FlxSort.ASCENDING, a.strumTime, b.strumTime);
 }
 
 private class HistoryDisplay extends FlxSpriteGroup {
@@ -4018,14 +4395,28 @@ private class HistoryDisplay extends FlxSpriteGroup {
 
 	public function updateDisplay() {
 		final utRay = ChartingState.instance.utRay;
+		final indices:Array<Int> = [];
+
+		for (i => action in utRay) {
+			if (!action.silent)
+				indices.push(i);
+		}
+
 		var half = Math.floor(txts.length / 2);
-		var offi = (utRay.length - curIdx);
+		var offi = (indices.length - curIdx);
 		var offi2 = FlxMath.maxInt(0, offi - half);
 		var scrollIdx = scrollIdx + offi2;
 
 		for (i in 1...txts.length + 1) {
-			var actionIdx = utRay.length - i - scrollIdx;
-			var action = (actionIdx < 0) ? null : utRay[actionIdx];
+			var actionIdx = indices.length - i - scrollIdx;
+			var action:ChartingAction;
+			
+			if (actionIdx >= 0 && actionIdx < indices.length) {
+				actionIdx = indices[actionIdx];
+				action = utRay[actionIdx];
+			}else {
+				action = null;
+			}
 
 			var txtIdx = txts.length - i;
 			var txt = (txtIdx < 0) ? null : txts[txtIdx];
@@ -4105,7 +4496,7 @@ private class ChangeMustHitSectionAction extends ChartingAction {
 		}
 
 		instance.check_mustHitSection.checked = section.mustHitSection;
-		instance.updateGrid();
+		instance.doUpdateGridObjects = true;
 		instance.updateHeads();
 	}
 
@@ -4128,14 +4519,14 @@ private class ChangeSustainAction extends NoteAction {
 
 	public function redo() {
 		noteData.sustainLength += change;
-		instance.updateGrid();
-		instance.updateNoteUI();
+		instance.doUpdateGridObjects = true;
+		instance.doUpdateNoteUI = true;
 	}
 
 	public function undo() {
 		noteData.sustainLength -= change;
-		instance.updateGrid();
-		instance.updateNoteUI();
+		instance.doUpdateGridObjects = true;
+		instance.doUpdateNoteUI = true;
 	}
 
 	public function toString() {
@@ -4172,7 +4563,7 @@ private class SeparateSubEventAction extends AddEventNoteAction {
 		}
 
 		ogEventData.subEventsData.insert(subEventIdx, eventData.subEventsData[0]);
-		instance.updateGrid();
+		instance.doUpdateGridObjects = true;
 	}
 
 	override function toString() {
@@ -4199,7 +4590,7 @@ private class MoveSubEventAction extends ChartingAction {
 		eventData.subEventsData[swapIdx] = temp;
 
 		instance.changeEventSelected(swapIdx, true);
-		instance.updateGrid();
+		instance.doUpdateGridObjects = true;
 	}
 
 	public function undo() {
@@ -4208,7 +4599,7 @@ private class MoveSubEventAction extends ChartingAction {
 		eventData.subEventsData[swapIdx] = temp;
 
 		instance.changeEventSelected(subEventIdx, true);
-		instance.updateGrid();
+		instance.doUpdateGridObjects = true;
 	}
 
 	public function toString() {
@@ -4238,7 +4629,7 @@ private class RemoveSubEventAction extends RemoveEventNoteAction {
 			super.redo();
 		else {
 			instance.changeEventSelected(-1);
-			instance.updateGrid();
+			instance.doUpdateGridObjects = true;
 		}
 	}
 
@@ -4249,7 +4640,7 @@ private class RemoveSubEventAction extends RemoveEventNoteAction {
 		}else {
 			eventData.subEventsData.insert(subEventIdx, subEventData);
 			instance.changeEventSelected(subEventIdx, true);
-			instance.updateGrid();
+			instance.doUpdateGridObjects = true;
 		}
 	}
 
@@ -4277,12 +4668,12 @@ private class AddNewSubEventAction extends ChartingAction {
 	public function redo() {
 		eventData.subEventsData.insert(subEventIdx, subEventData);
 		instance.changeEventSelected(subEventIdx, true);
-		instance.updateGrid();
+		instance.doUpdateGridObjects = true;
 	}
 
 	public function undo() {
 		eventData.subEventsData.remove(subEventData);
-		instance.updateGrid();
+		instance.doUpdateGridObjects = true;
 	}
 
 	public function toString() {
@@ -4300,7 +4691,7 @@ private class RemoveEventNoteAction extends ChartingAction {
 
 	public function redo() {
 		_song.events.remove(eventData);
-		instance.updateGrid();
+		instance.doUpdateGridObjects = true;
 
 		if (instance.curSelectedEvent == eventData) {
 			instance.subEventIdx = 0;
@@ -4311,7 +4702,7 @@ private class RemoveEventNoteAction extends ChartingAction {
 	
 	public function undo() {
 		_song.events.push(eventData);
-		instance.updateGrid();
+		instance.doUpdateGridObjects = true;
 
 		instance.subEventIdx = 0;
 		instance.curSelectedEvent = eventData;
@@ -4333,7 +4724,7 @@ private class AddEventNoteAction extends ChartingAction {
 
 	public function redo() {
 		_song.events.push(eventData);
-		instance.updateGrid();
+		instance.doUpdateGridObjects = true;
 
 		instance.subEventIdx = 0;
 		instance.curSelectedEvent = eventData;
@@ -4342,7 +4733,7 @@ private class AddEventNoteAction extends ChartingAction {
 
 	public function undo() {
 		_song.events.remove(eventData);
-		instance.updateGrid();
+		instance.doUpdateGridObjects = true;
 
 		if (instance.curSelectedEvent == eventData) {
 			instance.subEventIdx = 0;
@@ -4356,29 +4747,89 @@ private class AddEventNoteAction extends ChartingAction {
 	}
 }
 
+private class SelectNoteAction extends NoteAction {
+	public var prevNoteType:String;
+
+	public function new(noteData:NoteData) {
+		if (instance.selectedNotes.contains(noteData))
+			return;
+
+		this.noteData = noteData;
+		this.prevNoteType = instance.currentNoteType;
+		super();
+	}
+
+	public function redo() {
+		instance.selectedNotes.add(noteData);
+		instance.currentNoteType = noteData.noteType;
+		instance.colorSine = 0.0;
+		instance.doUpdateNoteUI = true;
+	}
+
+	public function undo() {
+		instance.selectedNotes.remove(noteData);
+		instance.currentNoteType = prevNoteType;
+		instance.colorSine = 0.0;
+		instance.doUpdateNoteUI = true;
+	}
+
+	public function toString() {
+		return 'Select Note (${noteData.column}, ${Std.int(noteData.strumTime)})';
+	}
+}
+
+private class SelectNotesAction extends ChartingAction {
+	public var list:NoteSelection;
+	public var prevSelected:NoteSelection;
+	public var prevNoteType:String;
+
+	public function new(list:Array<NoteData>) {
+		this.list = new NoteSelection(list);
+		this.prevSelected = instance.selectedNotes;
+		this.prevNoteType = instance.currentNoteType;
+		super();
+	}
+
+	public function redo() {
+		instance.selectedNotes = list;
+		instance.currentNoteType = list.noteType;
+		instance.colorSine = 0.0;
+		instance.doUpdateNoteUI = true;
+	}
+
+	public function undo() {
+		instance.selectedNotes = prevSelected;
+		instance.currentNoteType = prevNoteType;
+		instance.colorSine = 0.0;
+		instance.doUpdateNoteUI = true;
+	}
+
+	public function toString() {
+		return 'Select ${list.length} Notes';
+	}
+}
+
 private class RemoveNoteAction extends NoteAction {
 	public var sectionNumber:Int;
+	public var wasSelected:Bool;
 
 	public function new(sectionNumber:Int, noteData:NoteData) {
-		this.sectionNumber = sectionNumber;
 		this.noteData = noteData;
+		this.sectionNumber = sectionNumber;
+		this.wasSelected = instance.selectedNotes.contains(noteData);
 		super();
 	}
 		
 	public function redo() {
 		getSection(sectionNumber).sectionNotes.remove(noteData);
-		if (instance.curSelectedNote == noteData) {
-			instance.curSelectedNote = null;
-			instance.updateNoteUI();
-		}
-		instance.updateGrid();
+		if (wasSelected) instance.selectedNotes.remove(noteData);
+		instance.doUpdateGridObjects = true;
 	}
 
 	public function undo() {
 		getSection(sectionNumber).sectionNotes.push(noteData);
-		instance.curSelectedNote = noteData;
-		instance.updateNoteUI();
-		instance.updateGrid();
+		if (wasSelected) instance.selectedNotes.add(noteData);
+		instance.doUpdateGridObjects = true;
 	}
 
 	public function toString() {
@@ -4389,27 +4840,37 @@ private class RemoveNoteAction extends NoteAction {
 private class AddNoteAction extends NoteAction {
 	public var sectionNumber:Int;
 
+	var newSelected:NoteSelection;
+	var previousNoteType:String;
+	var previousSelected:NoteSelection;
+
 	public function new(sectionNumber:Int, noteData:NoteData)
 	{
 		this.noteData = noteData;
 		this.sectionNumber = sectionNumber;
+		this.newSelected = new NoteSelection([noteData]);
+		this.previousSelected = instance.selectedNotes;
 		super();
 	}
 	
 	public function redo() {
 		getSection(sectionNumber).sectionNotes.push(noteData);
-		instance.curSelectedNote = noteData;
-		instance.updateNoteUI();
-		instance.updateGrid();
+		
+		instance.selectedNotes = newSelected;
+		instance.colorSine = 0.0;
+		instance.doUpdateNoteUI = true;
+
+		instance.doUpdateGridObjects = true;
 	}
 
 	public function undo() {
 		getSection(sectionNumber).sectionNotes.remove(noteData);
-		if (instance.curSelectedNote == noteData) {
-			instance.curSelectedNote = null;
-			instance.updateNoteUI();
-		}
-		instance.updateGrid();
+		
+		instance.selectedNotes = previousSelected;
+		instance.colorSine = 0.0;
+		instance.doUpdateNoteUI = true;
+
+		instance.doUpdateGridObjects = true;
 	}
 
 	public function toString() {
@@ -4417,12 +4878,119 @@ private class AddNoteAction extends NoteAction {
 	}
 }
 
+private class ChangeNoteTypeAction extends NoteAction {
+	public var newType:String;
+	public var prevType:String;
+
+	public function new(noteData:NoteData, newType:String) {
+		this.noteData = noteData;
+		this.newType = newType;
+		this.prevType = noteData.noteType;
+		super();
+	}
+
+	public function redo() {
+		noteData.noteType = newType;
+		instance.doUpdateGridObjects = true;
+	}
+
+	public function undo() {
+		noteData.noteType = prevType;
+		instance.doUpdateGridObjects = true;
+	}
+
+	public function toString() {
+		return 'Change Note Type (${noteData.column}, ${Math.floor(noteData.strumTime)}) from "$prevType" to "$newType"';
+	}
+}
+
 private abstract class NoteAction extends ChartingAction {
 	var noteData:NoteData;
 }
 
+/** AHHHHHHHHHHHHHHH IT'S FUCKING PSYCH LUA AHHHHHHHHHHHHHHHH **/
+private class SetPropertyAction<T:Any> extends ChartingAction {
+	var object:Dynamic;
+	var fieldName:String;
+	var newValue:T;
+	var prevValue:T;
+
+	public function new(object:Dynamic, fieldName:String, newValue:T) {
+		this.object = object;
+		this.fieldName = fieldName;
+		this.newValue = newValue;
+		this.prevValue = Reflect.field(object, fieldName);
+		super();
+	}
+
+	public function redo() {
+		Reflect.setField(object, fieldName, newValue);
+	}
+
+	public function undo() {
+		Reflect.setField(object, fieldName, prevValue);
+	}
+}
+
+private class DynamicAction extends ChartingAction {
+	var doFunc:Void->Void;
+	var undoFunc:Void->Void;
+	var description:String;
+
+	public function new(doFunc:Void->Void, undoFunc:Void->Void, description:String = "Dynamic Action") {
+		this.doFunc = doFunc;
+		this.undoFunc = undoFunc;
+		this.description = description;
+		super();
+	}
+
+	public function redo() {
+		doFunc();
+	}
+
+	public function undo() {
+		undoFunc();
+	}
+
+	public function toString() {
+		return description;
+	}
+}
+
+/**
+	Groups an Array of Actions into one visible Action for the user.
+**/
+private class GroupAction extends ChartingAction {
+	final name:String;
+	
+	public function new(name:String, actions:Array<ChartingAction>) {
+		if (actions.length > 0) {
+			if (actions.length > 1) {
+				this.name = name;
+				for (action in actions)
+					action.silent = true;
+			}
+			super();
+		}
+	}
+
+	// This Action only serves as an eof type of thing lol
+	public function redo() {}
+	public function undo() {}
+
+	public function toString()
+		return name;
+}
+
 private abstract class ChartingAction
 {
+	/** 
+		Actions with `silent` set to `true` won't show up on the history display.  
+		Silent Actions shouldn't be the last done action, if the action after it is undone, this action will be undone too.
+		Similiarly, redoing a silent Action will also redo the Action after it.
+	**/
+	public var silent:Bool = false;
+	
 	/** Apply the effects of this action **/
 	abstract public function redo():Void;
 

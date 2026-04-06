@@ -40,6 +40,7 @@ class MusicData
 		snd.loopTime = loopTime;
 
 		if (sound == null) {
+			snd.context = MUSIC;
 			FlxG.sound.defaultMusicGroup.add(snd);
 		}
 

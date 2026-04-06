@@ -51,6 +51,7 @@ class Cutscene extends FlxTypedGroup<FlxBasic> {
 			sounds.push(music);
 
 		music.stop();
+		music.context = MUSIC;
 		music.loadEmbedded(path, true);
 		music.volume = volume;
 		music.play(true);

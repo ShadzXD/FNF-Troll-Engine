@@ -12,22 +12,18 @@ class Prompt extends MusicBeatSubstate
 	var selected = 0;
 	public var okc:Void->Void;
 	public var cancelc:Void->Void;
-	var buttons:FlxSprite = new FlxSprite(473.3, 450);
 	var theText:String = '';
-	var goAnyway:Bool = false;
-	var UI_box:FlxUIPopup;
 	var panel:FlxSprite;
 	var panelbg:FlxSprite;
 	var buttonAccept:FlxButton;
 	var buttonNo:FlxButton;
 	var cornerSize:Int = 10;
-	public function new(promptText:String = '', defaultSelected:Int = 0, okCallback:Void->Void = null, cancelCallback:Void->Void = null, acceptOnDefault:Bool = false, option1:String = 'OK', option2:String = 'CANCEL') 
+	public function new(promptText:String = '', defaultSelected:Int = 0, okCallback:Void->Void = null, cancelCallback:Void->Void = null, option1:String = 'OK', option2:String = 'CANCEL') 
 	{
 		selected = defaultSelected;
 		okc = okCallback;
 		cancelc = cancelCallback;
 		theText = promptText;
-		goAnyway = acceptOnDefault;
 		buttonAccept = new FlxButton(473.3, 450, option1, ()->{if(okc != null) okc(); close();} );
 		buttonNo = new FlxButton(633.3, 450, option2, ()->{if(cancelc != null) cancelc(); close();});
 		super(FlxColor.fromRGBFloat(.0,.0,.0,.4));
@@ -37,17 +33,10 @@ class Prompt extends MusicBeatSubstate
 	{
 		super.create();
 
-		if (goAnyway){
-			if(okc != null)
-				okc();
-			
-			return close();
-		}
-
 		panel = new FlxSprite(0, 0);
 		panelbg = new FlxSprite(0, 0);
 		makeSelectorGraphic(panel,300,150,0xff999999);
-		makeSelectorGraphic(panelbg,302,165,0xff000000);
+		makeSelectorGraphic(panelbg,302,152,0xff000000);
 		
 		panel.scrollFactor.set();
 		panel.screenCenter();

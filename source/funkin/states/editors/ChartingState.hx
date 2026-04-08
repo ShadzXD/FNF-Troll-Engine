@@ -314,6 +314,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 	var doUpdateGridLayer = false;
 	var doUpdateGridObjects = false;
+	var doUpdateWaveform = false;
 	var doUpdateNoteUI = false;
 
 	public function new(data:SwagSong = null) {
@@ -1753,7 +1754,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			trackVolumeSlider.visible = false;*/
 		}
 		
-		updateWaveform();
+		doUpdateWaveform = true;
 		_session.selectedTrack = trackName;
 	}
 
@@ -2609,11 +2610,15 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		////
 		if (doUpdateGridLayer) {
 			doUpdateGridLayer = false;
-			reloadGridLayer();
+			reloadGridLayer(true);
 		}
 		if (doUpdateGridObjects) {
 			doUpdateGridObjects = false;
 			updateGridObjects();
+		}
+		if (doUpdateWaveform) {
+			doUpdateWaveform = false;
+			updateWaveform();
 		}
 		if (doUpdateNoteUI) {
 			doUpdateNoteUI = false;
@@ -3166,7 +3171,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	var currentSectionEnd:Float = 0;
 
 	/** Creates the currently visible sections grid background and their objects (notes, events, waveform) **/
-	function reloadGridLayer(updateObjects:Bool = true) 
+	function reloadGridLayer(updateWaveform:Bool = false) 
 	{
 		wipeGroup(gridLayer);
 		
@@ -3271,8 +3276,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			fieldSeparators.add(gridBlackLine);
 		}
 
-		if (updateObjects)
-			updateWaveform();
+		if (updateWaveform)
+			doUpdateWaveform = true;
 	}
 
 	function strumLineUpdateY()

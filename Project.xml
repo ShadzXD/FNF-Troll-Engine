@@ -73,6 +73,10 @@
 	<!-- Custom shader error printing :D -->
 	<haxedef name="traceShaderLineNumbers"/>
 
+	<section if="OFFICIAL_BUILD">
+		<echo value="OFFICIAL_BUILD" />
+	</section>
+
 	<!-- _____________________________ Path Settings ____________________________ -->
 
 	<classpath path="source" />

@@ -6,6 +6,7 @@ class OptionsState extends MusicBeatState
 	override function create()
 	{
 		add(new funkin.objects.CoolMenuBG('menuDesat', 0xff7F94FF));
+		persistentUpdate = true;
 
 		var daSubstate = new OptionsSubstate(true);
 		daSubstate.goBack = (changedOptions:Array<String>) -> {

@@ -139,7 +139,7 @@ class ColorPickerSubstate extends FlxSubState {
 		hueSatSpr.updateHitbox();
 		hueSatSpr.scrollFactor.set();
 
-		hueSatPointer = new FlxSprite(0, 0, 'stageeditor/originMarker');
+		hueSatPointer = new FlxSprite(0, 0, 'editors/originMarker');
 		hueSatPointer.offset.x += hueSatPointer.width / 2;
 		hueSatPointer.offset.y += hueSatPointer.height / 2;
 

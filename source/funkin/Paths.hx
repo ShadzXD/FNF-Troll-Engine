@@ -720,6 +720,8 @@ class Paths
 					contentMetadata.set(folderName, data);
 					#end
 					return;
+				}else {
+					contentMetadata.set(folderName, {});
 				}
 			}
 		});
@@ -754,12 +756,6 @@ class Paths
 			Reflect.setField(data, "freeplaySongs", getFreeplaySongs());
 		else
 			Reflect.setField(data, "freeplaySongs", []);
-
-		////
-		if (Reflect.hasField(data, "chapters")) { // TGT
-			Reflect.setField(data, "weeks", Reflect.field(data, "chapters"));
-			Reflect.deleteField(data, "chapters");
-		}
 
 		return data;
 	}

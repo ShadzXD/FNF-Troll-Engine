@@ -20,6 +20,8 @@ class CoolMenuBG extends FlxSprite {
 	public function new(simpleGraphic:FlxGraphicAsset, color:FlxColor = 0xFFFFFFFF) {
 		super(0, 0, simpleGraphic);
 		this.color = color;
+
+		this.scrollFactor.set();
 		
 		this.coolShader = new CoolBGShader();
 		this.coolShader.iTime.value = iTime;

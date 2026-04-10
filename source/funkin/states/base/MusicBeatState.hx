@@ -48,7 +48,8 @@ enum abstract SongSyncMode(String) to String {
 	"closeSubState",
 	"stepHit",
 	"beatHit",
-	"sectionHit"
+	"sectionHit",
+	"getDebugText",
 ]))
 #end
 class MusicBeatState extends TransitionableState

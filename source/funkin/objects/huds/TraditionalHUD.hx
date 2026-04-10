@@ -165,16 +165,16 @@ class TraditionalHUD extends CommonHUD
 
 		if (!showJudgeCounter) 
 			text += separator + getComboBreaksText();
-		
+
+		text += separator + '$ratingString: ';
+
+		if (grade != "?")
+			text += getRatingText() + separator + getGradeText() + separator + getClearTypeText();
+		else
+			text += getGradeText();
+
 		if (ClientPrefs.npsDisplay)
 			text += separator + getNPSText();
-
-		if (grade != "?") {
-			text += separator + getRatingText();
-			text += separator + getClearTypeText();
-		}
-		
-		text += separator + getGradeText();
 
 		return text;
 	}
@@ -191,7 +191,7 @@ class TraditionalHUD extends CommonHUD
 	inline function getRatingText():String
 	{
 		final ratPerc:Float = CoolMath.floorDecimal(ratingPercent * 100, 2);
-		return '$ratingString: $ratPerc%';
+		return '$ratPerc%';
 	}
 
 	inline function getClearTypeText():String
@@ -205,7 +205,7 @@ class TraditionalHUD extends CommonHUD
 	}
 
 	inline function getGradeText() {
-		return '$rankString: $grade';
+		return '$grade';
 	}
 
 	override function update(elapsed:Float)

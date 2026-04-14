@@ -174,7 +174,6 @@ class SongSelectState extends MusicBeatSubstate
 		if (FlxG.keys.justPressed.SIX)
 		{
 			var ss = new OptionsSubstate();
-			ss.goBack = (_) -> ss.close();
 			openSubState(ss);
 		}
 

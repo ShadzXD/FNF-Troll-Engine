@@ -8,7 +8,7 @@ class OptionsState extends MusicBeatState
 		add(new funkin.objects.CoolMenuBG('menuDesat', 0xff7F94FF));
 		persistentUpdate = true;
 
-		var daSubstate = new OptionsSubstate(true);
+		var daSubstate = new OptionsSubstate();
 		daSubstate.goBack = (changedOptions:Array<String>) -> {
 			MusicBeatState.switchState(new MainMenuState());
 		};

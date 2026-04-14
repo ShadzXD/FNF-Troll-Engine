@@ -52,7 +52,7 @@ void main()
 	vec4 color = flixel_color();
 	vec4 colorTransformAdd = vec4(vec3(1.0) + color.xyz / 3.0, 0.0);
 
-    vec4 texColor = texture(bitmap, uv);
+    vec4 texColor = texture2D(bitmap, uv);
     vec4 grad = vec4(vec3(uv.y), 1.0);
     texColor = (texColor * colorTransformMult) + colorTransformAdd;
     

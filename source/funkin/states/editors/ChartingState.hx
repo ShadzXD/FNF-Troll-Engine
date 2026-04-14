@@ -2753,6 +2753,13 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 					]
 				);
 			}
+
+			if (FlxG.keys.justPressed.DELETE) {
+				new GroupAction(
+					"Remove Notes",
+					[for (note in selectedNotes.copy()) new RemoveNoteAction(curSection, note)]
+				);
+			}
 		}
 
 		if(FlxG.keys.justPressed.Z && curZoom > 0) {
@@ -4436,7 +4443,7 @@ private class HistoryDisplay extends FlxSpriteGroup {
 			else bg.color = 0xFF262626; // is past
 
 			txt.color = action_reverted ? 0xFF000000 : 0xFFFFFFFF;
-			txt.text = (action == null) ? "" : Std.string(action);
+			txt.text = (action == null) ? " " : Std.string(action);
 		}
 	}
 
@@ -4789,10 +4796,13 @@ private class SelectNotesAction extends ChartingAction {
 	public var prevNoteType:String;
 
 	public function new(list:Array<NoteData>) {
-		this.list = new NoteSelection(list);
-		this.prevSelected = instance.selectedNotes;
-		this.prevNoteType = instance.currentNoteType;
-		super();
+		// if selecting notes, or deselecting notes
+		if (list.length > 0 || instance.selectedNotes.length > 0) {
+			this.list = new NoteSelection(list);
+			this.prevSelected = instance.selectedNotes;
+			this.prevNoteType = instance.currentNoteType;
+			super();
+		}
 	}
 
 	public function redo() {
@@ -4810,7 +4820,10 @@ private class SelectNotesAction extends ChartingAction {
 	}
 
 	public function toString() {
-		return 'Select ${list.length} Notes';
+		return if (list.length > 0)
+			'Select ${list.length} Notes';
+		else
+			'Deselect Notes';
 	}
 }
 

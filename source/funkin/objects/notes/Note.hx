@@ -469,7 +469,7 @@ class Note extends NoteObject {
 		else
 			this.quant = getQuant(Conductor.getBeatSinceChange(this.strumTime));
 
-		this.baseAlpha = this.isSustainNote ? 0.6 : 1;
+		this.baseAlpha = 1;
 
 		if (prevNote != null)
 			prevNote.nextNote = this;

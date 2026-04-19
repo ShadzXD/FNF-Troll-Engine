@@ -16,3 +16,7 @@ highscore=Record
 rating=Clasificación
 cbplural=Combos Rotos
 cb=Combo Roto
+
+## Options stuff
+opt_value_bool_true=Si
+opt_value_bool_false=No

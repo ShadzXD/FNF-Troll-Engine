@@ -97,6 +97,8 @@ action_openGameplayChangers=Gameplay Modifiers
 action_resetScore=Reset Score
 action_listenToSong=Listen to Song
 ## Options stuff
+opt_value_bool_true=On
+opt_value_bool_false=Off
 opt_display_noteOffset=Offset
 opt_display_ratingOffset=Judgement Offset
 opt_display_ruin=Ruin the Mod

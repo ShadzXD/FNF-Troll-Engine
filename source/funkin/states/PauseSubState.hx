@@ -378,8 +378,10 @@ class PauseSubState extends MusicBeatSubstate
 	}
 
 	function openModifiers() {
+		var ss = new GameplayChangersSubstate();
+		ss.cameras = cameras;
+		this.openSubState(ss);
 		this.persistentDraw = false;
-		this.openSubState(new GameplayChangersSubstate());
 	}
 
 	function openOptions() {

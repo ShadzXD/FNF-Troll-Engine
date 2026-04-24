@@ -641,6 +641,12 @@ class ClientPrefs {
 				type: Button,
 				data: []
 			},
+			"customizeButtonBinds" => {
+				display: "Customize Button Bindings",
+				desc: "Lets you change your controls. Pretty straight forward, huh?",
+				type: Button,
+				data: []
+			},
 			//
 			"discordRPC" => {
 				display: "Discord Rich Presence",

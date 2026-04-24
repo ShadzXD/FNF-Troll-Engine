@@ -292,7 +292,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	var eventStuff:Array<Array<String>>;
 	var hudList:Array<String>;
 
-	private var blockPressWhileTypingOn:Array<FlxUIInputText> = [];
 	private var blockPressWhileTypingOnStepper:Array<CustomFlxUINumericStepper> = [];
 	private var blockPressWhileScrolling:Array<FlxUIDropDownMenu> = [];
 	private var blockScrollWhileHovering:Array<FlxUISlider> = [];
@@ -672,7 +671,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			remove(UI_box);
 		}
 
-		blockPressWhileTypingOn.resize(0);
 		blockPressWhileTypingOnStepper.resize(0);
 		blockPressWhileScrolling.resize(0);
 		blockScrollWhileHovering.resize(0);
@@ -1100,12 +1098,10 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		var arrowSkin = _song.arrowSkin ?? '';	
 		var noteSkinInputText = newFlxUIInputText(player2DropDown.x, player2DropDown.y + 40, 150, arrowSkin, 8);
 		noteSkinInputText.name = 'song_arrowSkin';
-		blockPressWhileTypingOn.push(noteSkinInputText);
 
 		var splashSkin = _song.splashSkin ?? '';
 		var noteSplashesInputText = newFlxUIInputText(noteSkinInputText.x, noteSkinInputText.y + 35, 150, splashSkin, 8);
 		noteSplashesInputText.name = 'song_noteSplashes';
-		blockPressWhileTypingOn.push(noteSplashesInputText);
 		
 		var tab_group_song = new FlxUI(null, UI_box);
 		tab_group_song.name = "Song";
@@ -1235,39 +1231,70 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	}
 
 	function section_swapSides() {
-		for (note in _song.notes[curSection].sectionNotes)
-			note.column = (note.column + _song.keyCount) % (_song.keyCount * 2);
+		var shitToDo:Array<ChartingAction> = [];
 
-		doUpdateGridObjects = true;
+		for (note in _song.notes[curSection].sectionNotes) {
+			var ogCol = note.column;
+			var nuCol = (note.column + _song.keyCount) % (_song.keyCount * 2);
+			function set_column(v) note.column = v;
+			shitToDo.push(new DynamicAction(set_column.bind(nuCol), set_column.bind(ogCol)));
+		}
+
+		if (shitToDo.length > 0) {
+			final f = () -> doUpdateGridObjects = true;
+			shitToDo.push(new DynamicAction(f, f));
+			new GroupAction("Swap Section Note Sides", shitToDo);
+		}
 	}
 	function section_duetNotes() {
-		var copiedNotes:Array<NoteData> = [for (note in _song.notes[curSection].sectionNotes) note.clone()];
+		var toCopy:Array<NoteData> = _song.notes[curSection].sectionNotes;
+		if (toCopy.length == 0)
+			return;
 
+		var copiedNotes:Array<NoteData> = [for (note in toCopy) note.clone()];
 		for (note in copiedNotes) {
 			if (Math.floor(note.column / _song.keyCount) % 2 == 1)
 				note.column -= _song.keyCount;
 			else
 				note.column += _song.keyCount;
-
-			_song.notes[curSection].sectionNotes.push(note);
 		}
 		
-		copiedNotes.resize(0);
-		copiedNotes = null;
-
-		doUpdateGridObjects = true;
-	}
-	function section_mirrorNotes() {
-		for (note in _song.notes[curSection].sectionNotes)
-		{
-			var boob:Int = note.column % _song.keyCount;
-			boob = _song.keyCount - 1 - boob;
-			if (note.column >= _song.keyCount) boob += _song.keyCount;
-
-			note.column = boob;
+		function redo() {
+			for (note in copiedNotes)
+				_song.notes[curSection].sectionNotes.push(note);
+			doUpdateGridObjects = true;
+		}
+		
+		function undo() {
+			for (note in copiedNotes)
+				_song.notes[curSection].sectionNotes.remove(note);
+			doUpdateGridObjects = true;
 		}
 
-		doUpdateGridObjects = true;
+		new DynamicAction(redo, undo, "Duet Section Notes");
+	}
+
+	function _mirrorNote(note:NoteData) {
+		var keyCount = _song.keyCount;
+		var fieldIndex:Int = Math.floor(note.column / keyCount);
+		var column:Int = note.column % keyCount;
+
+		note.column = (keyCount - 1 - column);
+		note.column += fieldIndex * _song.keyCount;
+	}
+
+	function section_mirrorNotes() {
+		var shitToDo:Array<ChartingAction> = [];
+		for (note in _song.notes[curSection].sectionNotes) {
+			var f = _mirrorNote.bind(note);
+			shitToDo.push(new DynamicAction(f, f));
+		}
+
+		if (shitToDo.length > 0) {
+			var f = () -> doUpdateGridObjects = true;
+			shitToDo.push(new DynamicAction(f, f));
+			new GroupAction("Mirror Section Notes", shitToDo);
+		}
 	}
 
 	function addSectionUI():Void
@@ -1471,7 +1498,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		noteTypeDropDown.add(noteTypeInput);
 
 		noteTypeInput.exists = false;
-		blockPressWhileTypingOn.push(noteTypeInput);
 
 		function onEnterNoteType(noteType:String) {
 			noteTypeDropDown.header.text.text = noteType;
@@ -1646,7 +1672,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		eventDropDown.add(eventNameInput);
 
 		eventNameInput.exists = false;
-		blockPressWhileTypingOn.push(eventNameInput);
 
 		function onEnterEventName(eventName:String) {
 			setSelectedEventType(eventName);
@@ -1662,11 +1687,9 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 		value1InputText = newFlxUIInputText(10, 125, 116, "");
 		value1InputText.name = 'event_value1';
-		blockPressWhileTypingOn.push(value1InputText);
 
 		value2InputText = newFlxUIInputText(10, 165, 116, "");
 		value2InputText.name = 'event_value2';
-		blockPressWhileTypingOn.push(value2InputText);
 
 		////
 		var removeButton = newFlxUIButton(eventDropDown.x + eventDropDown.width + 20, eventDropDown.y, '-', removeSubEvent, false);
@@ -1781,23 +1804,18 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 		var songNameInputText = newFlxUIInputText(10, 30, 180, _song.metadata.songName);
 		songNameInputText.name = "metadata_songName";
-		blockPressWhileTypingOn.push(songNameInputText);
 
 		var artistInputText = newFlxUIInputText(10, songNameInputText.y + 30, 180, _song.metadata.artist);
 		artistInputText.name = "metadata_artist";
-		blockPressWhileTypingOn.push(artistInputText);
 
 		var charterInputText = newFlxUIInputText(10, artistInputText.y + 30, 180, _song.metadata.charter);
 		charterInputText.name = "metadata_charter";
-		blockPressWhileTypingOn.push(charterInputText);
 
 		var modcharterInputText = newFlxUIInputText(10, charterInputText.y + 30, 180, _song.metadata.modcharter);
 		modcharterInputText.name = "metadata_modcharter";
-		blockPressWhileTypingOn.push(modcharterInputText);
 
 		var extraInfoInputText = newFlxUIInputText(10, modcharterInputText.y + 30, 180, (_song.metadata.extraInfo?.join(',') ?? ""));
 		extraInfoInputText.name = "metadata_extraInfo";
-		blockPressWhileTypingOn.push(extraInfoInputText);
 
 		////
 		// TODO: freeplay data shit idunno
@@ -2042,7 +2060,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			}
 		}
 		bgTextureInput.focusLost = () -> bgTextureInput.callback(bgTextureInput.text, "focuslost");
-		blockPressWhileTypingOn.push(bgTextureInput);
 
 		var check_coolBG = new FlxUICheckBox(0, 0, null, null, "Cool BG", 100);
 		check_coolBG.callback = function() {
@@ -2125,10 +2142,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			
 			selectTrack(_session.selectedTrack);
 		});
-
-		blockPressWhileTypingOn.push(instInput);
-		blockPressWhileTypingOn.push(playInput);
-		blockPressWhileTypingOn.push(oppInput);
 
 		tab_group_tracks.add(new FlxText(10, instInput.y - 15, 0, 'Instrumental Tracks'));
 		tab_group_tracks.add(instInput);
@@ -2510,11 +2523,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 	var inputBlocked = false;
 	function checkIsTyping():Bool {
-		for (inputText in blockPressWhileTypingOn) {
-			if (inputText.hasFocus)
-				return true;
-		}
-
 		for (stepper in blockPressWhileTypingOnStepper) {
 			@:privateAccess
 			var leText:Dynamic = stepper.text_field;
@@ -2636,11 +2644,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 		if (!inputBlocked) {
 			updateKeys(elapsed);
-		}else if (FlxG.keys.justPressed.ENTER) {
-			for (typebox in blockPressWhileTypingOn) {
-				if (typebox.hasFocus)
-					typebox.hasFocus = false;
-			}
 		}
 
 		////
@@ -4234,7 +4237,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 	static inline function newFlxUIInputText(X:Float = 0, Y:Float = 0, Width:Int = 150, ?Text:String, size:Int = 8, TextColor:Int = FlxColor.BLACK,
 			BackgroundColor:Int = FlxColor.WHITE, EmbeddedFont:Bool = true) {
-		var fit = new FlxUIInputText(X, Y, Width, Text, size, TextColor, BackgroundColor, EmbeddedFont);
+		var fit = new CustomFlxUIInputText(X, Y, Width, Text, size, TextColor, BackgroundColor, EmbeddedFont);
 		setupInputText(fit);
 		return fit;
 	}

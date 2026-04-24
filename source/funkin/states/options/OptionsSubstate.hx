@@ -180,10 +180,17 @@ class OptionsSubstate extends MusicBeatSubstate
 		],
 		"controls" => [
 			[
-				"keyboard", ["customizeKeybinds",]
+				"keyboard",
+				[
+					"customizeKeybinds",
+				]
 			], 
 			[
-				"controller", ["controllerMode",] // TODO customize binds for controllers
+				"controller",
+				[
+					"controllerMode",
+					"customizeButtonBinds",
+				]
 			]
 		],
 		
@@ -426,9 +433,17 @@ class OptionsSubstate extends MusicBeatSubstate
 						changed.push('customizeColours');
 				});
 
-			case 'customizeKeybinds':
-				var substate:IBindsMenu<Keybind> = ClientPrefs.controllerMode ? new ButtonBindsSubstate() : new KeyBindsSubstate();
-				var bindsMap:Map<String, Array<Int>> = ClientPrefs.controllerMode ? ClientPrefs.buttonBinds : ClientPrefs.keyBinds;
+			case 'customizeKeybinds' | 'customizeButtonBinds':
+				var substate:IBindsMenu<Keybind>;
+				var bindsMap:Map<String, Array<Int>>;
+				
+				if (option == 'customizeButtonBinds') {
+					substate = new ButtonBindsSubstate();
+					bindsMap = ClientPrefs.buttonBinds;
+				}else {
+					substate = new KeyBindsSubstate();
+					bindsMap = ClientPrefs.keyBinds;
+				}
 				
 				var currentBinds:Map<String, Array<Int>> = [];
 				for (key in bindsMap.keys())
@@ -494,7 +509,7 @@ class OptionsSubstate extends MusicBeatSubstate
 		}
 	}
 
-	var forceWidgetUpdate:Bool = false;
+	var forceWidgetUpdate:Bool = true;
 
 	var currentTabIdx:Int = 0;
 	var currentTab:TabInstance;
@@ -658,13 +673,7 @@ class OptionsSubstate extends MusicBeatSubstate
 		optionDesc.alpha = 0;
 		add(optionDesc);
 
-		#if (flixel >= "5.9.0")
-		prevScreenX = FlxG.mouse.viewX;
-		prevScreenY = FlxG.mouse.viewY;
-		#else
-		prevScreenX = FlxG.mouse.screenX;
-		prevScreenY = FlxG.mouse.screenY;
-		#end
+		updatePrevMouseScreenPos();
 
 		add(new FlxSignalHolder(FlxG.sound.onVolumeChange, onVolumeChange));
 		onVolumeChange(FlxG.sound.volume);
@@ -785,13 +794,20 @@ class OptionsSubstate extends MusicBeatSubstate
 				var checkbox = new Checkbox();
 				checkbox.toggled = data.value;
 
-				var text = new FlxText(0, 0, 0, "off", 16);
-				text.applyFormat(TextFormats.OPT_VALUE_TEXT);
+				var label = new FlxText(0, 0, 0, "off", 16);
+				label.applyFormat(TextFormats.OPT_VALUE_TEXT);
 
 				widget.data.set("checkbox", checkbox);
-				widget.data.set("text", text);
-				objects.add(text);
+				widget.data.set("text", label);
+				objects.add(label);
 				objects.add(checkbox);				
+
+				////
+				label.x = text.x + 450;
+				label.y = text.y + ((text.height - label.height) / 2);
+
+				checkbox.x = text.x + 800;
+				checkbox.y = text.y + ((text.height - checkbox.height) / 2);
 
 			case Dropdown:
 				if (optionExists(name)) {
@@ -814,6 +830,13 @@ class OptionsSubstate extends MusicBeatSubstate
 
 				widget.data.set("arrow", arrow);
 				widget.data.set("text", label);
+
+				////
+				arrow.x = text.x + 800;
+				arrow.y = text.y + ((text.height - arrow.height) / 2);
+
+				label.x = text.x + 450;
+				label.y = text.y + ((text.height - label.height) / 2);
 
 			case Number:
 				var min:Float = data.data.get("min");
@@ -863,9 +886,9 @@ class OptionsSubstate extends MusicBeatSubstate
 				objects.add(box);
 				objects.add(bar);
 
-				var text = new FlxText(0, 0, 0, "off", 16);
-				text.applyFormat(TextFormats.OPT_VALUE_TEXT);
-				objects.add(text);
+				var label = new FlxText(0, 0, 0, "off", 16);
+				label.applyFormat(TextFormats.OPT_VALUE_TEXT);
+				objects.add(label);
 
 				var leftAdjust = new WidgetButton();
 				var adjusters: FlxGraphic = Paths.image("optionsMenu/adjusters");
@@ -876,8 +899,6 @@ class OptionsSubstate extends MusicBeatSubstate
 				leftAdjust.updateHitbox();
 				leftAdjust.canRepeat = true;
 				leftAdjust.repeatTime = 0.05;
-				leftAdjust.track = box;
-				leftAdjust.trackOffset.x = -leftAdjust.width - 5;
 
 				var rightAdjust = new WidgetButton();
 				rightAdjust.loadGraphic(adjusters, true, Math.floor(adjusters.width / 2), adjusters.height);
@@ -886,8 +907,6 @@ class OptionsSubstate extends MusicBeatSubstate
 				rightAdjust.updateHitbox();
 				rightAdjust.canRepeat = true;
 				rightAdjust.repeatTime = 0.05;
-				rightAdjust.track = box;
-				rightAdjust.trackOffset.x = box.width + 5;
 
 				leftAdjust.onPressed = function()
 				{
@@ -903,11 +922,23 @@ class OptionsSubstate extends MusicBeatSubstate
 				objects.add(leftAdjust);
 				objects.add(rightAdjust);
 
-				widget.data.set("text", text);
+				widget.data.set("text", label);
 				widget.data.set("box", box);
 				widget.data.set("bar", bar);
 				widget.data.set("leftAdjust", leftAdjust);
 				widget.data.set("rightAdjust", rightAdjust);
+
+				////
+				box.x = text.x + 600;
+				box.y = text.y + ((text.height - bar.height) / 2);
+
+				leftAdjust.setTracking(box, -leftAdjust.width - 5);
+				leftAdjust.updateTracking();
+				leftAdjust.track = null;
+								
+				rightAdjust.setTracking(box, box.width + 5);
+				rightAdjust.updateTracking();
+				rightAdjust.track = null;
 
 			case Button:
 				// nothing needs to be made lol
@@ -989,11 +1020,7 @@ class OptionsSubstate extends MusicBeatSubstate
 				}
 
 				text.text = checkbox.toggled ? "On" : "Off";
-				text.x = object.x + 450;
-				text.y = object.y + ((object.height - text.height) / 2);
 
-				checkbox.x = object.x + 800;
-				checkbox.y = object.y + ((object.height - checkbox.height) / 2);
 			case Dropdown:
 				var arrow:FlxSprite = widget.data.get("arrow");
 				var label:FlxText = widget.data.get("text");
@@ -1042,12 +1069,6 @@ class OptionsSubstate extends MusicBeatSubstate
 				var active = openedDropdown == widget;
 				arrow.angle = active ? -90 : 0;
 
-				arrow.x = object.x + 800;
-				arrow.y = object.y + ((object.height - arrow.height) / 2);
-
-				label.x = object.x + 450;
-				label.y = object.y + ((object.height - label.height) / 2);
-
 			case Number:
 				final barBorder:Float = 8;
 				final barWidth:Float = 240 - barBorder;
@@ -1083,9 +1104,6 @@ class OptionsSubstate extends MusicBeatSubstate
 				bar.scale.x = (box.width - barBorder) * (value - min) / (max - min);
 				bar.updateHitbox();
 
-				box.x = object.x + 600;
-				box.y = object.y + ((object.height - bar.height) / 2);
-
 				text.text = '';
 				if (widget.optionData.data.exists("prefix"))
 					text.text += widget.optionData.data.get("prefix");
@@ -1104,6 +1122,103 @@ class OptionsSubstate extends MusicBeatSubstate
 						onButtonPressed(widget.optionData.data.get("optionName"));
 				}
 		}
+	}
+
+	function updateWidgetInput() {
+		var optionName:String = curWidget.optionData.data.get("optionName");
+		var doUpdate:Bool = false;
+
+		switch (curWidget.type) {
+			case Toggle:
+				if (FlxG.keys.justPressed.ENTER){
+					var checkbox:Checkbox = curWidget.data.get("checkbox");
+					checkbox.toggled = !checkbox.toggled;
+					changeToggle(optionName, checkbox.toggled);
+
+					doUpdate = true;
+				}
+
+				if (FlxG.keys.justPressed.R){
+					@:privateAccess
+					changeToggle(optionName, ClientPrefs.defaultOptionDefinitions.get(optionName).value);
+					doUpdate = true;
+				}
+				
+			case Button:
+				if (FlxG.keys.justPressed.ENTER){
+					onButtonPressed(optionName);
+					doUpdate = true;
+				}
+
+			case Number:
+				// ;_;	
+				var data = curWidget.data;
+
+				if (FlxG.keys.justPressed.LEFT)	{
+					if (FlxG.keys.pressed.SHIFT)	changeNumber(optionName, data.get("min"), true);
+					else							data.get("leftAdjust").press();
+				}
+				else if (FlxG.keys.justReleased.LEFT) {
+					data.get("leftAdjust").release();
+				}		
+
+				if (FlxG.keys.justPressed.RIGHT) {
+					if (FlxG.keys.pressed.SHIFT)	changeNumber(optionName, data.get("max"), true);
+					else							data.get("rightAdjust").press();
+				}
+				else if (FlxG.keys.justReleased.RIGHT) {
+					data.get("rightAdjust").release();
+				}
+
+				if (FlxG.keys.justPressed.R){
+					@:privateAccess
+					var defaultDefinition = ClientPrefs.defaultOptionDefinitions.get(optionName);
+					var defaultValue = defaultDefinition.value;
+
+					if (defaultDefinition.data.get("type") == "percent")
+						defaultValue *= 100;
+
+					changeNumber(optionName, defaultValue, true);
+					doUpdate = true;
+				}
+				if (FlxG.keys.pressed.LEFT || FlxG.keys.pressed.RIGHT || FlxG.mouse.pressed){
+					doUpdate = true;
+				}
+
+			case Dropdown:
+				if (openedDropdown == curWidget) {
+					doUpdate = true;
+				}else{
+					var change = 0;
+					if (FlxG.keys.justPressed.LEFT) change--;
+					if (FlxG.keys.justPressed.RIGHT) change++;
+
+					if (change != 0){
+						var sowy = actualOptions.get(optionName);
+						var allOptions:Array<String> = sowy.data.get("options");
+						var idx = CoolUtil.updateIndex(allOptions.indexOf(sowy.value), change, allOptions.length);
+
+						changeDropdown(optionName, allOptions[idx]);
+
+						doUpdate = true;
+					}
+
+					if (FlxG.keys.justPressed.R) {
+						@:privateAccess
+						changeDropdown(optionName, ClientPrefs.defaultOptionDefinitions.get(optionName).value);
+						doUpdate = true;
+					}
+
+					if (FlxG.keys.justPressed.ENTER) {
+						var options = curWidget.optionData.data.get("options");
+						var dV = curWidget.optionData.value;
+						dropdown.open(curWidget);
+						dropdown.changeSelected(options.indexOf(dV), true);
+					}
+				}
+		}
+
+		return doUpdate;
 	}
 
 	inline function getNumber(name:String):Float
@@ -1319,6 +1434,24 @@ class OptionsSubstate extends MusicBeatSubstate
 	var prevScreenX:Int;
 	var prevScreenY:Int;
 
+	inline function getMouseMoved():Bool {
+		#if (flixel >= "5.9.0")
+		return FlxG.mouse.gameX != prevScreenX || FlxG.mouse.gameY != prevScreenY;
+		#else
+		return FlxG.mouse.screenX != prevScreenX || FlxG.mouse.screenY != prevScreenY;
+		#end
+	}
+
+	inline function updatePrevMouseScreenPos() {
+		#if (flixel >= "5.9.0")
+		prevScreenX = FlxG.mouse.gameX;
+		prevScreenY = FlxG.mouse.gameY;
+		#else
+		prevScreenX = FlxG.mouse.screenX;
+		prevScreenY = FlxG.mouse.screenY;
+		#end
+	}
+
 	override function update(elapsed:Float)
 	{
 		super.update(elapsed);
@@ -1352,128 +1485,33 @@ class OptionsSubstate extends MusicBeatSubstate
 			}
 			}
 
-			// TODO: move this to updateWidget
-			if (curWidget != null && !curWidget.locked){
-				var optionName:String = curWidget.optionData.data.get("optionName");
-
-				switch (curWidget.type){
-					case Toggle:
-						if (FlxG.keys.justPressed.ENTER){
-							var checkbox:Checkbox = curWidget.data.get("checkbox");
-							checkbox.toggled = !checkbox.toggled;
-							changeToggle(optionName, checkbox.toggled);
-
-							doUpdate = true;
-						}
-
-						if (FlxG.keys.justPressed.R){
-							@:privateAccess
-							changeToggle(optionName, ClientPrefs.defaultOptionDefinitions.get(optionName).value);
-							doUpdate = true;
-						}
-						
-					case Button:
-						if (FlxG.keys.justPressed.ENTER){
-							onButtonPressed(optionName);
-							doUpdate = true;
-						}
-
-					case Number:
-						// ;_;	
-						var data = curWidget.data;
-
-						if (FlxG.keys.justPressed.LEFT)	{
-							if (FlxG.keys.pressed.SHIFT)	changeNumber(optionName, data.get("min"), true);
-							else							data.get("leftAdjust").press();
-						}
-						else if (FlxG.keys.justReleased.LEFT) {
-							data.get("leftAdjust").release();
-						}		
-
-						if (FlxG.keys.justPressed.RIGHT) {
-							if (FlxG.keys.pressed.SHIFT)	changeNumber(optionName, data.get("max"), true);
-							else							data.get("rightAdjust").press();
-						}
-						else if (FlxG.keys.justReleased.RIGHT) {
-							data.get("rightAdjust").release();
-						}
-
-						if (FlxG.keys.justPressed.R){
-							@:privateAccess
-							var defaultDefinition = ClientPrefs.defaultOptionDefinitions.get(optionName);
-							var defaultValue = defaultDefinition.value;
-
-							if (defaultDefinition.data.get("type") == "percent")
-								defaultValue *= 100;
-
-							changeNumber(optionName, defaultValue, true);
-							doUpdate = true;
-						}
-						if (FlxG.keys.pressed.LEFT || FlxG.keys.pressed.RIGHT || FlxG.mouse.pressed){
-							doUpdate = true;
-						}
-
-					case Dropdown:
-						if (openedDropdown == curWidget) {
-							doUpdate = true;
-						}else{
-						var change = 0;
-						if (FlxG.keys.justPressed.LEFT) change--;
-						if (FlxG.keys.justPressed.RIGHT) change++;
-
-						if (change != 0){
-							var sowy = actualOptions.get(optionName);
-							var allOptions:Array<String> = sowy.data.get("options");
-							var idx = CoolUtil.updateIndex(allOptions.indexOf(sowy.value), change, allOptions.length);
-
-							changeDropdown(optionName, allOptions[idx]);
-
-							doUpdate = true;
-						}
-
-						if (FlxG.keys.justPressed.R){
-							@:privateAccess
-							changeDropdown(optionName, ClientPrefs.defaultOptionDefinitions.get(optionName).value);
-							doUpdate = true;
-						}
-
-						if (FlxG.keys.justPressed.ENTER) {
-							var options = curWidget.optionData.data.get("options");
-							var dV = curWidget.optionData.value;
-							dropdown.open(curWidget);
-							dropdown.changeSelected(options.indexOf(dV), true);
-						}
-						}
-				}
+			if (curWidget != null && !curWidget.locked) {
+				if (updateWidgetInput())
+					doUpdate = true;
 			}
 
 			if (FlxG.mouse.released)
 				scrubbingBar = null;
 			else if (FlxG.mouse.justPressed)
 			{
-				for (idx => button in tabButtons)
-				{
-					if (FlxG.mouse.overlaps(button, mainCamera))
-					{
+				doUpdate = true;
+				for (idx => button in tabButtons) {
+					if (FlxG.mouse.overlaps(button, mainCamera)) {
 						changeTab(idx, true);
+						doUpdate = true;
 						pHov = null;
 						break;
 					}
 				}
 			}
 
-			#if (flixel >= "5.9.0")
-			var movedMouse = Math.abs(FlxG.mouse.wheel) + Math.abs(FlxG.mouse.viewX - prevScreenX) + Math.abs(FlxG.mouse.viewY - prevScreenY) != 0;
-			prevScreenX = FlxG.mouse.viewX;
-			prevScreenY = FlxG.mouse.viewY;
-			#else
-			var movedMouse = Math.abs(FlxG.mouse.wheel) + Math.abs(FlxG.mouse.screenX - prevScreenX) + Math.abs(FlxG.mouse.screenY - prevScreenY) != 0;
-			prevScreenX = FlxG.mouse.screenX;
-			prevScreenY = FlxG.mouse.screenY;
-			#end
-			if (movedMouse) FlxG.mouse.visible = true;
+			var movedMouse = FlxG.mouse.wheel != 0 || getMouseMoved();
+			if (movedMouse) {
+				doUpdate = true;
+				FlxG.mouse.visible = true;
+			}
 
-			if (pHov == null || doUpdate || movedMouse || FlxG.mouse.justPressed)
+			if (doUpdate)
 			{
 				for (object => widget in currentWidgets)
 				{
@@ -1488,26 +1526,26 @@ class OptionsSubstate extends MusicBeatSubstate
 				}
 			}
 
-			if (curWidget == null){
-				showOptionDesc(null);
-			}
-			else if (pHov != curWidget)
-			{
-				var hovering:OptionData = curWidget.optionData;
-				var optDesc:String = hovering.desc;
-
-				if (inPlayState){
-					var oN = hovering.data.get("optionName");
+			if (pHov != curWidget) {
+				if (curWidget == null) {
+					showOptionDesc(null);
+				}else {
+					var hovering:OptionData = curWidget.optionData;
+					var optDesc:String = hovering.desc;
 					
-					/*if(oN == 'customizeHUD' )
+					if (inPlayState){
+						var oN = hovering.data.get("optionName");
+						
+						/*if(oN == 'customizeHUD' )
 						optDesc += "\n(NOTE: This does not work because you're ingame!)";
-					else */if (requiresRestart.exists(oN))
-						optDesc += "\nWARNING: You will need to restart the song if you change this!";
-					else if (recommendsRestart.exists(oN))
-						optDesc += "\nNOTE: This won't have any effect unless you restart the song!";
+						else */if (requiresRestart.exists(oN))
+							optDesc += "\nWARNING: You will need to restart the song if you change this!";
+						else if (recommendsRestart.exists(oN))
+							optDesc += "\nNOTE: This won't have any effect unless you restart the song!";
+					}
+					
+					showOptionDesc(StringTools.ltrim(optDesc));
 				}
-				
-				showOptionDesc(StringTools.ltrim(optDesc));
 			}
 
 			////
@@ -1544,6 +1582,8 @@ class OptionsSubstate extends MusicBeatSubstate
 				}
 			}
 		} 
+
+		updatePrevMouseScreenPos();
 	}
 	
 	public dynamic function goBack(changed:Array<String>) {
@@ -1878,6 +1918,16 @@ class WidgetSprite extends FlxSprite
 	public var track:FlxObject;
 	public var trackOffset:FlxPoint = FlxPoint.get();
 
+	public inline function setTracking(object:FlxObject, x:Float = 0, y:Float = 0) {
+		track = object;
+		trackOffset.set(x, y);
+	}
+
+	public function updateTracking() {
+		if (track != null)
+			setPosition(track.x + trackOffset.x, track.y + ((track.height - height) / 2) + trackOffset.y);
+	}
+
 	override function destroy()
 	{
 		trackOffset.put();
@@ -1886,10 +1936,8 @@ class WidgetSprite extends FlxSprite
 
 	override function update(elapsed:Float)
 	{
-		if (track != null)
-			setPosition(track.x + trackOffset.x, track.y + ((track.height - height) / 2) + trackOffset.y);
-
-		return super.update(elapsed);
+		updateTracking();
+		super.update(elapsed);
 	}
 }
 

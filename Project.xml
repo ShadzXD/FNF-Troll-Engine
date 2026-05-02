@@ -62,7 +62,6 @@
 	<!-- <define name="USING_NEW_MOONCHART" /> -->
 
 	<!--Remove if you dont want the engine to autoupdate -->
-	<!--define name="DO_AUTO_UPDATE" if="native desktop OFFICIAL_BUILD" unless="debug" /-->
 
 	<!--Remove if you don't want to allow deprecated engine features.-->
 	<!--Anything marked as deprecated should be removed after a major or minor version but not after patches. (major.minor.patch)-->
@@ -79,6 +78,12 @@
 
 	<!-- Custom shader error printing :D -->
 	<haxedef name="traceShaderLineNumbers"/>
+
+	<!-- Allows the engine to checks for updates when the program starts -->
+	<define name="CHECK_FOR_UPDATES" if="native desktop OFFICIAL_BUILD" unless="debug" />
+
+	<!-- Allows the engine to download and install updates (asking the user first ofc) -->
+	<define name="UPDATES_ALLOWED" if="CHECK_FOR_UPDATES windows" unless="debug" />
 
 	<section if="OFFICIAL_BUILD">
 		<echo value="OFFICIAL_BUILD" />
@@ -164,6 +169,8 @@
 		<haxedef name="HXCPP_CATCH_SEGV" />
 		<haxedef name="openfl-enable-handle-error" />
 	</section>
+
+	<haxedef name="HXCPP_CPP17" if="cpp" />
 		
 	<haxedef name="NO_PRECOMPILED_HEADERS" if="linux" />
 

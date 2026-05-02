@@ -126,12 +126,7 @@ jobs:
           path: 'export/${{ matrix.build }}/linux/bin'
   
   buildMac:
-    runs-on: macos-${{ matrix.version }}
-    strategy:
-      fail-fast: false
-      matrix:
-        build: [release]
-        version: [15]
+    runs-on: macos-latest
     timeout-minutes: 45
     
     steps:

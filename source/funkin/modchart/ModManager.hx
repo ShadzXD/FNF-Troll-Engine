@@ -562,21 +562,26 @@ class ModManager {
 	public var playerOOBIsCentered:Bool = true; // Player Out of Bounds is centered
 	public var vPadding:Float = 45;
 
-	public function getBaseX(direction:Int, player:Float, receptorAmount:Int = 4):Float
+	public function getBaseX(column:Int, player:Float, totalColumns:Int = 4):Float
 	{
 		if (playerOOBIsCentered && (player >= playerAmount || player < 0))
 			player = (playerAmount - 1) * 0.5; // replicating old behaviour for upcoming modcharts
-		
-		var spaceWidth = FlxG.width / playerAmount;
-		var spaceX = spaceWidth * (playerAmount-1-player);
+
+		return _getBaseX(playerAmount, player, column, totalColumns);
+	}
+
+	public static function _getBaseX(totalPlayers:Int, player:Float, column:Int, totalColumns:Int = 4):Float
+	{	
+		var spaceWidth = FlxG.width / totalPlayers;
+		var spaceX = spaceWidth * (totalPlayers-1-player);
 
 		// how much the note gap should scale by
 		// pushes notes closer together on higher keycounts to make them look less ugly
 		// does not go over 1 to prevent keycounts less than 4 from getting an increased gap, which they dont need.
-		var noteGapMult = Math.min(1, 1 - (1 / 30) * (receptorAmount - 4));
+		var noteGapMult = Math.min(1, 1 - (1 / 30) * (totalColumns - 4));
 
-		var baseX:Float = spaceX + (spaceWidth - Note.swagWidth * (receptorAmount * noteGapMult)) * 0.5 * noteGapMult;
-		var x:Float = baseX + Note.swagWidth * (direction * noteGapMult);
+		var baseX:Float = spaceX + (spaceWidth - Note.swagWidth * (totalColumns * noteGapMult)) * 0.5 * noteGapMult;
+		var x:Float = baseX + Note.swagWidth * (column * noteGapMult);
 
 		return x;
 	}

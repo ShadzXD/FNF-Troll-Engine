@@ -171,8 +171,10 @@ class Main extends Sprite
 		}else 
 			scaleWindow(scaleModifier);
 
-		centerWindow();
-
+		#if windows
+		centerWindow(); // if you have multiple monitors on linux it just goes inbetween the monitors, very annoying
+		#end
+		
 		////		
 		StartupState.nextState = nextState;
 

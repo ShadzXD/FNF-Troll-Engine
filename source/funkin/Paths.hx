@@ -83,6 +83,7 @@ class Paths
 		'assets/images/Garlic-Bread-PNG-Images.$IMAGE_EXT'
 	];
 	public static var graphicDumpExclusions:Array<FlxGraphic> = [];
+	public static var soundDumpExclusions:Array<Sound> = [];
 
 	public static function excludeAsset(key:String)
 	{
@@ -151,7 +152,7 @@ class Paths
 		// clear anything not in the tracked assets list
 		@:privateAccess
 		for (key => obj in FlxG.bitmap._cache) {
-			if (obj != null && !currentTrackedAssets.exists(key) && !graphicDumpExclusions.contains(obj)) {
+			if (obj != null && !currentTrackedAssets.exists(key) && !graphicDumpExclusions.contains(obj) && !dumpExclusions.contains(key)) {
 				// trace('cleared $key');
 				destroyGraphic(obj);
 			}
@@ -159,7 +160,7 @@ class Paths
 
 		// clear all sounds that are cached
 		for (key => obj in currentTrackedSounds) {
-			if (obj != null && !localTrackedAssets.contains(key) && !dumpExclusions.contains(key)) {
+			if (obj != null && !localTrackedAssets.contains(key) && !soundDumpExclusions.contains(obj) && !dumpExclusions.contains(key)) {
 				Assets.cache.removeSound(key);
 				currentTrackedSounds.remove(key);
 			}

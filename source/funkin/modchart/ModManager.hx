@@ -15,10 +15,26 @@ using StringTools;
 // NEW: Now also has some features of mirin (aliases, nodes)
 
 /**
- * So, what is a Node?
- * A Node can be used to extend or otherwise modify modifiers
- * (for example you can have a screen bounce aux mod + node w/ that aux mod as an input, and then change transformX)
- */
+	A Node can be used to extend or otherwise modify modifiers  
+	Node functions only get called if one of its input mods are active.  
+
+	For example, you can have a screen bounce aux mod + a node w/ that aux mod as an input, and then change transformX 
+	```
+	function onModifierRegisterPost() {
+		modManager.registerAux("screen_bounce");
+		modManager.registerNode({
+			in_mods: ["screen_bounce", "transformX"], 
+			out_mods: ["transformX"],
+			nodeFunc: function(inputs:Array<Float>, player:Int) {
+				var bounceVal = inputs[0];
+				var x = inputs[1];
+				x += 0.0; // <-- do something cool to the x value here ^.^
+				return [x];
+			}
+		});
+	}
+	```
+**/
 typedef Node = {
 	/**
 		Modifiers that get input into this node
@@ -222,8 +238,7 @@ class ModManager {
 		aliases.set(alias, mod);
 
 	public function registerNode(node:Node){
-		var inputs = node.in_mods;
-		for(inp in inputs){
+		for (inp in node.in_mods){
 			if(!nodes.exists(inp))
 				nodes.set(inp, []);
 			
@@ -232,12 +247,10 @@ class ModManager {
 		nodeArray.push(node);
 	}
 
-	public function quickNode(inputs:Array<String>, nodeFunc:(Array<Float>, Int) -> Array <Float>, ?outputs:Array<String>){
-		if (outputs == null)
-			outputs=[];
+	public function quickNode(inputMods:Array<String>, nodeFunc:(values:Array<Float>, player:Int) -> Array<Float>, ?outputMods:Array<String>){
 		registerNode({
-			in_mods: inputs,
-			out_mods: outputs,
+			in_mods: inputMods,
+			out_mods: outputMods ?? [],
 			nodeFunc: nodeFunc
 		});
 	}

@@ -230,6 +230,9 @@ class Main extends Sprite
 	public static inline function printCallStack()
 		print(CrashHandler.callstackToString(haxe.CallStack.callStack()));
 
+	public static inline function printExceptionStack()
+		print(CrashHandler.callstackToString(haxe.CallStack.exceptionStack()));
+
 	public static inline function showCallStack(...extraInfo:Any) {
 		var css = CrashHandler.callstackToString(haxe.CallStack.callStack());
 		css += "\n" + extraInfo.toString();

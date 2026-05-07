@@ -109,12 +109,11 @@ class FreeplayState extends MusicBeatState
 			if (metadata.defaultCategory != null && metadata.defaultCategory.length > 0){
 				var dir = Paths.mods(contentId + "/songs");
 
-				Paths.iterateDirectory(dir, function(file:String) {
+				for (file in Paths.readDirectory(dir)) {
 					if (FileSystem.isDirectory(haxe.io.Path.join([dir, file]))) {
 						sowy(file);
 					}
-					
-				});
+				}
 
 			}
 		}

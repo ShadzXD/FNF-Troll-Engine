@@ -105,7 +105,15 @@ class ComboPositionSubstate extends MusicBeatSubstate
 			var totalPlayers:Int = ClientPrefs.centerNotefield ? 1 : 2;
 			
 			var swagOffset = Note.halfWidth + 45;
-			var y:Float = (ClientPrefs.downScroll) ? (FlxG.height - swagOffset) : swagOffset;
+			var top = swagOffset;
+			var bot = (FlxG.height - swagOffset);
+			var y:Float;
+			
+			#if FUNNY_ALLOWED
+			if (ClientPrefs.middleScroll)
+				y = (top + bot) * 0.5;
+			else #end
+				y = (ClientPrefs.downScroll ? bot : top);
 
 			for (player in 0...totalPlayers) {
 				var keyCount = 4;
@@ -122,7 +130,7 @@ class ComboPositionSubstate extends MusicBeatSubstate
 		}
 
 		////
-		timing = new FlxText(0, 0, 0, "0 ms");
+		timing = new FlxText(0, 0, 0, "0ms");
 		timing.setFormat(Paths.font("vcr.ttf"), 28, 0xFFFFFFFF, CENTER, FlxTextBorderStyle.OUTLINE, 0xFF000000);
 		timing.color = judgeColor;
 		timing.scrollFactor.set();
@@ -135,17 +143,23 @@ class ComboPositionSubstate extends MusicBeatSubstate
 		var textGroup = new FlxSpriteGroup();
 		textGroup.cameras = cameras;
 
+		final alignment:FlxTextAlign = {
+			// If this substate is opened while on PlayState then the offsets are shown on the opposite side to not cover the real judge counters :P
+			final beingShownOutside = (PlayState.instance != null) && (ClientPrefs.judgeCounter != "Off");
+			(ClientPrefs.hudPosition == "Left") != (!beingShownOutside) ? RIGHT : LEFT;
+		};
+
 		function makeText(i, text:String = ' '){
 			var text:FlxText = new FlxText(
 				10, 
 				(i * 30) + 24 * Math.floor(i / 2), 
-				0, 
+				FlxG.width - 10 * 2, 
 				text, 
 				24
 			);
 			text.scrollFactor.set();
-			text.setFormat(Paths.font("vcr.ttf"), 24, 0xFFFFFFFF, LEFT, FlxTextBorderStyle.OUTLINE, 0xFF000000);
-			text.borderSize = 2;
+			text.setFormat(Paths.font("vcr.ttf"), 24, 0xFFFFFFFF, alignment);
+			text.setBorderStyle(FlxTextBorderStyle.OUTLINE, 0xFF000000, 2);
 			text.cameras = cameras;
 			
 			textGroup.add(text);

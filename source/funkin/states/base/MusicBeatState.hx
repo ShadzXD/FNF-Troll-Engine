@@ -215,12 +215,17 @@ class MusicBeatState extends TransitionableState
 					beatHit();
 			}
 
+			var prevSection:Int = curSection;
+
 			if (PlayState.SONG != null) {
 				if (oldStep < curStep)
 					updateSection();
 				else
 					rollbackSection();
 			}
+
+			if (curSection > prevSection)
+				sectionHit();
 
 			tryResync();
 		}
@@ -263,8 +268,6 @@ class MusicBeatState extends TransitionableState
 		var sectionData = PlayState.SONG.notes[curSection];
 		if (sectionData?.changeBPM)
 			Conductor.changeBPM(sectionData.bpm);
-
-		sectionHit();
 	}
 
 	function resyncTracks() {

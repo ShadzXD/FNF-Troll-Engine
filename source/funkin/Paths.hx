@@ -467,9 +467,9 @@ class Paths
 		Iterates through a directory and calls a function with the name of each file contained within it
 		Returns true if the directory was a valid folder and false if not.
 	**/
+	@:deprecated('iterateDirectory is deprecated. Use readDirectory instead!')
 	inline static public function iterateDirectory(path:String, func:haxe.Constraints.Function):Bool
 	{
-		// TODO: replace this function with an iterator
 		#if FILESYSTEM_ALLOWED
 		if (FileSystem.exists(path) && FileSystem.isDirectory(path)) {
 			for (name in FileSystem.readDirectory(path))
@@ -483,6 +483,30 @@ class Paths
 		#else
 		return false;
 		#end
+	}
+
+	public static inline function _readDirectory(path:String):Null<Array<String>> {
+		return if (FileSystem.exists(path) && FileSystem.isDirectory(path))
+			FileSystem.readDirectory(path);
+		else
+			null;
+	}
+
+	public static inline function readDirectory(path:String):Array<String> {
+		var ret:Array<String>;
+
+		#if FILESYSTEM_ALLOWED
+		ret = Paths._readDirectory(path);
+		if (ret != null) return ret; 
+		#end
+		
+		#if READ_EMBEDDED_ASSETS
+		ret = AltFilePaths._readDirectory(path);
+		if (ret != null) return ret; 
+		#end
+		
+		ret = [];
+		return ret;
 	}
 
 	inline static public function fileExists(key:String, ?type:AssetType, ?library:String):Bool
@@ -953,6 +977,13 @@ private class AltFilePaths {
 			Func(i);
 		
 		return true;
+	}
+
+	public static inline function _readDirectory(path:String):Null<Array<String>> {
+		if (dirMap.exists(dir))
+			dirMap.get(dir);
+		else	
+			null;
 	}
 	#end
 }

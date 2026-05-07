@@ -818,7 +818,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		];
 
 		for (folderPath in Paths.getFolders('notetypes')) {
-			Paths.iterateDirectory(folderPath, function(fileName:String) {
+			for (fileName in Paths.readDirectory(folderPath)) {
 				var fileExtension:Null<String> = null;
 
 				for (ext in extensions) {
@@ -829,14 +829,14 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 				}
 
 				if (fileExtension == null)
-					return;
+					continue;
 
 				var name:String = fileName.substr(0, fileName.length - fileExtension.length); // get file name
 				if (noteTypeList.contains(name)) // if it already is on the list
-					return;
+					continue;
 
 				noteTypeList.push(name);
-			});
+			}
 		}
 		#end
 	}
@@ -1847,7 +1847,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			_song.metadata.artist = artistInputText.text;
 			_song.metadata.charter = charterInputText.text;
 			_song.metadata.modcharter = modcharterInputText.text;
-			_song.metadata.extraInfo = extraInfoInputText.text.split(',');
+			_song.metadata.extraInfo = extraInfoInputText.text.length == 0 ? [] : extraInfoInputText.text.split(',');
 
 			var data:String = Json.stringify(_song.metadata, "\t");
 			CoolUtil.showSaveDialog(data, "Save Metadata", getSongPath("metadata.json"), ["JSON file", "*.json"]);
@@ -2409,7 +2409,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 				case 'metadata_modcharter':
 					_song.metadata.modcharter = sender.text;
 				case 'metadata_extraInfo':
-					_song.metadata.extraInfo = sender.text.split(',');
+					_song.metadata.extraInfo = sender.text.length == 0 ? [] : sender.text.split(',');
 				
 				case 'tracks_inst':
 					_song.tracks.inst = sender.text.split(',');
@@ -3163,6 +3163,10 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		ss.onSelectChart = function(song:BaseSong, chartId:String) {
 			Song.loadSong(song, chartId);
 			_song = PlayState.SONG;
+			if (this.songId == song.songId) {
+				_session ??= makeSession();
+				_session.songPosition = Conductor.songPosition;
+			}
 			ss.close();
 			onChartLoaded();
 		}

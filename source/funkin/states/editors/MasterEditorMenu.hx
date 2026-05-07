@@ -95,7 +95,7 @@ class MasterEditorMenu extends MusicBeatState
 		directoryTxt.scrollFactor.set();
 		add(directoryTxt);
 		
-		for (folder in Paths.getModDirectories())
+		for (folder in Paths.modsList)
 		{
 			directories.push(folder);
 		}

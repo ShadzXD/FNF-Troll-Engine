@@ -62,60 +62,10 @@ class FreeplayState extends MusicBeatState
 
 	public static function getFreeplaySongs():Array<BaseSong> {
 		var list:Array<BaseSong> = [];
-		for (contentId => metadata in Paths.getContentMetadata())
-		{
-			var songIdMap:Map<String, Bool> = [];
-
-			inline function sowy(songId:String) {
-				// weird old tgt shit
-				#if ALLOW_DEPRECATION
-				var splitted:Array<String> = songId.split(":");
-				if (splitted.length > 1)
-					songId = splitted[0];
-				#end
-				
-				if (!songIdMap.exists(songId)) {
-					songIdMap.set(songId, true);
-					list.push(new Song(songId, contentId));
-				}
-			}
-
-			//// level songs
-			for (level in StoryModeState.scanContentLevels(contentId)) {
-				if (!level.isUnlocked())
-					continue;
-				
-				for (song in level.getFreeplaySongs()) {
-					songIdMap.set(song.songId, true);
-					list.push(song);
-				}
-			}
-
-			// metadata file freeplay songs
-			if (metadata.freeplaySongs != null) {
-				for (songId in metadata.freeplaySongs)
-					sowy(songId);
-			}
-
-			// freeplaySonglist.txt
-			var rawList:Null<String> = Paths.getContent(Paths._modPath('data/freeplaySonglist.txt', contentId));
-			if (rawList != null) {
-				for (songId in CoolUtil.listFromString(rawList))
-					sowy(songId);
-			}
-			
-			// default category shit
-			// should prob just make a autoAddToFreeplay bool or sum shit idk lol
-			if (metadata.defaultCategory != null && metadata.defaultCategory.length > 0){
-				var dir = Paths.mods(contentId + "/songs");
-
-				for (file in Paths.readDirectory(dir)) {
-					if (FileSystem.isDirectory(haxe.io.Path.join([dir, file]))) {
-						sowy(file);
-					}
-				}
-
-			}
+		for (contentId in Paths.modsList) {
+			var folder = Paths.assetFolders.get(contentId);
+			for (song in folder.getFreeplaySongs())
+				list.push(song);
 		}
 
 		#if USING_MOONCHART

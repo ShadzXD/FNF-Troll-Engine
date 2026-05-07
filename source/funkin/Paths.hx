@@ -1,8 +1,11 @@
 package funkin;
 
+import haxe.CallStack;
 import haxe.io.Bytes;
 import openfl.utils.ByteArray;
 import haxe.ds.StringMap;
+import funkin.data.content.AssetsFolder;
+import funkin.data.content.ContentFolder;
 import funkin.data.LocalizationMap;
 import flixel.addons.display.FlxRuntimeShader;
 import flixel.graphics.frames.FlxAtlasFrames;
@@ -96,10 +99,7 @@ class Paths
 		AltFilePaths.initPaths();
 		#end
 
-		#if MODS_ALLOWED
 		Paths.pushGlobalContent();
-		Paths.getModDirectories();
-		#end
 	}
 
 	/// haya I love you for the base cache dump I took to the max
@@ -172,25 +172,33 @@ class Paths
 
 	public static function getPath(key:String):Null<String>
 	{
-		var path:String;
+		var path:Null<String> = null;
 
-		#if MODS_ALLOWED
-		path = Paths.modFolders(key);
-		if (Paths.exists(path)) return path;
-		#end
+		inline function check(mod:String) {
+			path = modPath(key, mod);
+		}
 
-		path = Paths.getPreloadPath(key);
-		return Paths.exists(path) ? path : null;
+		if (Paths.currentModDirectory.length > 0) {
+			check(Paths.currentModDirectory);
+			if (path != null) return path;
+		}
+
+		for (mod in dependencies) {
+			check(mod);
+			if (path != null) return path;
+		}
+
+		for (mod in globalContent) {
+			check(mod);
+			if (path != null) return path;
+		}
+
+		return null;
 	}
 
 	@:deprecated("_getPath is deprecated, use getPath instead.")
 	inline public static function _getPath(key:String):Null<String>
 		return getPath(key);
-
-	inline public static function getPreloadPath(file:String = '')
-	{
-		return 'assets/$file';
-	}
 
 	/*
 	inline static public function txt(key:String):String
@@ -649,7 +657,7 @@ class Paths
 	}
 
 	public static inline function getFolderPath(folder:String = ""):String
-		return (folder == "") ? getPreloadPath() : mods(folder) + "/";
+		return assetFolders.get(folder).path;
 
 	////	
 	public static var currentModDirectory(default, set):String = '';
@@ -657,16 +665,11 @@ class Paths
 		if (currentModDirectory == v)
 			return currentModDirectory;
 
-		if (!contentMetadata.exists(v))
-			return currentModDirectory = v;
-
-		if (!contentDirectories.exists(v))return currentModDirectory = '';
+		var cunt = assetFolders.get(v);
+		if (cunt == null)
+			return currentModDirectory = '';
 		
-		if (contentMetadata.get(v).dependencies != null)
-			dependencies = contentMetadata.get(v).dependencies;
-		else
-			dependencies = [];
-
+		Paths.dependencies = cunt.dependencies;
 		//trace('set to $v with ${dependencies.length} dependencies');
 
 		return currentModDirectory = v;
@@ -679,8 +682,7 @@ class Paths
 	public static var postLoadContent:Array<String> = [];
 
 	public static var modsList:Array<String> = [];
-	public static var contentDirectories:Map<String, String> = [];
-	public static var contentMetadata:Map<String, ContentMetadata> = [];
+	public static var assetFolders:Map<String, AssetsFolder> = [];
 
 	#if MODS_ALLOWED
 	public static final contentFolderName:String = 'content';
@@ -688,17 +690,14 @@ class Paths
 	inline static public function mods(key:String = '')
 		return '$contentFolderName/$key';
 
-	inline static public function getGlobalContent(){
-		return globalContent;
-	}
-
-	static public function pushGlobalContent(){
-		globalContent = [];
-
-		for (mod => json in getContentMetadata())
-		{
-			if (Reflect.field(json, "runsGlobally") == true) 
-				globalContent.push(mod);
+	public static function pushGlobalContent(reloadList:Bool = true) {
+		if (reloadList)
+			Paths.updateContentList();
+		
+		Paths.globalContent = [];
+		for (id in modsList) {
+			if (Paths.assetFolders.get(id).runsGlobally) 
+				Paths.globalContent.push(id);
 		}
 
 		trace('global content: $globalContent');
@@ -707,146 +706,87 @@ class Paths
 	}
 
 	static public function _modPath(key:String, mod:String):String {
-		return contentDirectories.get(mod) + '/' + key;
+		return getFolderPath(mod) + '/' + key;
 	}
 
 	static public function modPath(key:String, mod:String):Null<String> {
-		if (contentDirectories.exists(mod)) {
+		if (assetFolders.exists(mod)) {
 			var path:String = _modPath(key, mod);
 			if (exists(path)) return path;
 		}
 		return null;
 	}
-	
-	static public function modFolders(key:String, ignoreGlobal:Bool = false)
-	{
-		var path:Null<String> = null;
-
-		inline function check(mod:String) {
-			path = modPath(key, mod);
-		}
-
-		if (Paths.currentModDirectory != null && Paths.currentModDirectory.length > 0) {
-			check(Paths.currentModDirectory);
-			if (path != null) return path;
-		}
-
-		for (mod in dependencies) {
-			check(mod);
-			if (path != null) return path;
-		}
-
-		if (ignoreGlobal != true) {
-			for (mod in getGlobalContent()) {
-				check(mod);
-				if (path != null) return path;
-			}
-		}
-
-		return mods(key);
-	}
+	#end
 
 	// I might end up making this just return an array of loaded mods and require you to press a refresh button to reload content lol
 	// mainly for optimization reasons, so its not going through the entire content folder every single time
-	public static function updateContentLists()
+	public static function updateContentList()
 	{
-		var list:Array<String> = modsList = [];
-		contentMetadata.clear();
+		assetFolders.clear();
+		var loadList:Array<AssetsFolder> = [];
 
-		contentDirectories.clear();
-		contentDirectories.set('', contentFolderName);
-
-		iterateDirectory(contentFolderName, (folderName) -> {
-			var folderPath = '$contentFolderName/$folderName';
-
-			if (isDirectory(folderPath) && !list.contains(folderName))
-			{
-				list.push(folderName);
-				contentDirectories.set(folderName, folderPath);
-
-				var rawJson:Null<String> = Paths.getContent('$folderPath/metadata.json');
-				if (rawJson != null && rawJson.length > 0) {
-					var data:Dynamic = Json.parse(rawJson);
-					#if ALLOW_DEPRECATION
-					contentMetadata.set(folderName, updateContentMetadataStructure(data));
-					#else
-					contentMetadata.set(folderName, data);
-					#end
-					return;
-				}else {
-					contentMetadata.set(folderName, {});
-				}
-			}
-		});
-	}
-	
-	inline static function updateContentMetadataStructure(data:Dynamic):ContentMetadata
-	{
-		inline function getFreeplaySongs():Array<String> {
-			var list:Array<String> = [];
-			
-			var fs:Dynamic = Reflect.field(data, "freeplaySongs");
-			if (fs is Array) {
-				var fs:Array<Dynamic> = cast fs;
-				
-				if (fs.length == 0) {
-					// none
-				}else if (fs[0] is String) {
-					for (s in fs) list.push(Std.string(s));
-				}
-				else if (Reflect.isObject(fs[0])) {
-					for (s in fs) {
-						var v = Reflect.field(s, "name");
-						if (v != null) list.push(Std.string(v));
-					}
-				}
-			}
-			
-			return list;
+		inline function push(cunt:AssetsFolder) {
+			assetFolders.set(cunt.id, cunt);
+			loadList.push(cunt);
 		}
 
-		if (Reflect.hasField(data, "freeplaySongs"))
-			Reflect.setField(data, "freeplaySongs", getFreeplaySongs());
-		else
-			Reflect.setField(data, "freeplaySongs", []);
+		//// "assets" folders
+		var cunt = new ContentFolder('assets', 'assets');
+		cunt.runsGlobally = true;
+		push(cunt);
 
-		return data;
+		//// moonchart folder
+		#if (USING_MOONCHART && false)
+		push(new funkin.data.MoonchartFolder('moonchart', '$contentFolderName/moonchart'));
+		#end
+
+		//// modded folders
+		#if MODS_ALLOWED
+		for (folderName in readDirectory(contentFolderName)) {
+			var folderPath = '$contentFolderName/$folderName';
+
+			if (isDirectory(folderPath) && !assetFolders.exists(folderName)) {
+				push(new ContentFolder(folderName, folderPath));
+			}
+		};
+		#end
+
+		modsList.resize(0);
+		for (i in 0...loadList.length) {
+			var cunt = loadList[loadList.length-1-i];
+			try {
+				cunt.load();
+				modsList.push(cunt.id);
+			}catch(e) {
+				Main.printExceptionStack();
+				print('Error loading ${cunt.id}: $e');
+			}
+		}
 	}
 
-	static public function getModDirectories():Array<String> 
-	{
-		updateContentLists();
-		return modsList;
-	}
+	inline static public function getFolders(dir:String) {
+		var foldersToCheck:Array<String> = [];
 
-	static public function getContentMetadata():Map<String, ContentMetadata>
-	{
-		updateContentLists();
-		return contentMetadata;
-	}
-	#end
+		if (currentModDirectory.length > 0)
+			foldersToCheck.push(currentModDirectory);
 
-	inline static public function getFolders(dir:String, ?modsOnly:Bool = false){
-		#if !MODS_ALLOWED
-		return [Paths.getPreloadPath('$dir/')];
+		for (mod in dependencies)
+			foldersToCheck.insert(0, mod);
 		
-		#else
-		var foldersToCheck:Array<String> = [
-			Paths.mods(Paths.currentModDirectory + '/$dir/'),
-			Paths.mods('$dir/'),
-		];
-
-		if(!modsOnly)
-			foldersToCheck.push(Paths.getPreloadPath('$dir/'));
+		for (mod in preLoadContent)
+			foldersToCheck.push(mod);
 		
-		for(mod in dependencies)foldersToCheck.insert(0, Paths.mods('$mod/$dir/'));
-		for(mod in preLoadContent)foldersToCheck.push(Paths.mods('$mod/$dir/'));
-		for(mod in getGlobalContent())foldersToCheck.insert(0, Paths.mods('$mod/$dir/'));
-		for(mod in postLoadContent)foldersToCheck.insert(0, Paths.mods('$mod/$dir/'));
+		for (mod in globalContent)
+			foldersToCheck.insert(0, mod);
+		
+		for (mod in postLoadContent)
+			foldersToCheck.insert(0, mod);
 
+		////
+		for (i => mod in foldersToCheck)
+			foldersToCheck[i] = Paths._modPath(dir, mod) + '/';
 
 		return foldersToCheck;
-		#end
 	}
 	
 	public static function loadRandomMod()
@@ -986,52 +926,4 @@ private class AltFilePaths {
 			null;
 	}
 	#end
-}
-
-typedef FreeplayCategoryMetadata = {
-	/**
-		Displayed Name of the category
-		This is used to show the category in the freeplay list
-	**/
-	var name:String;
-
-	/**
-		ID of the category
-		This gets used when adding songs to the category
-		(Defaults are main, side and remix)
-	**/
-	var id:String;
-}
-
-typedef ContentMetadata = {
-	/**
-		Content that will load before this content.
-	**/
-	@:optional var dependencies:Array<String>;
-
-	/**
-		Stages that can appear in the title menu
-	**/
-	@:optional var titleStages:Array<String>;
-
-	/**
-		Songs to be placed into the freeplay menu
-	**/
-	@:optional var freeplaySongs:Array<String>;
-
-	/**
-		Categories to be placed into the freeplay menu
-	**/
-	@:optional var freeplayCategories:Array<FreeplayCategoryMetadata>;
-	
-	/**
-		If this is specified, then songs don't have to be added to freeplaySongs to have them appear
-		As anything in the songs folder will appear in this category instead
-	**/
-	@:optional var defaultCategory:String;
-	/**
-		This mod will always run, regardless of whether it's currently being played or not.
-		(Custom HUDs, etc, will find this useful, as you can have stuff run across every song without adding to the global folder)
-	**/
-	@:optional var runsGlobally:Bool;
 }

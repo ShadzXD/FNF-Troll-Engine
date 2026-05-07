@@ -3,7 +3,7 @@ package funkin.data.content;
 import haxe.io.Path;
 import funkin.Paths;
 
-class ContentFolder extends AssetsFolder {
+class ContentFolder extends Pack {
 	public var jsonData:ContentMetadata = {};
 
 	override function load() {
@@ -114,7 +114,7 @@ class ContentFolder extends AssetsFolder {
 			var dir = '$path/songs';
 
 			for (file in Paths.readDirectory(dir)) {
-				if (sys.FileSystem.isDirectory(haxe.io.Path.join([dir, file]))) {
+				if (sys.FileSystem.isDirectory('$dir/$file')) {
 					sowy(file);
 				}
 			}

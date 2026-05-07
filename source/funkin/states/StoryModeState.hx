@@ -217,8 +217,8 @@ class StoryModeState extends MusicBeatState {
 	{
 		var levels:Array<Level> = [];
 
-		for (contentId in Paths.modsList) {
-			var folder = Paths.assetFolders.get(contentId);
+		for (contentId in Paths.packList) {
+			var folder = Paths.packMap.get(contentId);
 			for (level in folder.getStoryModeLevels())
 				levels.push(level);
 		}

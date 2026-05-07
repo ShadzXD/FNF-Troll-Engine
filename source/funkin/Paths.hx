@@ -1,11 +1,10 @@
 package funkin;
 
-import haxe.CallStack;
 import haxe.io.Bytes;
 import openfl.utils.ByteArray;
 import haxe.ds.StringMap;
-import funkin.data.content.AssetsFolder;
-import funkin.data.content.ContentFolder;
+import funkin.data.content.Pack;
+import funkin.data.content.PackManager;
 import funkin.data.LocalizationMap;
 import flixel.addons.display.FlxRuntimeShader;
 import flixel.graphics.frames.FlxAtlasFrames;
@@ -99,7 +98,8 @@ class Paths
 		AltFilePaths.initPaths();
 		#end
 
-		Paths.pushGlobalContent();
+		PackManager.reloadPackList();
+		PackManager.refreshLoadList();
 	}
 
 	/// haya I love you for the base cache dump I took to the max
@@ -172,33 +172,22 @@ class Paths
 
 	public static function getPath(key:String):Null<String>
 	{
-		var path:Null<String> = null;
-
-		inline function check(mod:String) {
-			path = modPath(key, mod);
-		}
-
-		if (Paths.currentModDirectory.length > 0) {
-			check(Paths.currentModDirectory);
-			if (path != null) return path;
-		}
-
-		for (mod in dependencies) {
-			check(mod);
-			if (path != null) return path;
-		}
-
-		for (mod in globalContent) {
-			check(mod);
-			if (path != null) return path;
+		for (pack in PackManager.loadList) {
+			var path = '${pack.path}/$key';
+			if (exists(path))
+				return path;
 		}
 
 		return null;
 	}
 
-	@:deprecated("_getPath is deprecated, use getPath instead.")
-	inline public static function _getPath(key:String):Null<String>
-		return getPath(key);
+	public static inline function getFolderPath(packId:String):String
+		return PackManager.packMap.get(packId).path;
+
+	public static function getFolders(dir:String):Array<String>
+		return [for (pack in PackManager.loadList)
+			'${pack.path}/$dir/'
+		];
 
 	/*
 	inline static public function txt(key:String):String
@@ -656,138 +645,17 @@ class Paths
 		return (path == null) ? null : getJson(path);
 	}
 
-	public static inline function getFolderPath(folder:String = ""):String
-		return assetFolders.get(folder).path;
-
 	////	
-	public static var currentModDirectory(default, set):String = '';
-	static function set_currentModDirectory(v:String){
-		if (currentModDirectory == v)
-			return currentModDirectory;
+	public static var currentModDirectory(get, set):String;
+	public static var packList(get, never):Array<String>;
+	public static var packMap(get, never):Map<String, Pack>;
+	public static var contentFolderName(get, never):String;
 
-		var cunt = assetFolders.get(v);
-		if (cunt == null)
-			return currentModDirectory = '';
-		
-		Paths.dependencies = cunt.dependencies;
-		//trace('set to $v with ${dependencies.length} dependencies');
-
-		return currentModDirectory = v;
-	}
-
-	// TODO: Write all of this to be not shit and use just like a generic load order thing
-	public static var globalContent:Array<String> = [];
-	public static var dependencies:Array<String> = [];
-	public static var preLoadContent:Array<String> = [];
-	public static var postLoadContent:Array<String> = [];
-
-	public static var modsList:Array<String> = [];
-	public static var assetFolders:Map<String, AssetsFolder> = [];
-
-	#if MODS_ALLOWED
-	public static final contentFolderName:String = 'content';
-
-	inline static public function mods(key:String = '')
-		return '$contentFolderName/$key';
-
-	public static function pushGlobalContent(reloadList:Bool = true) {
-		if (reloadList)
-			Paths.updateContentList();
-		
-		Paths.globalContent = [];
-		for (id in modsList) {
-			if (Paths.assetFolders.get(id).runsGlobally) 
-				Paths.globalContent.push(id);
-		}
-
-		trace('global content: $globalContent');
-
-		return globalContent;
-	}
-
-	static public function _modPath(key:String, mod:String):String {
-		return getFolderPath(mod) + '/' + key;
-	}
-
-	static public function modPath(key:String, mod:String):Null<String> {
-		if (assetFolders.exists(mod)) {
-			var path:String = _modPath(key, mod);
-			if (exists(path)) return path;
-		}
-		return null;
-	}
-	#end
-
-	// I might end up making this just return an array of loaded mods and require you to press a refresh button to reload content lol
-	// mainly for optimization reasons, so its not going through the entire content folder every single time
-	public static function updateContentList()
-	{
-		assetFolders.clear();
-		var loadList:Array<AssetsFolder> = [];
-
-		inline function push(cunt:AssetsFolder) {
-			assetFolders.set(cunt.id, cunt);
-			loadList.push(cunt);
-		}
-
-		//// "assets" folders
-		var cunt = new ContentFolder('assets', 'assets');
-		cunt.runsGlobally = true;
-		push(cunt);
-
-		//// moonchart folder
-		#if (USING_MOONCHART && false)
-		push(new funkin.data.MoonchartFolder('moonchart', '$contentFolderName/moonchart'));
-		#end
-
-		//// modded folders
-		#if MODS_ALLOWED
-		for (folderName in readDirectory(contentFolderName)) {
-			var folderPath = '$contentFolderName/$folderName';
-
-			if (isDirectory(folderPath) && !assetFolders.exists(folderName)) {
-				push(new ContentFolder(folderName, folderPath));
-			}
-		};
-		#end
-
-		modsList.resize(0);
-		for (i in 0...loadList.length) {
-			var cunt = loadList[loadList.length-1-i];
-			try {
-				cunt.load();
-				modsList.push(cunt.id);
-			}catch(e) {
-				Main.printExceptionStack();
-				print('Error loading ${cunt.id}: $e');
-			}
-		}
-	}
-
-	inline static public function getFolders(dir:String) {
-		var foldersToCheck:Array<String> = [];
-
-		if (currentModDirectory.length > 0)
-			foldersToCheck.push(currentModDirectory);
-
-		for (mod in dependencies)
-			foldersToCheck.insert(0, mod);
-		
-		for (mod in preLoadContent)
-			foldersToCheck.push(mod);
-		
-		for (mod in globalContent)
-			foldersToCheck.insert(0, mod);
-		
-		for (mod in postLoadContent)
-			foldersToCheck.insert(0, mod);
-
-		////
-		for (i => mod in foldersToCheck)
-			foldersToCheck[i] = Paths._modPath(dir, mod) + '/';
-
-		return foldersToCheck;
-	}
+	static inline function get_currentModDirectory() return PackManager.currentPackId;
+	static inline function set_currentModDirectory(v:String) return PackManager.currentPackId = v;
+	static inline function get_packList() return PackManager.packList;
+	static inline function get_packMap() return PackManager.packMap;
+	static inline function get_contentFolderName() return PackManager.CONTENT_PATH;
 	
 	public static function loadRandomMod()
 	{

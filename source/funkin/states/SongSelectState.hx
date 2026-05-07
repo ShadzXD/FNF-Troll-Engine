@@ -33,8 +33,8 @@ class SongSelectState extends MusicBeatSubstate
 	{
 		var songList:Array<BaseSong> = [];
 
-		for (contentId in Paths.modsList){
-			var folder = Paths.assetFolders.get(contentId);
+		for (contentId in Paths.packList){
+			var folder = Paths.packMap.get(contentId);
 			for (song in folder.getSongs())
 				songList.push(song);
 		}

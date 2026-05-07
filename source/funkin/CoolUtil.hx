@@ -380,6 +380,22 @@ class CoolUtil {
 		#end
 	}
 
+	#if sys
+	/**
+		Returns the absolute path where `FlxSave` data gets saved.  
+	**/
+	public static function getFlxSavePath():String {
+		// Fuck FlxSave for not making their shit accessible
+		var meta = openfl.Lib.current.stage.application.meta;
+		var path = meta["company"];
+		if (path == null || path.length == 0)
+			path = "HaxeFlixel";
+		else @:privateAccess
+			path = flixel.util.FlxSave.validate(path);
+		return Path.normalize('${lime.system.System.applicationStorageDirectory}/../../../$path');	
+	}
+	#end
+
 	public static function showOpenMultipleDialog(title:String = "Open Files", ?defaultPath:String, ?filters:Array<String>, ?onSelect:(paths:Array<String>)->Void, ?onCancel:Void->Void):Void {
 		final filters = _filefilters(filters);
 		final defaultPath = getSystemPath(defaultPath);

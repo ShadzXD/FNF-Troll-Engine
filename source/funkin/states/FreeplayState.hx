@@ -62,8 +62,8 @@ class FreeplayState extends MusicBeatState
 
 	public static function getFreeplaySongs():Array<BaseSong> {
 		var list:Array<BaseSong> = [];
-		for (contentId in Paths.modsList) {
-			var folder = Paths.assetFolders.get(contentId);
+		for (contentId in Paths.packList) {
+			var folder = Paths.packMap.get(contentId);
 			for (song in folder.getFreeplaySongs())
 				list.push(song);
 		}

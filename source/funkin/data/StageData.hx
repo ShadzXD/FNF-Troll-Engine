@@ -125,8 +125,8 @@ class StageData {
 	{
 		var daList:Array<StageReference> = [];
 
-		for (cid in Paths.modsList) {
-			var cunt = Paths.assetFolders.get(cid);
+		for (cid in Paths.packList) {
+			var cunt = Paths.packMap.get(cid);
 			for (stageId in cunt.getTitleStages())
 				daList.push({id: stageId, folder: cid});
 		}

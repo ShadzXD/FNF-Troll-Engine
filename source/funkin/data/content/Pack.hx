@@ -6,7 +6,7 @@ typedef ModMenuCapabilities = {
 	var hasCredits:Bool;
 }
 
-class AssetsFolder {
+class Pack {
 	/** Internal ID used by the engine **/
 	public final id:String;
 

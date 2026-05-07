@@ -557,12 +557,6 @@ class PlayState extends MusicBeatState
 		PauseSubState.resetVariables();
 		GameOverSubstate.resetVariables();
 
-		#if MODS_ALLOWED
-		Paths.preLoadContent = [];
-		Paths.postLoadContent = [];
-		Paths.pushGlobalContent();
-		#end
-
 		OptionsSubstate.resetRestartRecomendations();
 		Paths.getAllStrings();
 		Paths.clearStoredMemory();

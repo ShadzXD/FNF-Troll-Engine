@@ -113,11 +113,6 @@ class PackManager {
 		cunt.runsGlobally = true;
 		list.push(cunt);
 
-		//// "moonchart" folder
-		#if (USING_MOONCHART && false)
-		list.push(new funkin.data.MoonchartFolder('moonchart', '$CONTENT_PATH/moonchart'));
-		#end
-
 		return list;
 	}
 
@@ -128,8 +123,14 @@ class PackManager {
 		for (folderName in Paths.readDirectory(CONTENT_PATH)) {
 			var folderPath = '$CONTENT_PATH/$folderName';
 
-			if (Paths.isDirectory(folderPath))
-				list.push(new ContentFolder(folderName, folderPath));
+			if (Paths.isDirectory(folderPath)) {
+				switch(folderName) {
+					#if USING_MOONCHART
+					case "moonchart": list.push(new MoonchartFolder(folderName, folderPath));
+					#end
+					default: list.push(new ContentFolder(folderName, folderPath));
+				}
+			}
 		};
 		#end
 

@@ -25,6 +25,7 @@ enum abstract SongSyncMode(String) to String {
 	var LEGACY = "Legacy";
 	var PSYCH_1_0 = "Psych 1.0";
 	var LAST_MIX = "Last Mix";
+	var NEVER2X = "Never2x";
 	var SYSTEM_TIME = "System Time";
 	
 	public static function fromString(str:String):SongSyncMode {
@@ -198,6 +199,19 @@ class MusicBeatState extends TransitionableState
 				
 				Conductor.songPosition = lastMixPos + lastMixTimer;
 
+			case NEVER2X:
+				// It is basically just `songPos += elapsed` until it goes off sync
+				// However that allegedly works better than Last Mix at high framerates
+				if (lastMixPos != inst.time) {
+					if (Math.abs(inst.time - Conductor.songPosition) >= elapsedMS)
+						Conductor.songPosition = inst.time;
+					else
+						Conductor.songPosition += elapsedMS;
+
+					lastMixPos = inst.time;
+				}else {
+					Conductor.songPosition += elapsedMS;
+				}
 		}
 
 		updateSteps();

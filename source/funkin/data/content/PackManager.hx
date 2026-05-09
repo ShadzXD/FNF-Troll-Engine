@@ -116,102 +116,72 @@ class PackManager {
 		return list;
 	}
 
-	private static function _getModdedPacks():Array<Pack> {
-		var list:Array<Pack> = [];
-
+	private static function getModdedPacks():Array<Pack> {
+		var modPacks = [];
+		
 		#if MODS_ALLOWED
-		for (folderName in Paths.readDirectory(CONTENT_PATH)) {
-			var folderPath = '$CONTENT_PATH/$folderName';
-
-			if (Paths.isDirectory(folderPath)) {
-				switch(folderName) {
-					#if USING_MOONCHART
-					case "moonchart": list.push(new MoonchartFolder(folderName, folderPath));
-					#end
-					default: list.push(new ContentFolder(folderName, folderPath));
-				}
+		reloadEntries();
+		for (entry in entries) {
+			if (entry.active) {
+				var pack = #if USING_MOONCHART if (entry.id == "moonchart")
+					new MoonchartFolder(entry.id, '$CONTENT_PATH/${entry.id}');
+				else #end					
+					new ContentFolder(entry.id, '$CONTENT_PATH/${entry.id}');
+				
+				modPacks.push(pack);
 			}
-		};
+		}
 		#end
 
-		return list;
+		return modPacks;
 	}
+	#end
 
-	private static function getModdedPacks():Array<Pack> {
-		var modPacks = _getModdedPacks();
-		loadEntryList();
+	#if MODS_ALLOWED // ENTRY LIST
+	public static function reloadEntries() {
+		var folderList:Array<String> = [];
 
-		inline function modPackExists(id:String):Bool {
-			var found = false;
-			for (pack in modPacks) {
-				if (pack.id == id) {
-					found = true; 
-					break;
-				}
-			}
-			return found;
-		}
+		for (folderName in Paths.readDirectory(CONTENT_PATH)) {
+			var folderPath = '$CONTENT_PATH/$folderName';
+			if (Paths.isDirectory(folderPath))
+				folderList.push(folderName);
+		};
 
-		// Remove entries for non-existent content folders
+		readEntryList();
+		trace('Entry list $entries');
+
+		//// Remove entries for non-existent content folders
 		while (entries.array.remove(null)) trace("wtf");
 		for (i => entry in entries) {
-			if (!modPackExists(entry.id)) {
+			if (!folderList.contains(entry.id)) {
 				trace('Folder for entry "${entry.id}" does not exist! Removing...');
 				entries.array[i] = null;
 			}
 		}
 		while (entries.array.remove(null)) {}
 
-		// Add entries for new content folders
-		for (pack in modPacks) {
-			if (!entries.hasEntry(pack.id)) {
-				trace('Found content folder "${pack.id}", adding to entry list');
-				entries.array.push(new PackEntry(pack.id, true));
+		//// Add entries for new content folders
+		for (folderName in folderList) {
+			if (!entries.hasEntry(folderName)) {
+				trace('Found content folder "$folderName", adding to entry list');
+				entries.array.push(new PackEntry(folderName, true));
 			}
 		}
 
-		// Remove disabled mods
-		modPacks = modPacks.filter(pack -> entries.getEntry(pack.id).active);
-
-		// Sort by entry order
-		inline function getPackOrder(id:String):Int {
-			var index:Int = -1;
-			for (i => entry in entries) {
-				if (entry.id == id) {
-					index = i;
-					break;
-				}
-			}
-			return index;
-		}
-
-		modPacks.sort(function(a, b) {
-			var a = getPackOrder(a.id);
-			var b = getPackOrder(b.id);
-			return a - b;
-		});
-
-		return modPacks;
-	}
-	#end
-
-	#if true // ENTRY LIST
-	private static inline function loadEntryList():Void {
-		#if sys
-		var path:String = getEntryListSavePath();
-		if (sys.FileSystem.exists(path))
-			entries.parseString(sys.io.File.getContent(path));
-		#end
-		trace('Entry list $entries');
-	}
-
-	public static inline function flushEntryList():Void {
-		#if sys
-		CoolUtil.safeSaveFile(getEntryListSavePath(), entries.stringify());
-		#end
+		return;
 	}
 	
 	#if sys
+	private static inline function readEntryList():Void {
+		var path:String = getEntryListSavePath();
+		if (sys.FileSystem.exists(path))
+			entries.parseString(sys.io.File.getContent(path));
+	}
+
+	public static inline function flushEntryList():Void {
+		CoolUtil.safeSaveFile(getEntryListSavePath(), entries.stringify());
+	}
+	
 	inline static function getEntryListSavePath():String {
 		return CoolUtil.getFlxSavePath() + '/packList.txt';
 	} 
@@ -221,7 +191,7 @@ class PackManager {
 
 // aura
 @:forward(length, iterator, keyValueIterator)
-private abstract EntryList(Array<PackEntry>) {
+abstract EntryList(Array<PackEntry>) {
 	public function new() {
 		this = [];
 	}
@@ -280,7 +250,7 @@ private abstract EntryList(Array<PackEntry>) {
 /**
 	Represents an entry in the pack list save.  	
 **/
-private abstract PackEntry(haxe.ds.Vector<String>) {
+abstract PackEntry(haxe.ds.Vector<String>) {
 	public var id(get, never):String;
 	public var active(get, set):Bool;
 

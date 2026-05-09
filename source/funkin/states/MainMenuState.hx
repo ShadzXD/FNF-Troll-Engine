@@ -33,6 +33,7 @@ class MainMenuState extends MusicBeatState
 		'freeplay',
 		//'credits',
 		//'donate',
+		'mods',
 		'options',
 	];
 
@@ -156,6 +157,8 @@ class MainMenuState extends MusicBeatState
 				switchState.bind(new CreditsState());
 			case 'options':
 				switchState.bind(new funkin.states.options.OptionsState());
+			case 'mods':
+				switchState.bind(new ModsMenuState());
 			default:
 				MusicBeatState.resetState.bind();
 		}

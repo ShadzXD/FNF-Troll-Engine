@@ -184,6 +184,8 @@ class CoolUtil {
 	}
 
 	@:noCompletion static var _point:FlxPoint = new FlxPoint();
+
+	/** Checks if an object is being overlapped by the mouse, respecting the camera bounds **/
 	public static function overlapsMouse(object:FlxObject, ?camera:FlxCamera):Bool
 	{
 		camera ??= FlxG.camera;
@@ -195,6 +197,11 @@ class CoolUtil {
 		}
 
 		return false;
+	}
+
+	public static function mouseOverlapsCamera(camera:FlxCamera):Bool {
+		FlxG.mouse.getPositionInCameraView(camera, _point);
+		return camera.containsPoint(_point);
 	}
 
 	public static function centerOnObject(obj1:FlxObject, obj2:FlxObject) {

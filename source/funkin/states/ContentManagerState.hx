@@ -1,5 +1,6 @@
 package funkin.states;
 
+import funkin.objects.ui.CustomFlxUI.CustomFlxInputText;
 import funkin.input.InputFormatter;
 import funkin.objects.ui.ScrollBar;
 import trollui.SlicedSprite;
@@ -39,46 +40,71 @@ class ContentManagerState extends MusicBeatState {
 		PackManager.reloadEntries();
 		entries = PackManager.entries;
 
-		FlxG.mouse.visible = true;
-
-		var borderHPadding = 20;
-		var borderVPadding = 80;
-		
-		var viewHeight:Int = FlxG.height - borderVPadding * 2;
-		
-		var boxHeight:Float = 64;
-		var boxSpacing:Float = 8;
-		/*
-		var boxes:Int = 8;
-		var boxSpacing:Float = 8;
-		
-		var boxHeight:Float = (viewHeight - (boxes + 1) * boxSpacing) / boxes;
-
-		trace(viewHeight, boxHeight, boxSpacing);
-
-		// floor boxHeight and recalc spacing
-		boxHeight = Math.fround(boxHeight);
-		boxSpacing = (viewHeight - boxHeight * boxes) / (boxes + 1);
-		*/
-
-		trace(viewHeight, boxHeight, boxSpacing);
-
-		////
-		var w = Std.int(FlxG.width / 3 - borderHPadding);
-		var h = Std.int(viewHeight);
-		listCamera = new FlxCamera(borderHPadding, borderVPadding, w, h);
-		listCamera.bgColor = 0;
-		//listCamera.targetOffset.y = -26; // what's up with this
-		listCamera.minScrollX = 0;
-		listCamera.minScrollY = boxSpacing;
-		listCamera.maxScrollY = boxSpacing + boxSpacing;
-		FlxG.cameras.add(listCamera, false);
-
 		////
 		FlxG.camera.bgColor = 0xFF4C4C4C;
 		//add(new funkin.objects.CoolMenuBG('menuDesat', 0xFFffFFFF));
 		bgManager = new ChangingMenuBG();
 		add(bgManager);
+
+		////
+		FlxG.mouse.visible = true;
+
+		var borderHPadding = 20;
+		var borderVPadding = 80;
+		
+		var listX = borderHPadding;
+		var listY = borderVPadding;
+		var listWidth = Std.int(FlxG.width / 3 - borderHPadding);
+		var listHeight:Int = FlxG.height - borderVPadding * 2;
+		
+		#if true
+		var boxHeight:Float = 64;
+		var boxSpacing:Float = 8;
+		#else
+		var boxes:Int = 8;
+		var boxSpacing:Float = 8;
+		var boxHeight:Float = (listHeight - (boxes + 1) * boxSpacing) / boxes;
+
+		// floor boxHeight and recalc spacing
+		boxHeight = Math.fround(boxHeight);
+		boxSpacing = (listHeight - boxHeight * boxes) / (boxes + 1);
+		#end
+
+		if (false) {
+			var searchBox = new CustomFlxInputText(0, 0, listWidth - 8 * 2, "", 16, FlxColor.WHITE, FlxColor.TRANSPARENT);
+			searchBox.setFormat(Paths.font("quantico.ttf"), 16);
+			searchBox.text = "Search";
+			searchBox.drawFrame();
+			searchBox.updateHitbox();
+			
+			var searchBG = new FlxSprite(borderHPadding, listY + 8);
+
+			final searchBoxTextPadding = 6;
+			final searchBoxHeight = Std.int(searchBox.height) + searchBoxTextPadding * 2;
+			
+			searchBG.makeGraphic(1, 1);
+			searchBG.color = 0xFF000000;
+			searchBG.alpha = 0.64;
+			searchBG.scale.set(listWidth, searchBoxHeight);
+			searchBG.updateHitbox();
+			add(searchBG);
+
+			SpriteTools.objectCenter(searchBox, searchBG);
+			add(searchBox);
+			
+			listY = Std.int(searchBG.y + searchBG.height) + 8;
+			listHeight = FlxG.height - listY - borderVPadding;
+		}
+
+		////
+		listCamera = new FlxCamera(listX, listY, listWidth, listHeight);
+		listCamera.bgColor = 0;
+		//listCamera.targetOffset.y = -26; // what's up with this
+		//okay so it has something to do with using LOCKON target following but i don't wanna add camFollow camFollowPos bs here so suck it
+		listCamera.minScrollX = 0;
+		listCamera.minScrollY = boxSpacing;
+		listCamera.maxScrollY = boxSpacing + boxSpacing;
+		FlxG.cameras.add(listCamera, false);
 
 		////
 		listGrp.camera = listCamera;
@@ -119,7 +145,7 @@ class ContentManagerState extends MusicBeatState {
 		////
 		var topB = new SlicedSprite(
 			listCamera.x, 
-			listCamera.y,
+			borderVPadding,
 			listCamera.width, 
 			64,
 			"modsmenu/9slice_top",
@@ -215,18 +241,6 @@ class ContentManagerState extends MusicBeatState {
 
 		modDescText.scrollBar.scale.x = 8;
 
-
-modDescText.text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc pharetra leo neque, tristique congue felis malesuada ac. Vivamus et dolor fringilla, rutrum orci a, tempor ante. Sed non purus libero. Aliquam erat volutpat. Duis placerat rhoncus mi id pulvinar. Vestibulum varius hendrerit est, id pellentesque neque tincidunt ut. In non ullamcorper orci. Vestibulum lacinia, nisl sed tempus congue, turpis lacus sagittis dui, sit amet pharetra nunc urna facilisis ipsum. Interdum et malesuada fames ac ante ipsum primis in faucibus. Quisque quam arcu, rhoncus a arcu vitae, egestas imperdiet odio. Pellentesque vitae egestas nunc. Fusce feugiat erat ac dui sodales, a imperdiet justo blandit. Ut maximus ipsum accumsan, ornare massa non, ultricies dolor.
-Vestibulum molestie, quam vel porttitor rhoncus, urna ipsum tempor magna, quis malesuada augue quam eu tortor. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Duis dignissim massa justo, ac pretium eros porta quis. Sed tempus mi leo, vitae convallis odio accumsan in. Mauris sed consectetur nisi, eu ultrices ex. Pellentesque mi tortor, tincidunt eu nunc vel, scelerisque ullamcorper turpis. Curabitur vestibulum id turpis a faucibus. Praesent feugiat consectetur leo sit amet tincidunt.
-Etiam id ipsum a elit semper ullamcorper. Sed varius purus eu lacus feugiat viverra. Vestibulum id ipsum rutrum, iaculis ex sed, maximus turpis. Nam ultrices ut nisi at posuere. Duis placerat laoreet tellus, id accumsan leo pulvinar non. Aliquam feugiat vestibulum turpis nec tincidunt. Cras ut velit eros.
-";
-		/*
-		descText.text = "REal description";
-		for (i in 0...50) {
-			descText.text += "\nA";
-		}
-		*/
-
 		////
 		changeSelected(0);
 
@@ -252,7 +266,8 @@ Etiam id ipsum a elit semper ullamcorper. Sed varius purus eu lacus feugiat vive
 		}
 
 		////
-		PackManager.currentPackId = entries.array[listSelectedIndex].id;
+		if (entries.array[listSelectedIndex].active)
+			PackManager.currentPackId = entries.array[listSelectedIndex].id;
 		
 		var modTitle:String = null;
 		var modDescription:String = null;
@@ -404,6 +419,9 @@ Etiam id ipsum a elit semper ullamcorper. Sed varius purus eu lacus feugiat vive
 		super.destroy();
 
 		if (didChanges) {
+			// Move disabled mods to the end of the list
+			entries.array.sort((a, b) -> (a.active == b.active) ? 0 : (b.active ? 1 : -1));
+
 			PackManager.entries = entries;
 			PackManager.flushEntryList();
 			PackManager.reloadPackList();

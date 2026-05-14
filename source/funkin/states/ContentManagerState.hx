@@ -1,5 +1,6 @@
 package funkin.states;
 
+import funkin.input.Controls;
 import funkin.objects.ui.CustomFlxUI.CustomFlxInputText;
 import funkin.input.InputFormatter;
 import funkin.objects.ui.ScrollBar;
@@ -14,6 +15,8 @@ import funkin.data.content.PackManager;
 import funkin.data.content.PackManager.PackEntry;
 import math.CoolMath;
 import flixel.math.FlxRect;
+
+using StringTools;
 
 class ContentManagerState extends MusicBeatState {
 	
@@ -32,6 +35,8 @@ class ContentManagerState extends MusicBeatState {
 	var rightCamera:FlxCamera;
 	var modTitleText:FlxText;
 	var modDescText:ScrollText;
+
+	var dropdown:Dropdown;
 
 	/** Whether to reload packs after leaving this state **/
 	var didChanges:Bool = false;
@@ -242,9 +247,22 @@ class ContentManagerState extends MusicBeatState {
 		modDescText.scrollBar.scale.x = 8;
 
 		////
+		dropdown = new Dropdown();
+		dropdown.exists = false;
+		add(dropdown);
+
+		////
 		changeSelected(0);
 
 		super.create();
+	}
+
+	function focusOnSelectedEntry() {
+		var curOpt = listGrp.members[listSelectedIndex];
+		if (curOpt != null) {
+			//curOpt.onSelected();
+			listCamera.follow(curOpt.bg, LOCKON, 0.25);
+		}
 	}
 
 	function changeSelected(val:Int, isAbs:Bool = false) {
@@ -256,13 +274,15 @@ class ContentManagerState extends MusicBeatState {
 			listHoveredIndex = -1;
 		}
 
+		dropdown.exists = false;
+
 		var prevOpt = listGrp.members[prevSelected];
 		if (prevOpt != null) prevOpt.unSelected();
 
 		var curOpt = listGrp.members[listSelectedIndex];
 		if (curOpt != null) {
 			curOpt.onSelected();
-			listCamera.follow(curOpt.bg, LOCKON, 0.25);
+			focusOnSelectedEntry();
 		}
 
 		////
@@ -310,6 +330,38 @@ class ContentManagerState extends MusicBeatState {
 		changeSelected(change);
 	}
 
+	function openDropdown() {
+		var options:Array<ModOption> = [
+			LAUNCH_MOD,
+			OPEN_MOD_LOCATION,
+			OPEN_PACK_OPTIONS,
+		];
+		var strings:Array<String> = [
+			for (opt in options)
+				CoolerStringTools.capitalize((opt:String).replace('_', ' ')).replace(' ', '')
+		];
+
+		dropdown.exists = true;
+		dropdown.setList(strings);
+		dropdown.callback = function(_, index:Int) {
+			acceptOption(options[index]);
+		}
+
+	}
+
+	function acceptOption(opt:ModOption) {
+		switch(opt) {
+			case LAUNCH_MOD:
+			case OPEN_MOD_LOCATION:
+				// TODO
+				var path = PackManager.CONTENT_PATH + '/' + entries.array[listSelectedIndex].id; 
+				lime.system.System.openFile(CoolUtil.getSystemPath(path));
+			case OPEN_PACK_OPTIONS:
+			case ADD_FAVORITE:
+			case REMOVE_FAVORITE:
+		}
+	}
+
 	/** @returns Index of the `BoxEntry` that the mouse is currently hovering over **/
 	function getHoverIndex():Int {
 		var index = -1;
@@ -347,16 +399,15 @@ class ContentManagerState extends MusicBeatState {
 		pack?.launch();
 	}
 
-	override function update(elapsed:Float) {
-		var change:Int = 0;
-		if (controls.UI_UP_P)
-			change--;
-		if (controls.UI_DOWN_P)
-			change++;
+	function updateListKeyboardInput() {
+		var change:Int = uiVerticalInput;
 		if (change != 0)
 			FlxG.keys.pressed.SHIFT ? shiftSelectedOrder(change) : changeSelected(change);
 
-		//asbtract
+		if (FlxG.keys.justPressed.CONTROL && listHoveredIndex == -1) {
+			openDropdown();
+			//focusOnSelectedEntry();
+		}
 
 		if (controls.ACCEPT && listHoveredIndex == -1)
 			toggleEntry(listSelectedIndex);
@@ -367,12 +418,30 @@ class ContentManagerState extends MusicBeatState {
 			}
 			MusicBeatState.switchState(new funkin.states.MainMenuState());
 		}
+	}
+
+	override function update(elapsed:Float) {
+		if (!dropdown.exists) {
+			updateListKeyboardInput();
+		}
 
 		var cameraMoved:Bool = _lastListScrollY != listCamera.scroll.y;
 		if (cameraMoved) _lastListScrollY = listCamera.scroll.y;
 
+		var exitDropdown:Bool = false;
+
 		#if FLX_MOUSE
-		if (CoolUtil.overlapsMouse(listScrollBar, listScrollBar.camera) || !CoolUtil.mouseOverlapsCamera(listCamera)) {
+		var overlapsScrollBar:Bool = CoolUtil.overlapsMouse(listScrollBar, listScrollBar.camera);
+
+		/*
+		if (FlxG.mouse.justPressed && overlapsScrollBar)
+			exitDropdown = true;
+		*/
+		if (FlxG.mouse.justPressed && !CoolUtil.mouseOverlapsCamera(dropdown.camera)) {
+			exitDropdown = true;
+		}
+
+		if (overlapsScrollBar || !CoolUtil.mouseOverlapsCamera(listCamera)) {
 			if (listHoveredIndex != -1)
 				changeHovered(-1);
 		}else {
@@ -382,6 +451,7 @@ class ContentManagerState extends MusicBeatState {
 				listCamera._scrollInternal.y -= 48 * FlxG.mouse.wheel;
 				listCamera.updateScroll(); // apply follow bounds
 				cameraMoved = true;
+				exitDropdown = true;
 			}
 
 			if ((cameraMoved && listHoveredIndex != -1) || FlxG.mouse.deltaScreenX != 0.0 || FlxG.mouse.deltaScreenX != 0.0) {
@@ -401,8 +471,30 @@ class ContentManagerState extends MusicBeatState {
 					}
 				}
 			}
+			
+			if (FlxG.mouse.justPressedRight) {
+				var hoverIndex = getHoverIndex();
+				if (hoverIndex != -1) {
+					changeSelected(hoverIndex, true);
+					openDropdown();
+				}
+			}
 		}
 		#end
+
+		if (exitDropdown)
+			dropdown.exists = false;
+
+		if (dropdown.exists) {
+			var box = listGrp.members[listSelectedIndex];
+			if (box != null) {
+				var camera = listCamera;
+				var y = camera.y + box.getScreenPosition(null, camera).y;
+				
+				dropdown.x = camera.x + camera.width;
+				dropdown.y = y;
+			}
+		}
 
 		if (cameraMoved)
 			listScrollBar.progress = CoolMath.scale(listCamera.scroll.y, listCamera.minScrollY, listCamera.maxScrollY - listCamera.viewHeight, 0, 1);
@@ -450,7 +542,148 @@ private class SwitchToggle extends FlxSprite {
 	}
 }
 
-class EntryBox extends FlxSpriteGroup {
+private var uiVerticalInput(get, never):Int;
+private inline function get_uiVerticalInput():Int {
+	var change:Int = 0;
+	if (Controls.firstActive.UI_UP_P)
+		change--;
+	if (Controls.firstActive.UI_DOWN_P)
+		change++;
+	return change;
+}
+
+private enum abstract ModOption(String) from String to String {
+	var LAUNCH_MOD;
+	var OPEN_PACK_OPTIONS;
+	var OPEN_MOD_LOCATION;
+	var ADD_FAVORITE;
+	var REMOVE_FAVORITE;
+}
+
+private class Dropdown extends FlxTypedGroup<DropdownItem> {
+	public var x:Float = 0;
+	public var y:Float = 0;
+
+	public var hovered:Bool = false;
+	public var selectedIndex:Int = 0;
+	public var options(default, null):Array<String>;
+	public var callback:(name:String, index:Int) -> Void;
+
+	var width = 256;
+	var height = 52;
+	var spacing = 4;
+
+	public function new(x:Float = 0.0, y:Float = 0.0) {
+		super();
+		this.x = x;
+		this.y = y;
+
+		camera = new FlxCamera(x, y, width, 1);
+		camera.bgColor = 0;
+		FlxG.cameras.add(camera, false);
+	}
+
+	public function setList(options:Array<String>) {
+		this.options = options;
+		selectedIndex = -1;
+
+		var totalHeight = options.length * (height + spacing);
+		camera.height = totalHeight;
+
+		killMembers();
+		for (i => str in options) {
+			var item = members[i] ??= {
+				var obj = new DropdownItem();
+				add(obj);
+				obj;
+			};
+			var y = (height + spacing) * i;
+			item.setup(0, y, width, height, str);
+			item.revive();
+		}
+	}
+
+	public function changeSelected(val:Int, isAbs:Bool = false) {
+		var prevSelected = selectedIndex;
+		selectedIndex = isAbs ? val : CoolUtil.updateIndex(selectedIndex, val, this.length);
+		
+		var prevObj = members[prevSelected];
+		prevObj?.unSelected();
+		
+		var curObj = members[selectedIndex];
+		curObj?.onSelected();
+	}
+
+	override function update(elapsed:Float) {
+		camera.setPosition(x, y);
+		hovered = CoolUtil.mouseOverlapsCamera(camera);
+
+		var change:Int = uiVerticalInput;
+		if (change != 0)
+			changeSelected(change);
+
+		if (Controls.firstActive.BACK)
+			this.exists = false;
+
+		if (Controls.firstActive.ACCEPT && callback != null)
+			callback(options[selectedIndex], selectedIndex);
+
+		super.update(elapsed);
+	}
+
+	override function destroy() {
+		FlxG.cameras.remove(camera);
+		super.destroy();
+	}
+}
+
+private class DropdownItem extends FlxGroup {
+	public var bg:SlicedSprite;
+	public var txt:FlxText;
+
+	public function new() {
+		super();
+		
+		bg = new SlicedSprite(
+			0,
+			0,
+			0,
+			0,
+			"modsmenu/9slice",
+			[24, 24, 24, 28]
+		);
+		bg.useDefaultAntialiasing = true;
+
+		txt = new FlxText(0, 0, 0, "", 18);
+		txt.font = Paths.font("quanticob.ttf");
+		txt.color = FlxColor.BLACK;
+		
+		add(bg);
+		add(txt);
+	}
+	
+	public function setup(x:Float = 0.0, y:Float = 0.0, width:Float, height:Float, str:String = "") {
+		bg.setPosition(x, y);
+		bg.setSize(width, height);
+
+		txt.fieldWidth = width - 24 * 2;
+		txt.text = str;
+		txt.drawFrame();
+		SpriteTools.objectCenter(txt, bg);
+	}
+
+	public function onSelected() {
+		bg.color = FlxColor.YELLOW;
+		//txt.color = FlxColor.RED;
+	}
+	
+	public function unSelected() {
+		bg.color = FlxColor.WHITE;
+		txt.color = FlxColor.BLACK;
+	}
+}
+
+private class EntryBox extends FlxSpriteGroup {
 	public var bg:FlxSprite;
 	public var icon:FlxSprite;
 	public var text:FlxText;
@@ -483,7 +716,7 @@ class EntryBox extends FlxSpriteGroup {
 
 		text = new FlxText(20, 0, 0, entry.id, 18);
 		text.x = icon.x + icon.width + text.x;
-		text.setFormat(Paths.font("quanticob.ttf"), 16, 0xFFFFFFFF, LEFT);
+		text.setFormat(Paths.font("quanticob.ttf"), 18, 0xFFFFFFFF, LEFT);
 		text.alignment = LEFT;
 		//text.setFormat();
 		//text.color = 0xFF000000;

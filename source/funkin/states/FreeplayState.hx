@@ -311,7 +311,7 @@ class FreeplayState extends MusicBeatState
 
 	function onSelectSong(data:BaseSong)
 	{	
-		Paths.currentModDirectory = data.folder;
+		Paths.currentPackId = data.folder;
 
 		selectedSongData = data;
 		selectedSongCharts = data.getCharts();
@@ -439,7 +439,7 @@ private class FreeplayMenu extends AlphabetMenu
 		var songName:String = metadata.songName;
 		var iconId:Null<String> = metadata.freeplayIcon;
 
-		Paths.currentModDirectory = song.folder;
+		Paths.currentPackId = song.folder;
 		addOption(songName, iconId);
 	}
 

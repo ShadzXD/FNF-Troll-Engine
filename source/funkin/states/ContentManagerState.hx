@@ -18,8 +18,7 @@ import flixel.math.FlxRect;
 
 using StringTools;
 
-class ContentManagerState extends MusicBeatState {
-	
+class ContentManagerState extends MusicBeatState {	
 	var entries:EntryList;
 
 	var listCamera:FlxCamera;
@@ -33,17 +32,71 @@ class ContentManagerState extends MusicBeatState {
 	var bgManager:ChangingMenuBG;
 	
 	var rightCamera:FlxCamera;
-	var modTitleText:FlxText;
-	var modDescText:ScrollText;
+	var packCardBG:FlxSprite;
+	var packCardTitle:FlxText;
+	var packCardAuthor:FlxText;
+	var packCardBanner:FlxSprite;
+	var packDescriptionText:ScrollText;
 
 	var dropdown:Dropdown;
 
-	/** Whether to reload packs after leaving this state **/
+	/** Whether to save the entry list and reload packs after leaving this state **/
 	var didChanges:Bool = false;
+
+	/*
+	final defaultDisplayData:PackDisplayData = {
+		title: "Unknown",
+		author: "Unknown",
+		description: "No description provided",
+		accentColor: 0xFFFFFFFF,
+		bgColor: 0xFF4C4C4C,
+	}*/
+
+	function getDisplayData(entry:PackEntry):PackDisplayData {
+		var title:String = null;
+		var author:Null<String> = null;
+		var description:String = null;
+
+		var accentColor:Null<FlxColor> = null;
+		var bgColor:Null<FlxColor> = null;
+
+		var bannerAsset:Null<FlxGraphic> = null;
+		var bgAsset:Null<FlxGraphic> = null;
+
+		////
+		final entryPackLoaded = PackManager.packMap.exists(entry.id);
+		if (entryPackLoaded) {
+			bannerAsset = Paths.graphic('packbanner', entry.id);
+			bgAsset = Paths.image('menuDesat', entry.id);
+		}
+
+		////
+		title ??= entry.id;
+		author ??= "Unknown";
+		description ??= "No description provided";
+
+		bgColor ??= accentColor ?? FlxColor.fromHSB(FlxG.random.int(64) * 5.625, 0.15, FlxG.random.float(0.420, 0.467)); //0xFFea71fd;
+		accentColor ??= FlxColor.WHITE;
+
+		return {
+			title: title,
+			author: author,
+			description: description,
+
+			bgColor: bgColor,
+			accentColor: accentColor,
+			
+			bannerAsset: bannerAsset,
+			bgAsset: bgAsset,
+		};
+	}
 
 	override function create() {
 		PackManager.reloadEntries();
 		entries = PackManager.entries;
+
+		// Move disabled mods to the end of the list
+		entries.array.sort((a, b) -> (a.enabled == b.enabled) ? (a.enabled ? 0 : CoolUtil.alphabeticalSort(a.id, b.id)) : (b.enabled ? 1 : -1));
 
 		////
 		FlxG.camera.bgColor = 0xFF4C4C4C;
@@ -75,7 +128,7 @@ class ContentManagerState extends MusicBeatState {
 		boxSpacing = (listHeight - boxHeight * boxes) / (boxes + 1);
 		#end
 
-		if (false) {
+		if (true) {
 			var searchBox = new CustomFlxInputText(0, 0, listWidth - 8 * 2, "", 16, FlxColor.WHITE, FlxColor.TRANSPARENT);
 			searchBox.setFormat(Paths.font("quantico.ttf"), 16);
 			searchBox.text = "Search";
@@ -124,10 +177,11 @@ class ContentManagerState extends MusicBeatState {
 		}
 
 		for (i => entry in entries) {
-			var curOpt = new EntryBox(entry, boxWidth, boxHeight);
-			curOpt.ID = i;
-			updateToggleSprite(entry, curOpt);
+			var curOpt = new EntryBox(boxWidth, boxHeight);
 			listGrp.add(curOpt);
+
+			curOpt.ID = i;
+			curOpt.setEntry(entry);
 			
 			curOpt.y = listCamera.maxScrollY + (boxHeight + boxSpacing) * i;
 		}
@@ -206,25 +260,33 @@ class ContentManagerState extends MusicBeatState {
 		rightCamera.height = Std.int(FlxG.height - rightCamera.y * 2);
 		FlxG.cameras.add(rightCamera, false);
 
-		var modTitleBorder = CoolUtil.blankSprite(rightCamera.width, 112, 0xFF000000);
-		modTitleBorder.x = rightCamera.x;
-		modTitleBorder.y = rightCamera.y;
-		add(modTitleBorder);
+		////
+		var packCardBGBorder = CoolUtil.blankSprite(rightCamera.width, 112, 0xFF000000);
+		packCardBGBorder.x = rightCamera.x;
+		packCardBGBorder.y = rightCamera.y;
+		
+		packCardBG = CoolUtil.blankSprite(packCardBGBorder.width - 4 - 4, packCardBGBorder.height - 4 - 8);
+		packCardBG.x = packCardBGBorder.x + 4;
+		packCardBG.y = packCardBGBorder.y + 4;
 
-		var modTitleBlank = CoolUtil.blankSprite(modTitleBorder.width - 4 - 4, modTitleBorder.height - 4 - 8);
-		modTitleBlank.x = modTitleBorder.x + 4;
-		modTitleBlank.y = modTitleBorder.y + 4;
-		add(modTitleBlank);
+		packCardBanner = new FlxSprite();
+		packCardBanner.exists = false;
+		
+		packCardTitle = new FlxText(0, 0, packCardBG.width - 16 * 2, "");
+		packCardTitle.setFormat(Paths.font("quanticob.ttf"), 26, 0xFF000000, LEFT);
+		packCardTitle.pixelPerfectRender = true;
 
-		modTitleText = new FlxText(0, 0, modTitleBlank.width - 16 * 2, "Sample Text");
-		modTitleText.setFormat(Paths.font("quanticob.ttf"), 26, 0xFF000000, LEFT);
-		modTitleText.pixelPerfectRender = true; // suck ya dad
-		modTitleText.drawFrame();
-		modTitleText.updateHitbox();
-		SpriteTools.objectCenter(modTitleText, modTitleBlank);
-		add(modTitleText);
+		packCardAuthor = new FlxText(0, 0, packCardTitle.width, "");
+		packCardAuthor.setFormat(Paths.font("quanticob.ttf"), 18, 0xFF000000, LEFT);
+		packCardAuthor.pixelPerfectRender = true;
+		
+		add(packCardBGBorder);
+		add(packCardBG);
+		add(packCardBanner);
+		add(packCardTitle);		
+		add(packCardAuthor);		
 
-		var offy = Std.int(modTitleBorder.height + 16);		
+		var offy = Std.int(packCardBGBorder.height + 16);		
 		rightCamera.y += offy;
 		rightCamera.height -= offy;
 
@@ -238,13 +300,13 @@ class ContentManagerState extends MusicBeatState {
 		final descPadding = 8;
 		final scrollBarWidth = 12;
 		
-		modDescText = new ScrollText(rightCamera.x + descPadding, rightCamera.y + descPadding, rightCamera.width - descPadding * 2 - scrollBarWidth);
-		modDescText.setFormat(Paths.font("quantico.ttf"), 18, FlxColor.WHITE, LEFT);
-		modDescText.minY = modDescText.y;
-		modDescText.maxY = rightCamera.y + rightCamera.height - descPadding;
-		add(modDescText);
+		packDescriptionText = new ScrollText(rightCamera.x + descPadding, rightCamera.y + descPadding, rightCamera.width - descPadding * 2 - scrollBarWidth);
+		packDescriptionText.setFormat(Paths.font("quantico.ttf"), 18, FlxColor.WHITE, LEFT);
+		packDescriptionText.minY = packDescriptionText.y;
+		packDescriptionText.maxY = rightCamera.y + rightCamera.height - descPadding;
+		add(packDescriptionText);
 
-		modDescText.scrollBar.scale.x = 8;
+		packDescriptionText.scrollBar.scale.x = 8;
 
 		////
 		dropdown = new Dropdown();
@@ -286,25 +348,46 @@ class ContentManagerState extends MusicBeatState {
 		}
 
 		////
-		if (entries.array[listSelectedIndex].active)
-			PackManager.currentPackId = entries.array[listSelectedIndex].id;
+		final entry = entries.array[listSelectedIndex];
+
+		if (PackManager.packMap.exists(entry.id))
+			PackManager.currentPackId = entry.id;
+
+		var displayData = getDisplayData(entry);
+		trace(displayData);
 		
-		var modTitle:String = null;
-		var modDescription:String = null;
-		var modAuthor:String = null;
+		if (displayData.author != null) {
+			var midY = packCardBG.y + packCardBG.height / 2;
+			
+			packCardTitle.text = displayData.title;
+			SpriteTools.objectCenter(packCardTitle, packCardBG, X);
+			packCardTitle.y = midY - packCardTitle.height + 8;
+			
+			packCardAuthor.text = displayData.author;
+			SpriteTools.objectCenter(packCardAuthor, packCardBG, X);
+			packCardAuthor.y = midY;
+			packCardAuthor.exists = true;
+		}else {
+			packCardTitle.text = displayData.title;
+			SpriteTools.objectCenter(packCardTitle, packCardBG, XY);
+			
+			packCardAuthor.exists = false;
+		}
 
-		var bgColor:Null<FlxColor> = null;
-		var bgKey:String = null; 
-		var bgGraphic:FlxGraphic = null;
+		if (displayData.bannerAsset != null) {
+			packCardBanner.exists = true;
+			packCardBanner.loadGraphic(displayData.bannerAsset);
+			packCardBanner.setGraphicSize(0, packCardBG.height);
+			packCardBanner.updateHitbox();
+			packCardBanner.x = packCardBG.x + packCardBG.width - packCardBanner.width;
+			SpriteTools.objectCenter(packCardBanner, packCardBG, Y);
+		}else {
+			packCardBanner.exists = false;
+		}
 
-		modTitleText.text = curOpt?.text.text;
-		modDescText.text = "No description provided";
-		
-		bgKey ??= "menuDesat";
-		bgGraphic ??= Paths.image(bgKey);
-		bgColor ??= FlxColor.fromHSB(FlxG.random.int(64) * 5.625, 0.15, FlxG.random.float(0.420, 0.467)); //0xFF4C4C4C;//0xFFea71fd;
+		packDescriptionText.text = displayData.description;
 
-		bgManager.fadeToBg(bgGraphic, bgColor);
+		bgManager.fadeToBg(displayData.bgAsset, bgColor);
 	}
 
 	function changeHovered(index:Int) {
@@ -330,32 +413,46 @@ class ContentManagerState extends MusicBeatState {
 		changeSelected(change);
 	}
 
+	function getEntryOptions(entry:PackEntry) {
+		var options:Array<ModOption> = [];
+		final packIsLoaded = entry.enabled && PackManager.packMap.exists(entry.id);
+
+		if (packIsLoaded)
+			options.push(LAUNCH_MOD);
+		
+		options.push(OPEN_MOD_LOCATION);
+		//options.push(entry.favorite ? REMOVE_FAVORITE : ADD_FAVORITE);
+		
+		if (packIsLoaded)
+			options.push(OPEN_PACK_OPTIONS);
+
+		return options;
+	}
+
 	function openDropdown() {
-		var options:Array<ModOption> = [
-			LAUNCH_MOD,
-			OPEN_MOD_LOCATION,
-			OPEN_PACK_OPTIONS,
-		];
-		var strings:Array<String> = [
+		final entry = entries.array[listSelectedIndex];
+		final options:Array<ModOption> = getEntryOptions(entry);
+		final strings:Array<String> = [
 			for (opt in options)
-				CoolerStringTools.capitalize((opt:String).replace('_', ' ')).replace(' ', '')
+				CoolerStringTools.snakeToPascal(opt)
 		];
 
 		dropdown.exists = true;
 		dropdown.setList(strings);
 		dropdown.callback = function(_, index:Int) {
-			acceptOption(options[index]);
+			acceptOption(entry, options[index]);
 		}
-
 	}
 
-	function acceptOption(opt:ModOption) {
+	function acceptOption(entry:PackEntry, opt:ModOption) {
 		switch(opt) {
 			case LAUNCH_MOD:
 			case OPEN_MOD_LOCATION:
 				// TODO
-				var path = PackManager.CONTENT_PATH + '/' + entries.array[listSelectedIndex].id; 
+				var path = PackManager.CONTENT_PATH + '/' + entry.id; 
 				lime.system.System.openFile(CoolUtil.getSystemPath(path));
+				dropdown.exists = false;
+
 			case OPEN_PACK_OPTIONS:
 			case ADD_FAVORITE:
 			case REMOVE_FAVORITE:
@@ -374,22 +471,17 @@ class ContentManagerState extends MusicBeatState {
 		return index;
 	}
 
-	function updateToggleSprite(entry:PackEntry, box:EntryBox) {
-		box.toggleSprite.animation.play(entry.active ? "on" : "off");
-	}
-
 	function updateListTexts() {
 		for (i => box in listGrp) {
 			final entry = entries.array[i];
-			box.text.text = entry.id;
-			updateToggleSprite(entry, box);
+			box.setEntry(entry);
 		}
 	}
 
 	function toggleEntry(index:Int) {
 		var entry = entries.array[index];
-		entry.active = !entry.active;
-		updateToggleSprite(entry, listGrp.members[index]);	
+		entry.enabled = !entry.enabled;
+		listGrp.members[index].updateToggleSprite();
 		didChanges = true;
 	}
 
@@ -406,6 +498,7 @@ class ContentManagerState extends MusicBeatState {
 
 		if (FlxG.keys.justPressed.CONTROL && listHoveredIndex == -1) {
 			openDropdown();
+			dropdown.changeSelected(0, true);
 			//focusOnSelectedEntry();
 		}
 
@@ -477,6 +570,7 @@ class ContentManagerState extends MusicBeatState {
 				if (hoverIndex != -1) {
 					changeSelected(hoverIndex, true);
 					openDropdown();
+					dropdown.changeSelected(-1, true);
 				}
 			}
 		}
@@ -511,9 +605,6 @@ class ContentManagerState extends MusicBeatState {
 		super.destroy();
 
 		if (didChanges) {
-			// Move disabled mods to the end of the list
-			entries.array.sort((a, b) -> (a.active == b.active) ? 0 : (b.active ? 1 : -1));
-
 			PackManager.entries = entries;
 			PackManager.flushEntryList();
 			PackManager.reloadPackList();
@@ -523,6 +614,19 @@ class ContentManagerState extends MusicBeatState {
 			Paths.clearUnusedMemory();
 		}
 	}
+}
+
+private typedef PackDisplayData = {
+	var title:String;
+	var description:String;
+	var author:String;
+
+	var accentColor:FlxColor;
+	var bgColor:FlxColor;
+	
+	////
+	var bgAsset:FlxGraphic;
+	var bannerAsset:Null<FlxGraphic>;
 }
 
 private class SwitchToggle extends FlxSprite {
@@ -584,9 +688,6 @@ private class Dropdown extends FlxTypedGroup<DropdownItem> {
 	}
 
 	public function setList(options:Array<String>) {
-		this.options = options;
-		selectedIndex = -1;
-
 		var totalHeight = options.length * (height + spacing);
 		camera.height = totalHeight;
 
@@ -601,6 +702,9 @@ private class Dropdown extends FlxTypedGroup<DropdownItem> {
 			item.setup(0, y, width, height, str);
 			item.revive();
 		}
+
+		this.options = options;
+		//changeSelected(-1, true);
 	}
 
 	public function changeSelected(val:Int, isAbs:Bool = false) {
@@ -614,10 +718,36 @@ private class Dropdown extends FlxTypedGroup<DropdownItem> {
 		curObj?.onSelected();
 	}
 
+	public function acceptSelected() {
+		if (callback != null)
+			callback(options[selectedIndex], selectedIndex);
+	}
+
 	override function update(elapsed:Float) {
 		camera.setPosition(x, y);
 		hovered = CoolUtil.mouseOverlapsCamera(camera);
 
+		var hoverIdx:Int = -1;
+		if (hovered) {
+			for (i => obj in members) {
+				if (CoolUtil.overlapsMouse(obj.bg, camera)) {
+					hoverIdx = i;
+					break;
+				}
+			}
+		}
+		
+		if (!hovered && FlxG.mouse.justPressed) {
+			this.exists = false;
+		}
+
+		if (hoverIdx != -1 && FlxG.mouse.justPressed)
+			acceptSelected();
+
+		if (hoverIdx != selectedIndex && FlxG.mouse.deltaScreenX != 0 && FlxG.mouse.deltaScreenY != 0.0)
+			changeSelected(hoverIdx, true);
+
+		////
 		var change:Int = uiVerticalInput;
 		if (change != 0)
 			changeSelected(change);
@@ -625,9 +755,10 @@ private class Dropdown extends FlxTypedGroup<DropdownItem> {
 		if (Controls.firstActive.BACK)
 			this.exists = false;
 
-		if (Controls.firstActive.ACCEPT && callback != null)
-			callback(options[selectedIndex], selectedIndex);
+		if (Controls.firstActive.ACCEPT)
+			acceptSelected();
 
+		////
 		super.update(elapsed);
 	}
 
@@ -684,13 +815,15 @@ private class DropdownItem extends FlxGroup {
 }
 
 private class EntryBox extends FlxSpriteGroup {
+	public var entry:PackEntry;
+
 	public var bg:FlxSprite;
 	public var icon:FlxSprite;
 	public var text:FlxText;
 	public var toggleSprite:FlxSprite;
 	public var selectionHighlight:FlxSprite;
 	
-	public function new(entry:PackEntry, width:Float, height:Float) {
+	public function new(width:Float, height:Float) {
 		super();
 		
 		bg = new FlxSprite();
@@ -706,16 +839,10 @@ private class EntryBox extends FlxSpriteGroup {
 		SpriteTools.objectCenter(draggable, bg, Y);
 		add(draggable);
 
-		icon = new FlxSprite(draggable.x + draggable.width);
-		icon.loadGraphic("flixel/images/logo/default.png");
-		icon.loadGraphic("modsmenu/pack");
-		icon.setGraphicSize(32, 32);
-		icon.updateHitbox();
+		icon = new FlxSprite(draggable.x + draggable.width + 8);
 		add(icon);
-		SpriteTools.objectCenter(icon, bg, Y);
 
-		text = new FlxText(20, 0, 0, entry.id, 18);
-		text.x = icon.x + icon.width + text.x;
+		text = new FlxText(0, 0, 0, "unknown", 18);
 		text.setFormat(Paths.font("quanticob.ttf"), 18, 0xFFFFFFFF, LEFT);
 		text.alignment = LEFT;
 		//text.setFormat();
@@ -735,8 +862,6 @@ private class EntryBox extends FlxSpriteGroup {
 		//toggleSprite.x = draggable.x - toggleSprite.width;
 		SpriteTools.objectCenter(toggleSprite, bg, Y);
 
-		text.fieldWidth = Std.int(toggleSprite.x - text.x - 20);
-
 		selectionHighlight = new FlxSprite();
 		selectionHighlight.loadGraphic(CoolUtil.makeOutlinedGraphic(Std.int(width), Std.int(height), FlxColor.TRANSPARENT, 4, FlxColor.WHITE));
 		selectionHighlight.setGraphicSize(width, height);
@@ -744,6 +869,27 @@ private class EntryBox extends FlxSpriteGroup {
 		add(selectionHighlight);
 
 		unSelected();
+	}
+
+	public function setEntry(entry:PackEntry) {
+		this.entry = entry;
+		
+		updateToggleSprite();
+
+		icon.loadGraphic("flixel/images/logo/default.png");
+		icon.loadGraphic("modsmenu/pack");
+		icon.loadGraphic(Paths.graphic('packicon', entry.id));
+		icon.setGraphicSize(32, 32);
+		icon.updateHitbox();
+		SpriteTools.objectCenter(icon, bg, Y);
+
+		text.text = entry.id;
+		text.x = icon.x + icon.width + 12;
+		text.fieldWidth = Std.int(toggleSprite.x - text.x - 20);
+	}
+
+	public function updateToggleSprite() {
+		toggleSprite.animation.play(entry.enabled ? "on" : "off");
 	}
 
 	public function onSelected() {

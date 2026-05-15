@@ -99,7 +99,7 @@ class Paths
 		#end
 
 		PackManager.reloadPackList();
-		PackManager.refreshLoadList();
+		PackManager.refreshReadList();
 	}
 
 	/// haya I love you for the base cache dump I took to the max
@@ -170,9 +170,27 @@ class Paths
 		localTrackedAssets.resize(0);
 	}
 
-	public static function getPath(key:String):Null<String>
+	public static function getPath(key:String, ?packId:String):Null<String>
 	{
-		for (pack in PackManager.loadList) {
+		if (packId != null) {
+			var pack = PackManager.packMap.get(packId);
+			if (pack != null) {
+				var path = '${pack.path}/$key';
+				if (exists(path))
+					return path;
+				
+				for (packId in pack.dependencies) {
+					// No null check, if the dependency doesn't exist then the main pack shouldn't have been loaded to the list in the first place
+					var pack = PackManager.packMap.get(packId);
+					var path = '${pack.path}/$key';
+					if (exists(path))
+						return path;
+				}
+			}
+			return null;
+		}
+
+		for (pack in PackManager.readList) {
 			var path = '${pack.path}/$key';
 			if (exists(path))
 				return path;
@@ -185,7 +203,7 @@ class Paths
 		return PackManager.packMap.get(packId).path;
 
 	public static function getFolders(dir:String):Array<String>
-		return [for (pack in PackManager.loadList)
+		return [for (pack in PackManager.readList)
 			'${pack.path}/$dir/'
 		];
 
@@ -583,15 +601,10 @@ class Paths
 	inline public static function cacheGraphic(path:String):Null<FlxGraphic>
 		return getGraphic(path, true);
 
-	inline public static function imagePath(key:String, ?folder:String):Null<String>
-		return getPath('images/$key.$IMAGE_EXT');
-
-	inline public static function imageExists(key:String):Bool
-		return imagePath(key) != null;
-
-	public static function image(key:String, ?folder:String = null, allowGPU:Bool = true):Null<FlxGraphic>
+	/** Like Paths.image, but it gets a path from the base folder instead of the images folder **/
+	public static function graphic(key:String, ?pack:String, allowGPU:Bool = true):Null<FlxGraphic>
 	{
-		var path:String = imagePath(key, folder);
+		var path:String = getPath('$key.$IMAGE_EXT', pack);
 
 		var graphic = (path==null) ? null : getGraphic(path, true, allowGPU);
 		if (graphic==null && Main.showDebugTraces)
@@ -599,6 +612,17 @@ class Paths
 
 		return graphic;
 	}
+
+	public static function image(key:String, ?pack:String, allowGPU:Bool = true):Null<FlxGraphic>
+	{
+		return graphic('images/$key');
+	}
+
+	inline public static function imagePath(key:String, ?pack:String):Null<String>
+		return getPath('images/$key.$IMAGE_EXT', pack);
+
+	inline public static function imageExists(key:String):Bool
+		return imagePath(key) != null;
 
 	inline public static function soundPath(path:String, key:String, ?library:String)
 	{
@@ -645,22 +669,27 @@ class Paths
 		return (path == null) ? null : getJson(path);
 	}
 
-	////	
-	public static var currentModDirectory(get, set):String;
+	////
+	public static var currentPack(get, set):Pack;
+	public static var currentPackId(get, set):String;
 	public static var packList(get, never):Array<String>;
 	public static var packMap(get, never):Map<String, Pack>;
 	public static var contentFolderName(get, never):String;
 
-	static inline function get_currentModDirectory() return PackManager.currentPackId;
-	static inline function set_currentModDirectory(v:String) return PackManager.currentPackId = v;
+	static inline function get_currentPack() return PackManager.currentPack;
+	static inline function set_currentPack(v:Pack) return PackManager.currentPack = v;
+	static inline function get_currentPackId() return PackManager.currentPackId;
+	static inline function set_currentPackId(v:String) return PackManager.currentPackId = v;
 	static inline function get_packList() return PackManager.packList;
 	static inline function get_packMap() return PackManager.packMap;
 	static inline function get_contentFolderName() return PackManager.CONTENT_PATH;
 	
-	public static function loadRandomMod()
-	{
-		Paths.currentModDirectory = '';
-	}
+	#if ALLOW_DEPRECATION
+	@:deprecated('currentModDirectory is deprecated! Use currentPackId instead.')
+	public static var currentModDirectory(get, set):String;
+	static inline function get_currentModDirectory() return currentPackId;
+	static inline function set_currentModDirectory(v:String) return currentPackId = v;
+	#end
 
 	//// String stuff, should maybe move this to a diff class¿¿¿
 	public static var locale(default, set):String;

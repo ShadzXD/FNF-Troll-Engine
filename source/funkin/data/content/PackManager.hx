@@ -1,66 +1,53 @@
 package funkin.data.content;
 
+// I chose to call them PACKS because of conflicts with functions from Paths (getContent, getFolders)
+// Here comes packman
+
+/** :v **/
+@:noScripting
 class PackManager {
 	public static final CONTENT_PATH:String = 'content';
 
-	public static var packList:Array<String> = [];
-	public static var packMap:Map<String, Pack> = [];
+	public static var currentPackId(default, set):String = '';
+	public static var currentPack(default, set):Pack = null;
 
 	/** 
-		Dictates the order of user added packs
-	**/
-	public static var entries = new EntryList();
-
-	/** 
-		Used by Paths, a list of packs to load assets from.  
+		The currently active pack, its dependencies and global packs.  
 		Updated whenever `currentPackId` is changed.
 	**/
-	public static var loadList:Array<Pack> = []; // rename to readList?
+	public static var readList:Array<Pack> = [];
 
+	/** Map `[pack.id => pack]` of loaded packs **/
+	public static var packMap:Map<String, Pack> = [];
+	/** List of loaded packs id's, in loading order **/
+	public static var packList:Array<String> = [];
+	/** List of global packs id's, in loading order **/
 	public static var globalPacks:Array<Pack> = [];
 
-	public static var currentPackId(default, set):String = '';
-	public static var currentPack(default, null):Pack = null;
+	/** Dictates which packs and in which order they're added **/
+	public static var entries = new EntryList();
+	// TODO: "profiles" so that I don't have to make copies of the content folder :P
 
-	static function set_currentPackId(v:String) {
-		if (currentPackId == v)
-			return currentPackId;
-		
-		if (v.length == 0) {
-			currentPack = null;
-		}else {
-			currentPack = packMap.get(v);
-			if (currentPack == null) {
-				trace('WARNING: currentPackId was set to a non-existant pack: "$v"');
-				v = '';
-			}
-		}
-
-		refreshLoadList();		
-		trace('set currentPackId to "$v"');
-		return currentPackId = v;
-	}
-
-	public static function refreshLoadList() {
-		loadList.resize(0);
+	#if true
+	public static function refreshReadList() {
+		readList.resize(0);
 
 		for (pack in globalPacks)
-			loadList.push(pack);
+			readList.push(pack);
 		
 		if (currentPack != null) {
 			for (id in currentPack.dependencies) {
 				var pack = packMap.get(id);
 				if (pack != null)
-					loadList.push(pack);
+					readList.push(pack);
 			}
 				
-			loadList.push(currentPack);
+			readList.push(currentPack);
 		}
-		loadList.reverse();
-		trace('loadList: $loadList');
+		readList.reverse();
+		trace('readList: $readList');
 	}
 
-	#if true
 	public static function reloadPackList()
 	{
 		//// Unload packs
@@ -122,7 +109,7 @@ class PackManager {
 		#if MODS_ALLOWED
 		reloadEntries();
 		for (entry in entries) {
-			if (entry.active) {
+			if (entry.enabled) {
 				var pack = #if USING_MOONCHART if (entry.id == "moonchart")
 					new MoonchartFolder(entry.id, '$CONTENT_PATH/${entry.id}');
 				else #end					
@@ -187,6 +174,30 @@ class PackManager {
 	} 
 	#end
 	#end
+
+	////
+	static function set_currentPackId(v:String) {
+		if (v.length == 0) {
+			currentPack = null;
+		}else {
+			currentPack = packMap.get(v);
+			if (currentPack == null) {
+				trace('WARNING: currentPackId was set to a non-existant pack: "$v"');
+			}
+		}
+
+		return currentPackId = v;
+	}
+
+	static function set_currentPack(v:Pack) {
+		if (currentPack != v) {
+			currentPack = v;
+			currentPackId = (v == null) ? '' : v.id;
+			refreshReadList();
+		}
+
+		return currentPack;
+	}
 }
 
 // aura
@@ -252,17 +263,17 @@ abstract EntryList(Array<PackEntry>) {
 **/
 abstract PackEntry(haxe.ds.Vector<String>) {
 	public var id(get, never):String;
-	public var active(get, set):Bool;
+	public var enabled(get, set):Bool;
 
-	public function new(id:String, active:Bool) {
+	public function new(id:String, enabled:Bool) {
 		this = new haxe.ds.Vector<String>(2);
 		this.set(0, id);
-		this.set(1, active ? "1" : "0");
+		this.set(1, enabled ? "1" : "0");
 	}
 
 	/**
 		Parses a `PackEntry` from a String.  
-		Format: `"id=active"` (e.g. `"myMod=1"` or `"anotherMod=0"`)
+		Format: `"id=enabled"` (e.g. `"myMod=1"` or `"anotherMod=0"`)
 		@param str The String to parse.
 		@returns A `PackEntry` instance, or `null` if the String couldn't be parsed.
 	**/
@@ -270,8 +281,8 @@ abstract PackEntry(haxe.ds.Vector<String>) {
 		var splitIdx = str.lastIndexOf('=');
 		if (splitIdx == -1) return null;
 		var id:String = str.substring(0, splitIdx);
-		var active:Bool = str.substring(splitIdx + 1) == "1";
-		return new PackEntry(id, active);
+		var enabled:Bool = str.substring(splitIdx + 1) == "1";
+		return new PackEntry(id, enabled);
 	}
 
 	/**
@@ -282,8 +293,8 @@ abstract PackEntry(haxe.ds.Vector<String>) {
 		return '${this.get(0)}=${this.get(1)}';
 
 	function get_id():String return this.get(0);
-	function get_active():Bool return this.get(1) == "1";
-	function set_active(value:Bool):Bool {
+	function get_enabled():Bool return this.get(1) == "1";
+	function set_enabled(value:Bool):Bool {
 		this.set(1, value ? "1" : "0");
 		return value;
 	}

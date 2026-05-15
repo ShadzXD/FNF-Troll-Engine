@@ -88,7 +88,7 @@ class TitleState extends MusicBeatState
 		var chosenStage = FlxG.random.getObject(titleStages);
 		if (chosenStage != null) {
 			trace('Title stage $chosenStage');
-			Paths.currentModDirectory = chosenStage.folder;
+			Paths.currentPackId = chosenStage.folder;
 			bg = new Stage(chosenStage.id, true);
 			
 			#if MULTICORE_LOADING

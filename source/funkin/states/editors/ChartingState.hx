@@ -779,7 +779,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 	function loadSkinStuff() {
 		hudList = ['default'];
-		#if MODS_ALLOWED
+
 		var skinsLoaded:Map<String, Bool> = new Map();
 		var directories:Array<String> = Paths.getFolders('hudskins');
 		for (i in 0...directories.length) {
@@ -797,7 +797,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 				}
 			}
 		}
-		#end
 	}
 
 	function loadEventStuff() {
@@ -810,7 +809,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		for (noteType in defaultNoteTypeList)
 			noteTypeList.push(noteType);
 
-		#if MODS_ALLOWED
 		var extensions:Array<String> = [
 			#if HSCRIPT_ALLOWED
 			'.hscript'
@@ -838,7 +836,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 				noteTypeList.push(name);
 			}
 		}
-		#end
 	}
 
 	function getSongNoteTypes(wipe:Bool = true) {
@@ -4082,7 +4079,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 	function loadJson(songId:String):Void
 	{
-		var song = new Song(songId, Paths.currentModDirectory);
+		var song = new Song(songId, Paths.currentPackId);
 		var charts:Array<String> = song.getCharts();
 
 		if (charts.length == 0) {

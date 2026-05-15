@@ -39,7 +39,7 @@ class Pack {
 		`funkin.states.TitleState` by default.
 	**/
 	public function launch():Void {
-		Paths.currentModDirectory = this.id;
+		Paths.currentPackId = this.id;
 		funkin.states.base.MusicBeatState.switchState(() -> new funkin.states.TitleState());
 	}
 

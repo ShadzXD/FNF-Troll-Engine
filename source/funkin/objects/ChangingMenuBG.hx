@@ -1,5 +1,6 @@
 package funkin.objects;
 
+import flixel.graphics.FlxGraphic;
 import flixel.tweens.FlxTween;
 import flixel.tweens.FlxEase;
 import flixel.util.FlxColor;
@@ -10,7 +11,7 @@ import flixel.FlxBasic;
 class ChangingMenuBG extends FlxTypedGroup<FlxSprite> {
 	var curBG:FlxSprite;
 
-	public function fadeToBg(graphic, color:FlxColor) {
+	public function fadeToBg(graphic:FlxGraphic, color:FlxColor) {
 		if (curBG != null && curBG.graphic == graphic && curBG.color == color)
 			return;
 

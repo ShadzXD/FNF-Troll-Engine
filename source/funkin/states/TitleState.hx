@@ -84,7 +84,12 @@ class TitleState extends MusicBeatState
 		super.create();
 
 		////
-		var titleStages = StageData.getTitleStages();
+		var titleStages = if (Paths.currentPack == null)
+			StageData.getTitleStages();
+		else [
+			for (stageId in Paths.currentPack.getTitleStages()) 
+				{id:stageId, folder: Paths.currentPack.id}
+		];
 		var chosenStage = FlxG.random.getObject(titleStages);
 		if (chosenStage != null) {
 			trace('Title stage $chosenStage');

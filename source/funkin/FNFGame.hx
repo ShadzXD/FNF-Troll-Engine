@@ -80,7 +80,7 @@ class FNFGame extends FlxGame
 					if (_state != null) _state.visible = false;
 					TransitionableState.skipNextTransIn = true;
 					TransitionableState.skipNextTransOut = true;
-					MusicBeatState.switchState(new funkin.states.MainMenuState());
+					MusicBeatState.switchState(() -> new funkin.states.MainMenuState());
 				}else {
 					MusicBeatState.resetState();
 				}

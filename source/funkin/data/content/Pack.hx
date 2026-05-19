@@ -1,10 +1,7 @@
 package funkin.data.content;
 
-typedef ModMenuCapabilities = {
-	var canLaunch:Bool;
-	var hasOptions:Bool;
-	var hasCredits:Bool;
-}
+import funkin.data.content.PackManager;
+import flixel.util.FlxColor;
 
 class Pack {
 	/** Internal ID used by the engine **/
@@ -18,7 +15,12 @@ class Pack {
 
 	public var dependencies:Array<String> = [];
 
+	public var metadata:PackMetadata = {};
+
 	public final extraData = new Map<String, Dynamic>();
+
+	@:access(funkin.data.content.PackManager)
+	private var active(default, default):Bool = false;
 
 	public function new(id:String, path:String) {
 		this.id = id;
@@ -40,14 +42,12 @@ class Pack {
 	**/
 	public function launch():Void {
 		Paths.currentPackId = this.id;
-		funkin.states.base.MusicBeatState.switchState(() -> new funkin.states.TitleState());
+		funkin.states.TitleState.initialized = false;
+		funkin.states.base.MusicBeatState.switchState(new funkin.states.TitleState());
 	}
 
-	public function getDisplayName():String
-		return id; // TODO
-
-	public function getDescription():String
-		return '';
+	public inline function getPath(key:String):String
+		return '$path/$key'; 
 
 	/** Returns a list EVERY song belonging to this AssetFolder **/
 	public function getSongs():Array<BaseSong>
@@ -79,4 +79,13 @@ class Pack {
 	public function getRepo():funkin.api.Github.RepoInfo
 		return null;
 	*/
+}
+
+typedef PackMetadata = {
+	@:optional var title:String;
+	@:optional var description:String;
+	@:optional var author:String;
+
+	@:optional var accentColor:FlxColor;
+	@:optional var bgColor:FlxColor;
 }

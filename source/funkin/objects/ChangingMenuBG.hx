@@ -49,3 +49,57 @@ class ChangingMenuBG extends FlxTypedGroup<FlxSprite> {
 		return spr;
 	}
 }
+
+class ChangingSpriteGroup extends FlxTypedGroup<FlxSprite> {
+	public var curSprite:FlxSprite;
+	public var curTween:FlxTween;
+
+	public function fadeTo(graphic:FlxGraphic, color:FlxColor = FlxColor.WHITE) {
+		if (curSprite != null && curSprite.graphic == graphic && curSprite.color != color)
+			return;
+
+		/*
+		if (graphic == null) {
+			curTween = FlxTween.tween(curSprite, {alpha: 0.0}, 0.4, {ease: FlxEase.sineInOut, onComplete: onTweenComplete});
+			curSprite = null;
+		}
+		*/
+		
+		if (this.members.length > 4) {
+			curSprite = this.members[0];
+			curSprite.exists = true;
+			FlxTween.cancelTweensOf(curSprite);
+
+			var sowy = this.members[1];
+			sowy.alpha = 1.0;
+			FlxTween.cancelTweensOf(sowy);
+		}else {
+			curSprite = this.recycle(FlxSprite, makeBgSprite);
+		}
+		curSprite.alpha = 0.0;
+		this.members.remove(curSprite);
+		this.members.push(curSprite);
+		
+		curSprite.loadGraphic(graphic);
+		curSprite.screenCenter();
+		curSprite.color = color;
+		curTween = FlxTween.tween(curSprite, {alpha: 1.0}, 0.4, {ease: FlxEase.sineInOut, onComplete: onTweenComplete});
+	}
+
+	private function onTweenComplete(twn:FlxTween) {
+		if (twn != curTween)
+			return;
+		
+		for (obj in members) {
+			if (obj != curSprite)
+				obj.exists = false;
+		}
+	}
+
+	static function makeBgSprite(){
+		var spr = new FlxSprite();
+		spr.active = false;
+		spr.moves = false;
+		return spr;
+	}
+}

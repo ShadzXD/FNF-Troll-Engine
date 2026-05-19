@@ -8,6 +8,8 @@ package funkin.data.content;
 class PackManager {
 	public static final CONTENT_PATH:String = 'content';
 
+	public static var engineAssets(default, null):Pack = null;
+
 	public static var currentPackId(default, set):String = '';
 	public static var currentPack(default, set):Pack = null;
 
@@ -23,6 +25,9 @@ class PackManager {
 	public static var packList:Array<String> = [];
 	/** List of global packs id's, in loading order **/
 	public static var globalPacks:Array<Pack> = [];
+
+	/** A map of all packs, including packs that weren't loaded **/
+	private static var allPacks:Map<String, Pack> = [];
 
 	/** Dictates which packs and in which order they're added **/
 	public static var entries = new EntryList();
@@ -56,6 +61,7 @@ class PackManager {
 		packMap.clear();
 		packList.resize(0);
 		globalPacks.resize(0);
+		allPacks.clear();
 
 		////
 		var loadList:Array<Pack> = [];
@@ -63,6 +69,8 @@ class PackManager {
 		//
 		var hcPacks:Array<Pack> = getHardcodedPacks();
 		for (pack in hcPacks) {
+			allPacks.set(pack.id, pack);
+			// these can't be disabled
 			packMap.set(pack.id, pack);
 			loadList.push(pack);
 		}
@@ -71,8 +79,11 @@ class PackManager {
 		var modPacks:Array<Pack> = getModdedPacks();
 		for (pack in modPacks) {
 			if (!packMap.exists(pack.id)) {
-				packMap.set(pack.id, pack);
-				loadList.push(pack);
+				allPacks.set(pack.id, pack);
+				if (entries.getEntry(pack.id).enabled) {
+					packMap.set(pack.id, pack);
+					loadList.push(pack);
+				}
 			}
 		}
 
@@ -96,9 +107,9 @@ class PackManager {
 		var list:Array<Pack> = [];
 
 		//// "assets" folder
-		var cunt = new ContentFolder('assets', 'assets');
-		cunt.runsGlobally = true;
-		list.push(cunt);
+		engineAssets = new ContentFolder('assets', 'assets');
+		engineAssets.runsGlobally = true;
+		list.push(engineAssets);
 
 		return list;
 	}
@@ -109,7 +120,8 @@ class PackManager {
 		#if MODS_ALLOWED
 		reloadEntries();
 		for (entry in entries) {
-			if (entry.enabled) {
+			//if (entry.enabled)
+			{
 				var pack = #if USING_MOONCHART if (entry.id == "moonchart")
 					new MoonchartFolder(entry.id, '$CONTENT_PATH/${entry.id}');
 				else #end					

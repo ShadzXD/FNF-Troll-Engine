@@ -2,11 +2,17 @@ package funkin.data.content;
 
 import haxe.io.Path;
 import funkin.Paths;
+import funkin.data.content.Pack;
 
 class ContentFolder extends Pack {
 	public var jsonData:ContentMetadata = {};
 
 	override function load() {
+		var metaJson:PackMetadata = Paths.getJson('$path/pack.json');
+		if (metaJson != null)
+			this.metadata = metaJson;
+		
+		////
 		var metaJson:ContentMetadata = Paths.getJson('$path/metadata.json');
 		
 		if (metaJson == null) {

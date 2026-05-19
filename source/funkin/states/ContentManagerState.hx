@@ -2,6 +2,7 @@ package funkin.states;
 
 import funkin.input.Controls;
 import funkin.objects.ui.CustomFlxUI.CustomFlxInputText;
+import funkin.objects.ChangingMenuBG;
 import funkin.input.InputFormatter;
 import funkin.objects.ui.ScrollBar;
 import trollui.SlicedSprite;
@@ -12,12 +13,14 @@ import flixel.group.FlxSpriteGroup;
 import flixel.group.FlxGroup;
 import flixel.text.FlxText;
 import funkin.data.content.PackManager;
-import funkin.data.content.PackManager.PackEntry;
+import funkin.data.content.Pack;
 import math.CoolMath;
 import flixel.math.FlxRect;
 
 using StringTools;
 
+// Used to get the path and menu styles
+@:access(funkin.data.content.PackManager.allPacks)
 class ContentManagerState extends MusicBeatState {	
 	var entries:EntryList;
 
@@ -35,7 +38,7 @@ class ContentManagerState extends MusicBeatState {
 	var packCardBG:FlxSprite;
 	var packCardTitle:FlxText;
 	var packCardAuthor:FlxText;
-	var packCardBanner:FlxSprite;
+	var packCardBannerGroup:ChangingSpriteGroup;
 	var packDescriptionText:ScrollText;
 
 	var dropdown:Dropdown;
@@ -43,52 +46,25 @@ class ContentManagerState extends MusicBeatState {
 	/** Whether to save the entry list and reload packs after leaving this state **/
 	var didChanges:Bool = false;
 
-	/*
-	final defaultDisplayData:PackDisplayData = {
-		title: "Unknown",
-		author: "Unknown",
-		description: "No description provided",
-		accentColor: 0xFFFFFFFF,
-		bgColor: 0xFF4C4C4C,
-	}*/
+	final displayData = new PackDisplayData();
 
-	function getDisplayData(entry:PackEntry):PackDisplayData {
-		var title:String = null;
-		var author:Null<String> = null;
-		var description:String = null;
-
-		var accentColor:Null<FlxColor> = null;
-		var bgColor:Null<FlxColor> = null;
-
-		var bannerAsset:Null<FlxGraphic> = null;
-		var bgAsset:Null<FlxGraphic> = null;
+	inline function getDisplayData(entry:PackEntry) {
+		final pack = PackManager.allPacks.get(entry.id);
+		final data:PackMetadata = pack.metadata ?? {};
+		
+		displayData.packIsLoaded = PackManager.packMap.exists(entry.id);
+		displayData.runsGlobally = pack.runsGlobally;
 
 		////
-		final entryPackLoaded = PackManager.packMap.exists(entry.id);
-		if (entryPackLoaded) {
-			bannerAsset = Paths.graphic('packbanner', entry.id);
-			bgAsset = Paths.image('menuDesat', entry.id);
-		}
+		displayData.title = data.title ?? entry.id;
+		displayData.description = data.description ?? "No description provided";
+		displayData.author = data.author;//?? "Unknown";
 
-		////
-		title ??= entry.id;
-		author ??= "Unknown";
-		description ??= "No description provided";
+		displayData.bgColor = data.bgColor ?? data.accentColor ?? FlxColor.fromHSB(FlxG.random.int(64) * 5.625, 0.15, FlxG.random.float(0.467, 0.512)); //0xFFea71fd;
+		displayData.accentColor = data.accentColor ?? FlxColor.WHITE;
 
-		bgColor ??= accentColor ?? FlxColor.fromHSB(FlxG.random.int(64) * 5.625, 0.15, FlxG.random.float(0.420, 0.467)); //0xFFea71fd;
-		accentColor ??= FlxColor.WHITE;
-
-		return {
-			title: title,
-			author: author,
-			description: description,
-
-			bgColor: bgColor,
-			accentColor: accentColor,
-			
-			bannerAsset: bannerAsset,
-			bgAsset: bgAsset,
-		};
+		displayData.bannerAsset = packGraphic(pack, 'packbanner');
+		displayData.bgAsset = packGraphic(pack, 'images/menuDesat') ?? packGraphic(PackManager.engineAssets, 'images/modsmenu/menuDesat') ?? FlxGraphic.fromRectangle(FlxG.width, FlxG.height, 0xFFE1E1E1, false, 'contentmanager_nobg');
 	}
 
 	override function create() {
@@ -99,6 +75,17 @@ class ContentManagerState extends MusicBeatState {
 		entries.array.sort((a, b) -> (a.enabled == b.enabled) ? (a.enabled ? 0 : CoolUtil.alphabeticalSort(a.id, b.id)) : (b.enabled ? 1 : -1));
 
 		////
+		
+		if (FlxG.sound.music?.playing && FlxG.sound.music.volume > 0.1) {
+			FlxG.sound.music.fadeOut(
+				0.4,
+				0.0,
+				_ -> MusicBeatState.playMusic('contentmanager', true)
+			);
+		}else {
+			MusicBeatState.playMusic('contentmanager');
+		}
+
 		FlxG.camera.bgColor = 0xFF4C4C4C;
 		//add(new funkin.objects.CoolMenuBG('menuDesat', 0xFFffFFFF));
 		bgManager = new ChangingMenuBG();
@@ -128,7 +115,7 @@ class ContentManagerState extends MusicBeatState {
 		boxSpacing = (listHeight - boxHeight * boxes) / (boxes + 1);
 		#end
 
-		if (true) {
+		if (false) {
 			var searchBox = new CustomFlxInputText(0, 0, listWidth - 8 * 2, "", 16, FlxColor.WHITE, FlxColor.TRANSPARENT);
 			searchBox.setFormat(Paths.font("quantico.ttf"), 16);
 			searchBox.text = "Search";
@@ -269,8 +256,7 @@ class ContentManagerState extends MusicBeatState {
 		packCardBG.x = packCardBGBorder.x + 4;
 		packCardBG.y = packCardBGBorder.y + 4;
 
-		packCardBanner = new FlxSprite();
-		packCardBanner.exists = false;
+		packCardBannerGroup = new ChangingSpriteGroup();
 		
 		packCardTitle = new FlxText(0, 0, packCardBG.width - 16 * 2, "");
 		packCardTitle.setFormat(Paths.font("quanticob.ttf"), 26, 0xFF000000, LEFT);
@@ -282,7 +268,7 @@ class ContentManagerState extends MusicBeatState {
 		
 		add(packCardBGBorder);
 		add(packCardBG);
-		add(packCardBanner);
+		add(packCardBannerGroup);
 		add(packCardTitle);		
 		add(packCardAuthor);		
 
@@ -350,10 +336,7 @@ class ContentManagerState extends MusicBeatState {
 		////
 		final entry = entries.array[listSelectedIndex];
 
-		if (PackManager.packMap.exists(entry.id))
-			PackManager.currentPackId = entry.id;
-
-		var displayData = getDisplayData(entry);
+		getDisplayData(entry);
 		trace(displayData);
 		
 		if (displayData.author != null) {
@@ -374,20 +357,28 @@ class ContentManagerState extends MusicBeatState {
 			packCardAuthor.exists = false;
 		}
 
+		var packCardBanner:FlxSprite;
 		if (displayData.bannerAsset != null) {
-			packCardBanner.exists = true;
-			packCardBanner.loadGraphic(displayData.bannerAsset);
+			packCardBannerGroup.fadeTo(displayData.bannerAsset);	
+			packCardBanner = packCardBannerGroup.curSprite;
 			packCardBanner.setGraphicSize(0, packCardBG.height);
 			packCardBanner.updateHitbox();
-			packCardBanner.x = packCardBG.x + packCardBG.width - packCardBanner.width;
-			SpriteTools.objectCenter(packCardBanner, packCardBG, Y);
 		}else {
-			packCardBanner.exists = false;
+			packCardBannerGroup.fadeTo(packCardBG.graphic);
+			packCardBanner = packCardBannerGroup.curSprite;
+			packCardBanner.scale.set(packCardBG.width, packCardBG.height);
+			packCardBanner.updateHitbox();
 		}
+		packCardBanner.x = packCardBG.x + packCardBG.width - packCardBanner.width;
+		SpriteTools.objectCenter(packCardBanner, packCardBG, Y);
 
-		packDescriptionText.text = displayData.description;
+		var descStr = displayData.description;
+		if (displayData.runsGlobally)
+			descStr += '\n\nNOTE: This pack runs globally';
 
-		bgManager.fadeToBg(displayData.bgAsset, bgColor);
+		packDescriptionText.text = descStr;
+
+		bgManager.fadeToBg(displayData.bgAsset, displayData.bgColor);
 	}
 
 	function changeHovered(index:Int) {
@@ -445,12 +436,14 @@ class ContentManagerState extends MusicBeatState {
 	}
 
 	function acceptOption(entry:PackEntry, opt:ModOption) {
+		final pack = PackManager.allPacks.get(entry.id);
+		
 		switch(opt) {
 			case LAUNCH_MOD:
+				pack.launch();
+
 			case OPEN_MOD_LOCATION:
-				// TODO
-				var path = PackManager.CONTENT_PATH + '/' + entry.id; 
-				lime.system.System.openFile(CoolUtil.getSystemPath(path));
+				lime.system.System.openFile(CoolUtil.getSystemPath(pack.path));
 				dropdown.exists = false;
 
 			case OPEN_PACK_OPTIONS:
@@ -507,7 +500,6 @@ class ContentManagerState extends MusicBeatState {
 
 		if (controls.BACK) {
 			if (didChanges) {
-				FlxG.sound.music?.fadeOut(0.3);
 			}
 			MusicBeatState.switchState(new funkin.states.MainMenuState());
 		}
@@ -600,6 +592,13 @@ class ContentManagerState extends MusicBeatState {
 
 	}
 
+	override function startOutro(onOutroComplete:() -> Void) {
+		if (FlxG.sound.music?.playing)
+			FlxG.sound.music.fadeOut(0.3, 0.0, _ -> FlxG.sound.music.stop());
+
+		super.startOutro(onOutroComplete);
+	}
+
 	override function destroy() {
 		FlxG.cameras.remove(listCamera);
 		super.destroy();
@@ -616,33 +615,52 @@ class ContentManagerState extends MusicBeatState {
 	}
 }
 
-private typedef PackDisplayData = {
-	var title:String;
-	var description:String;
-	var author:String;
-
-	var accentColor:FlxColor;
-	var bgColor:FlxColor;
-	
-	////
-	var bgAsset:FlxGraphic;
-	var bannerAsset:Null<FlxGraphic>;
+typedef ModMenuCapabilities = {
+	var canLaunch:Bool;
+	var hasOptions:Bool;
+	var hasCredits:Bool;
 }
 
-private class SwitchToggle extends FlxSprite {
-	public var enabled(default, set):Bool;
+@:publicFields
+private class PackDisplayData {
+	var title:String;
+	var description:String;
+	var author:Null<String>;
+	var bgColor:FlxColor;
+	var accentColor:FlxColor;
 
-	function set_enabled(v) {
-		animation.play(v ? "on" : "off");
-		return enabled = v;
+	var packIsLoaded:Bool;
+	var runsGlobally:Bool;
+
+	var bgAsset:FlxGraphic;
+	var bannerAsset:FlxGraphic;
+
+	inline function new() {}
+
+	public function toString() {
+		final fields = Type.getInstanceFields(Type.getClass(this));
+		final arr:Array<String> = [];
+
+		for (fieldName in fields) {
+			var value = Reflect.getProperty(this, fieldName);
+			
+			if (Reflect.isFunction(value))
+				continue;
+
+			arr.push('$fieldName => $value');
+		}
+
+		return '[\n' + arr.join('\n') + '\n]';
 	}
+}
 
-	public function new(x:Float = 0, y:Float = 0, enabled:Bool = false) {
-		super(x, y);
-		loadGraphic("modsmenu/switch_toggle");
-		loadGraphic(graphic, true, graphic.width, Std.int(graphic.height / 2));
-		animation.add("off", [0]);
-		animation.add("on", [1]);
+private inline function packGraphic(pack:Pack, key:String):Null<FlxGraphic> {
+	if (pack == null)
+		return null;
+	else {
+		var path = pack.getPath('$key.png');
+		var bmp = openfl.display.BitmapData.fromFile(path);
+		return (bmp==null) ? null : FlxG.bitmap.add(bmp, false, path);
 	}
 }
 
@@ -875,10 +893,15 @@ private class EntryBox extends FlxSpriteGroup {
 		this.entry = entry;
 		
 		updateToggleSprite();
-
-		icon.loadGraphic("flixel/images/logo/default.png");
-		icon.loadGraphic("modsmenu/pack");
-		icon.loadGraphic(Paths.graphic('packicon', entry.id));
+		
+		@:privateAccess {
+			final pack = PackManager.allPacks.get(entry.id);
+			var graphic:FlxGraphic = packGraphic(pack, 'packicon');
+			graphic ??= Paths.image("modsmenu/pack");
+			icon.loadGraphic(graphic);
+			icon.checkEmptyFrame(); // flixel icon :o
+		}
+		
 		icon.setGraphicSize(32, 32);
 		icon.updateHitbox();
 		SpriteTools.objectCenter(icon, bg, Y);

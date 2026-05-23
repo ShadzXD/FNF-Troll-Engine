@@ -24,6 +24,10 @@ using StringTools;
 class ContentManagerState extends MusicBeatState {	
 	var entries:EntryList;
 
+	var listBoxStartY:Float = 0;
+	var listBoxHeight:Float = 64;
+	var listBoxSpacing:Float = 8;
+
 	var listCamera:FlxCamera;
 	var listScrollBar:ScrollBar;
 	var listGrp = new FlxTypedGroup<EntryBox>();
@@ -103,16 +107,16 @@ class ContentManagerState extends MusicBeatState {
 		var listHeight:Int = FlxG.height - borderVPadding * 2;
 		
 		#if true
-		var boxHeight:Float = 64;
-		var boxSpacing:Float = 8;
+		listBoxHeight = 64;
+		listBoxSpacing = 8;
 		#else
 		var boxes:Int = 8;
-		var boxSpacing:Float = 8;
-		var boxHeight:Float = (listHeight - (boxes + 1) * boxSpacing) / boxes;
+		listBoxSpacing = 8;
+		var listBoxHeight:Float = (listHeight - (boxes + 1) * listBoxSpacing) / boxes;
 
-		// floor boxHeight and recalc spacing
-		boxHeight = Math.fround(boxHeight);
-		boxSpacing = (listHeight - boxHeight * boxes) / (boxes + 1);
+		// floor listBoxHeight and recalc spacing
+		listBoxHeight = Math.fround(listBoxHeight);
+		listBoxSpacing = (listHeight - listBoxHeight * boxes) / (boxes + 1);
 		#end
 
 		if (false) {
@@ -147,15 +151,15 @@ class ContentManagerState extends MusicBeatState {
 		//listCamera.targetOffset.y = -26; // what's up with this
 		//okay so it has something to do with using LOCKON target following but i don't wanna add camFollow camFollowPos bs here so suck it
 		listCamera.minScrollX = 0;
-		listCamera.minScrollY = boxSpacing;
-		listCamera.maxScrollY = boxSpacing + boxSpacing;
+		listCamera.minScrollY = listBoxSpacing;
+		listCamera.maxScrollY = listBoxSpacing + listBoxSpacing;
 		FlxG.cameras.add(listCamera, false);
 
 		////
 		listGrp.camera = listCamera;
 		add(listGrp);
 
-		var maxScrollY = listCamera.maxScrollY + (boxHeight + boxSpacing) * entries.length;
+		var maxScrollY = listCamera.maxScrollY + (listBoxHeight + listBoxSpacing) * entries.length;
 		var boxWidth = listCamera.width;
 
 		if (maxScrollY - listCamera.minScrollY > listCamera.height) {
@@ -163,15 +167,13 @@ class ContentManagerState extends MusicBeatState {
 			boxWidth -= 12 + 4;
 		}
 
-		for (i => entry in entries) {
-			var curOpt = new EntryBox(boxWidth, boxHeight);
-			listGrp.add(curOpt);
+		listBoxStartY = listCamera.maxScrollY;
 
-			curOpt.ID = i;
-			curOpt.setEntry(entry);
-			
-			curOpt.y = listCamera.maxScrollY + (boxHeight + boxSpacing) * i;
+		for (i => entry in entries) {
+			var curOpt = new EntryBox(boxWidth, listBoxHeight);
+			listGrp.add(curOpt);
 		}
+		updateListBoxes();
 		listCamera.maxScrollY = maxScrollY;
 
 		listScrollBar = new ScrollBar(0, 0, listCamera.maxScrollY, listCamera.height);
@@ -390,18 +392,25 @@ class ContentManagerState extends MusicBeatState {
 			listGrp.members[listHoveredIndex].onSelected();
 	}
 
-	function shiftSelectedOrder(change:Int) {
-		var newIndex = listSelectedIndex + change;
+	function shiftSelectedOrder(val:Int, isAbs:Bool = false, insert:Bool = false) {
+		var newIndex = isAbs ? val : listSelectedIndex + val;
 		if (newIndex < 0 || newIndex >= entries.length)
 			return;
 
-		final entry = entries.array[listSelectedIndex];
-		entries.array[listSelectedIndex] = entries.array[newIndex];
-		entries.array[newIndex] = entry;
+		if (insert) {
+			final entry = entries.array[listSelectedIndex];
+			entries.array[listSelectedIndex] = null;
+			entries.array.insert(newIndex, entry);
+			while (entries.array.remove(null)) {}
+		}else {
+			final entry = entries.array[listSelectedIndex];
+			entries.array[listSelectedIndex] = entries.array[newIndex];
+			entries.array[newIndex] = entry;
+		}
 		
 		didChanges = true;
-		updateListTexts();
-		changeSelected(change);
+		updateListBoxes();
+		changeSelected(newIndex, true);
 	}
 
 	function getEntryOptions(entry:PackEntry) {
@@ -464,10 +473,11 @@ class ContentManagerState extends MusicBeatState {
 		return index;
 	}
 
-	function updateListTexts() {
+	function updateListBoxes() {
 		for (i => box in listGrp) {
 			final entry = entries.array[i];
 			box.setEntry(entry);
+			box.y = listBoxStartY + (listBoxHeight + listBoxSpacing) * i;
 		}
 	}
 
@@ -838,6 +848,7 @@ private class EntryBox extends FlxSpriteGroup {
 	public var bg:FlxSprite;
 	public var icon:FlxSprite;
 	public var text:FlxText;
+	public var dragSprite:FlxSprite;
 	public var toggleSprite:FlxSprite;
 	public var selectionHighlight:FlxSprite;
 	
@@ -851,13 +862,13 @@ private class EntryBox extends FlxSpriteGroup {
 		bg.updateHitbox();
 		add(bg);
 
-		var draggable = new FlxSprite();
-		draggable.loadGraphic("modsmenu/item_draggable");
-		draggable.x = bg.x;
-		SpriteTools.objectCenter(draggable, bg, Y);
-		add(draggable);
+		dragSprite = new FlxSprite();
+		dragSprite.loadGraphic("modsmenu/item_draggable");
+		dragSprite.x = bg.x;
+		SpriteTools.objectCenter(dragSprite, bg, Y);
+		add(dragSprite);
 
-		icon = new FlxSprite(draggable.x + draggable.width + 8);
+		icon = new FlxSprite(dragSprite.x + dragSprite.width + 8);
 		add(icon);
 
 		text = new FlxText(0, 0, 0, "unknown", 18);

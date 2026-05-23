@@ -35,6 +35,7 @@ class ContentManagerState extends MusicBeatState {
 	var listHoveredIndex:Int = -1;
 
 	var _lastListScrollY:Float = 0;
+	var dragging:Bool = false;
 
 	var bgManager:ChangingMenuBG;
 	
@@ -46,6 +47,8 @@ class ContentManagerState extends MusicBeatState {
 	var packDescriptionText:ScrollText;
 
 	var dropdown:Dropdown;
+	
+	var topCamera:FlxCamera;
 
 	/** Whether to save the entry list and reload packs after leaving this state **/
 	var didChanges:Bool = false;
@@ -301,6 +304,10 @@ class ContentManagerState extends MusicBeatState {
 		dropdown.exists = false;
 		add(dropdown);
 
+		topCamera = new FlxCamera();
+		topCamera.bgColor = 0;
+		FlxG.cameras.add(topCamera, false); 
+
 		////
 		changeSelected(0);
 
@@ -475,6 +482,21 @@ class ContentManagerState extends MusicBeatState {
 		return index;
 	}
 
+	/** @returns Index of the `BoxEntry` that the mouse is currently hovering over **/
+	function getHoverIndex2(excludeIndex:Int):Int {
+		var index = -1;
+		for (i => box in listGrp.members) {
+			if (i == excludeIndex)
+				continue;
+
+			if (CoolUtil.overlapsMouse(box.bg, listCamera)) {
+				index = i;
+				break;
+			}
+		}
+		return index;
+	}
+
 	function updateListBoxes() {
 		for (i => box in listGrp) {
 			final entry = entries.array[i];
@@ -538,6 +560,26 @@ class ContentManagerState extends MusicBeatState {
 			exitDropdown = true;
 		}
 
+		if (dragging) {
+			if (FlxG.mouse.justReleased) {
+				dragging = false;
+
+				var selBox = listGrp.members[listSelectedIndex];
+				selBox.camera = listCamera;
+
+				if (CoolUtil.mouseOverlapsCamera(listCamera)) {
+					var hoverIndex = getHoverIndex2(listSelectedIndex);
+					if (hoverIndex != -1)
+						shiftSelectedOrder(hoverIndex, true, true);
+					else {
+						updateListBoxes();
+						changeSelected(listSelectedIndex, true);
+						listCamera.follow(null);
+					}
+				}
+			}
+		}
+
 		if (overlapsScrollBar || !CoolUtil.mouseOverlapsCamera(listCamera)) {
 			if (listHoveredIndex != -1)
 				changeHovered(-1);
@@ -551,7 +593,7 @@ class ContentManagerState extends MusicBeatState {
 				exitDropdown = true;
 			}
 
-			if ((cameraMoved && listHoveredIndex != -1) || FlxG.mouse.deltaScreenX != 0.0 || FlxG.mouse.deltaScreenX != 0.0) {
+			if (!dragging && ((cameraMoved && listHoveredIndex != -1) || FlxG.mouse.deltaScreenX != 0.0 || FlxG.mouse.deltaScreenX != 0.0)) {
 				var hoverIndex = getHoverIndex();
 				if (hoverIndex != -1)
 					changeHovered(hoverIndex);
@@ -561,10 +603,16 @@ class ContentManagerState extends MusicBeatState {
 				var hoverIndex = getHoverIndex();
 				if (hoverIndex != -1) {
 					var box = listGrp.members[hoverIndex];
+
 					if (CoolUtil.overlapsMouse(box.toggleSprite, listCamera)) {
 						toggleEntry(hoverIndex);
 					}else {
 						changeSelected(hoverIndex, true);				
+					}
+
+					if (CoolUtil.overlapsMouse(box.dragSprite, listCamera)) {
+						changeSelected(hoverIndex, true);
+						dragging = true;
 					}
 				}
 			}
@@ -577,6 +625,23 @@ class ContentManagerState extends MusicBeatState {
 					dropdown.changeSelected(-1, true);
 				}
 			}
+		}
+
+		if (dragging) {
+			// nice visual feedback
+			changeHovered(getHoverIndex());
+
+			var mousePos = FlxG.mouse.getPositionInCameraView(topCamera);
+			var selBox = listGrp.members[listSelectedIndex];
+
+			@:privateAccess
+			//topCamera._scrollInternal.set(-listCamera.x, -listCamera.y);
+
+			selBox.y = mousePos.y - selBox.height / 2;
+			selBox.camera = topCamera;
+			listCamera.follow(null);
+
+			mousePos.putWeak();
 		}
 		#end
 

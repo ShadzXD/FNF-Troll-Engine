@@ -375,8 +375,10 @@ class ContentManagerState extends MusicBeatState {
 		SpriteTools.objectCenter(packCardBanner, packCardBG, Y);
 
 		var descStr = displayData.description;
+		/*
 		if (displayData.runsGlobally)
 			descStr += '\n\nNOTE: This pack runs globally';
+		*/
 
 		packDescriptionText.text = descStr;
 

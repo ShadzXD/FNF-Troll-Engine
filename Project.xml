@@ -120,7 +120,7 @@
 	<haxelib name="flixel-addons" version="3.2.3" />
 
 	<haxelib name="troll-ui" />
-	<haxelib name="flixel-animate" if="USING_FLXANIMATE" version="1.3.1"/>
+	<haxelib name="flixel-animate" if="USING_FLXANIMATE" version="1.5.0"/>
 	<haxelib name="funkin.vis"/>
 	<haxelib name="grig.audio"/>
 

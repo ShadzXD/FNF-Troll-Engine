@@ -1,5 +1,7 @@
 package funkin.data.content;
 
+import funkin.util.FileUtil;
+
 // I chose to call them PACKS because of conflicts with functions from Paths (getContent, getFolders)
 // Here comes packman
 
@@ -178,11 +180,11 @@ class PackManager {
 	}
 
 	public static inline function flushEntryList():Void {
-		CoolUtil.safeSaveFile(getEntryListSavePath(), entries.stringify());
+		FileUtil.safeSaveFile(getEntryListSavePath(), entries.stringify());
 	}
 	
 	inline static function getEntryListSavePath():String {
-		return CoolUtil.getFlxSavePath() + '/packList.txt';
+		return FileUtil.getFlxSavePath() + '/packList.txt';
 	} 
 	#end
 	#end

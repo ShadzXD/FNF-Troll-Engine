@@ -2480,17 +2480,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		Conductor.resumeSong();
 
 	override function updateSongPosition(?_:FlxSound) {
-		@:privateAccess
-		var elapsedMS:Float = FlxG.game._elapsedMS * inst.pitch;
-
-		if (inst.playing && lastMixPos != inst.time) {
-			lastMixPos = inst.time;
-			lastMixTimer = 0;
-		}else {
-			lastMixTimer += elapsedMS;
-		}
-				
-		Conductor.songPosition = lastMixPos + lastMixTimer;
+		//Conductor.songSyncMode = LAST_MIX; // fuck it let's see how it behaves
+		Conductor.update();
 	}
 
 	override function updateSteps() {
@@ -2513,8 +2504,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 					rollbackSection();
 			}
 			*/
-
-			tryResync();
 		}
 	}
 
@@ -2931,7 +2920,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 		var movedDummyY:Bool = false;
 		var onIcons:Bool = FlxG.mouse.overlaps(iconBG);
-		var onGrid:Bool = !onIcons && !FlxG.mouse.overlaps(progressBG)
+		var onTimeBar:Bool = !onIcons && FlxG.mouse.overlaps(progressBG);
+		var onGrid:Bool = !onIcons && !onTimeBar && !FlxG.mouse.overlaps(progressBG)
 			&& FlxG.mouse.x >= gridBG.x
 			&& FlxG.mouse.x < gridBG.x + gridBG.width
 			&& FlxG.mouse.y >= gridBG.y
@@ -3027,6 +3017,10 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			}
 		}
 
+		inline function deselectEverything() {
+			new SelectNotesAction([]);
+		}
+
 		inline function placeGridObject() {
 			var noteTime:Float = sectionStartTime() + getStrumTime(dummyArrow.y * (getSectionBeats(curSection) / 4), false);
 			var column:Int = Math.floor(FlxG.mouse.x / GRID_SIZE) - 1;
@@ -3047,7 +3041,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 				if ((overlappedObj = getOverlappedNote()) != null)
 					deleteNote(overlappedObj);
 				else
-					new SelectNotesAction([]);
+					deselectEverything();
 			}
 		}
 
@@ -3063,8 +3057,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 				}
 				else if (onGrid)
 					placeGridObject();
-				else if (!FlxG.mouse.overlaps(UI_box)) {
-					//new SelectNotesAction([]);
+				else if (!onTimeBar && !FlxG.mouse.overlaps(UI_box)) {
+					//deselectEverything();
 					startSelectionBox = true;
 				}
 			}

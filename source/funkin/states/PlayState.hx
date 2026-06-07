@@ -3273,6 +3273,8 @@ class PlayState extends MusicBeatState
 		if (ClientPrefs.simpleJudge || !ClientPrefs.comboFading)
 			ratingGroup.killLastCombo();
 
+		playMissSound();
+
 		if (stats.combo > 10 && gf != null && gf.animOffsets.exists('sad')){
 			gf.playAnim('sad');
 			gf.specialAnim = true;
@@ -3349,8 +3351,10 @@ class PlayState extends MusicBeatState
 		for(track in field.tracks)
 			track.volume = 0;
 
+		/*
 		if (!daNote.isSustainNote)
 			playMissSound();
+		*/
 
 		if (!daNote.noMissAnimation) {
 			for (char in getNoteCharacters(daNote, field)) {
@@ -3390,8 +3394,6 @@ class PlayState extends MusicBeatState
 		// i dont think this should reduce acc lol
 		//totalPlayed++;
 		//RecalculateRating();
-
-		playMissSound();
 
 		if (field != null) {
 			for (track in field.tracks)

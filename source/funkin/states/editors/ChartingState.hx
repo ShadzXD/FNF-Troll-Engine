@@ -61,6 +61,7 @@ using Lambda;
 typedef ChartingStateOptions = {
 	var ?autosave:String;
 	var ignoreWarnings:Bool;
+	var showHistoryDisplay:Bool;
 	var vortex:Bool;
 	var mouseScrollingQuant:Bool;
 	var noAutoScroll:Bool;
@@ -110,6 +111,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	public static function getDefaultOptions():ChartingStateOptions return {
 		autosave: null,
 		ignoreWarnings: false,
+		showHistoryDisplay: true,
 		vortex: false,
 		mouseScrollingQuant: false,
 		noAutoScroll: false,
@@ -669,7 +671,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		progressBar.maxValue = songLength;
 		progressBar.maxLabel.text = formatTime(songLength);
 
-		//historyDisplay.exists = true;
+		historyDisplay.exists = options.showHistoryDisplay;
 
 		if (UI_box != null) {
 			UI_box.destroy();
@@ -2531,6 +2533,9 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	}
 
 	function checkCanMouseScroll():Bool {
+		if (historyDisplay.exists && FlxG.mouse.overlaps(historyDisplay))
+			return false;
+
 		for (dropDownMenu in blockPressWhileScrolling) {
 			if (dropDownMenu.header.button.status == FlxButton.HIGHLIGHT)
 				return false;
@@ -2896,6 +2901,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		
 		if (FlxG.keys.justPressed.F6) {
 			historyDisplay.exists = !historyDisplay.exists;
+			options.showHistoryDisplay = historyDisplay.exists;
 		}
 
 		if (FlxG.keys.justPressed.ENTER) {
@@ -4480,6 +4486,7 @@ private class HistoryDisplay extends FlxSpriteGroup {
 				action = utRay[actionIdx];
 			}else {
 				action = null;
+				actionIdx = -1;
 			}
 
 			var txtIdx = txts.length - i;
@@ -4496,16 +4503,21 @@ private class HistoryDisplay extends FlxSpriteGroup {
 
 			txt.color = action_reverted ? 0xFF000000 : 0xFFFFFFFF;
 			txt.text = (action == null) ? " " : Std.string(action);
+			txt.ID = actionIdx;
 		}
 	}
 
 	override function update(elapsed:Float) {
-		if (FlxG.keys.justPressed.V) {
-			scrollIdx--;
-			updateDisplay();
-		}
-		if (FlxG.keys.justPressed.N) {
-			scrollIdx++;
+		var scrollChange:Int = FlxG.mouse.overlaps(this) ? -FlxG.mouse.wheel : 0;
+
+		if (FlxG.keys.justPressed.V)
+			scrollChange--;
+		
+		if (FlxG.keys.justPressed.N)
+			scrollChange++;
+		
+		if (scrollChange != 0) {
+			scrollIdx += scrollChange;
 			updateDisplay();
 		}
 
@@ -4513,6 +4525,23 @@ private class HistoryDisplay extends FlxSpriteGroup {
 			curIdx = ChartingState.instance.utIdx;
 			scrollIdx = 0;
 			updateDisplay();
+		}
+
+		if (FlxG.mouse.justPressed) {
+			for (txt in txts) {
+				if (!FlxG.mouse.overlaps(txt))
+					continue;
+				var actionIdx = txt.ID;
+				if (actionIdx == -1 || actionIdx == curIdx)
+					break;
+				else if (actionIdx < curIdx)
+					while (ChartingState.instance.utIdx != actionIdx)
+						ChartingState.instance.undo();
+				else
+					while (ChartingState.instance.utIdx != actionIdx)
+						ChartingState.instance.redo();
+				break;
+			}
 		}
 
 		for (obj in bgs) obj.update(elapsed);

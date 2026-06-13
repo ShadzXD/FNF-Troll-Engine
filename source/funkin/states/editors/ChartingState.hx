@@ -621,7 +621,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 	function onChartLoaded() {
 		if (_song == null) {
-			var ss = new SongSelectState(FlxColor.fromRGB(0,0,0,240));
+			var ss = new SongSelectState();
+			ss.bgColor = FlxColor.fromRGB(0,0,0,240);
 			ss.onSelectChart = function(song:BaseSong, chartId:String) {
 				Song.loadSong(song, chartId);
 				_song = PlayState.SONG;
@@ -3151,7 +3152,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	}
 
 	function openSongSelect() {
-		var ss = new SongSelectState(FlxColor.fromRGB(0,0,0,240));
+		var ss = new SongSelectState();
+		ss.bgColor = FlxColor.fromRGB(0,0,0,240);
 		ss.songs = SongSelectState.getEverySong();
 		ss.curSelected = CoolUtil.indexOfSong(ss.songs, PlayState.song);
 		if (ss.curSelected == -1) ss.curSelected = 0;

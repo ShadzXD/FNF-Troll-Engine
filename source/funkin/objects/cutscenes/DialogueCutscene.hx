@@ -99,7 +99,7 @@ class DialogueCutscene extends Cutscene
 			var char:DialogueCharacter = new DialogueCharacter(curCharacter);
 			char.updateHitbox();
 			char.scrollFactor.set();
-			char.alpha = 0.00001;
+			char.alpha = 0;
 			add(char);
 			characters.push(char);
 		}
@@ -107,6 +107,7 @@ class DialogueCutscene extends Cutscene
 
 	override function update(elapsed:Float)
 	{
+		//controls.accept wasnt working so i jst gave up ngl
 	   	if (FlxG.keys.justPressed.SPACE && canProgressDialogue)
 		{
 			if(finishedLine)

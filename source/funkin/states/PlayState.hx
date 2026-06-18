@@ -3735,7 +3735,13 @@ class PlayState extends MusicBeatState
 
 	public function openCutscenePauseMenu(scene: Cutscene)
 	{
-		if (!scene.canPause)return;
+		if (!scene.canPause)
+			return;
+
+		// W hack to prevent pausing if ACCEPT and PAUSE have the same bind
+		if (scene is DialogueCutscene && controls.ACCEPT) 
+			return;
+
 		if (callOnScripts('onPause') == Globals.Function_Stop) 
 			return;
 

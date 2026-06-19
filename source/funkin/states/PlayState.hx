@@ -3270,7 +3270,8 @@ class PlayState extends MusicBeatState
 	}
 
 	function breakCombo() {
-		ratingGroup.killLastCombo();
+		if (ClientPrefs.simpleJudge || !ClientPrefs.comboFading)
+			ratingGroup.killLastCombo();
 
 		if (stats.combo > 10 && gf != null && gf.animOffsets.exists('sad')){
 			gf.playAnim('sad');

@@ -258,6 +258,14 @@ class MusicBeatState extends TransitionableState
 		curMusic = key;
 	}
 
+	public static function cacheMusic(key:String) {
+		var md = MusicData.fromName(key);
+		if (md != null)
+			md.cache();
+		else
+			Paths.music(key);
+	}
+
 	// TODO: check the jukebox selection n shit and play THAT instead? idk lol
 	// ^ this was a TGT comment but re-adding the jukebox menu as part of freeplay would be nice I think
 	public static function playMenuMusic(force:Bool = false) {

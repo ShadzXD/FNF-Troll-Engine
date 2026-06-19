@@ -34,7 +34,7 @@ class MusicData
 	**/
 	public function play(?sound:FlxSound, volume:Float = 1.0):FlxSound {
 		var snd = sound ?? FlxG.sound.list.recycle(FlxSound);
-		snd.loadEmbedded(Paths.returnSound(path), looped, false);
+		snd.loadEmbedded(cache(), looped, false);
 		snd.volume = volume;
 		snd.play(false, startTime, endTime);
 		snd.loopTime = loopTime;
@@ -45,6 +45,10 @@ class MusicData
 		}
 
 		return snd;
+	}
+
+	public function cache() {
+		return Paths.returnSound(path);
 	}
 
 	////

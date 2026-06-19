@@ -1,5 +1,7 @@
 import flixel.FlxG;
 
+using StringTools;
+
 class CoolerStringTools {
 	static public function isAlpha(s:String):Bool
 		return s.toLowerCase() != s.toUpperCase();
@@ -18,6 +20,11 @@ class CoolerStringTools {
 				}
 				buf.toString();
 		}
+	}
+
+	//** SNAKE_CASE => PascalCase **/
+	public static function snakeToPascal(str:String):String {
+		return capitalize(str.replace('_', ' ')).replace(' ', '');
 	}
 	
 	public static function shuffle(s:String):String {

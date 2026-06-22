@@ -11,7 +11,7 @@ import openfl.text.TextFormatAlign;
 
 class DebugDisplay extends TextField {
 	/** Allows the FPS counter to lie about your framerate because Lime sucks and framerates goes above whats desired **/
-	public var canLie:Bool = true;
+	public var canLie:Bool = false;
 
 	/** The current frame rate, expressed using frames-per-second **/
 	public var currentFPS(default, null):Int = 0;

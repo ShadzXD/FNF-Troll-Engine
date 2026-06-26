@@ -3046,18 +3046,6 @@ class PlayState extends MusicBeatState
 
 		RecalculateRating();
 
-		if (ClientPrefs.coloredCombos)
-		{
-			if (stats.judgements.get("bad") > 0 || stats.judgements.get("shit") > 0 || stats.comboBreaks > 0)
-				comboColor = 0xFFFFFFFF;
-			else if (stats.judgements.get("good") > 0)
-				comboColor = hud.judgeColours.get("good");
-			else if (stats.judgements.get("sick") > 0)
-				comboColor = hud.judgeColours.get("sick");
-			else if (stats.judgements.get("epic") > 0)
-				comboColor = hud.judgeColours.get("epic");
-		}
-
 		hudSkinScript?.call("onApplyJudgmentDataPost", [judgeData, hitData, show]);
 		callOnScripts("onApplyJudgmentDataPost", [judgeData, hitData, show]);
 
@@ -3689,6 +3677,16 @@ class PlayState extends MusicBeatState
 	public function RecalculateRating() {
 		callOnScripts('onRecalculateRating');
 
+		if (ClientPrefs.coloredCombos) {
+			if (stats.bads > 0 || stats.shits > 0 || stats.comboBreaks > 0)
+				comboColor = 0xFFFFFFFF;
+			else if (stats.goods > 0)
+				comboColor = hud.judgeColours.get("good");
+			else if (stats.sicks > 0)
+				comboColor = hud.judgeColours.get("sick");
+			else if (stats.epics > 0)
+				comboColor = hud.judgeColours.get("epic");
+		}
 		stats.updateVariables();
 		hud.recalculateRating();
 		#if ALLOW_DEPRECATION

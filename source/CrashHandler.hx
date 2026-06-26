@@ -31,7 +31,7 @@ class CrashHandler {
 	}
 
 	private static function onFlashCrash(event:UncaughtErrorEvent) {
-		onCrash(event.error);
+		onCrash('Uncaught Error: ' + event.error);
 		// one of these oughta do it
 		event.stopImmediatePropagation();
 		event.stopPropagation();
@@ -39,7 +39,7 @@ class CrashHandler {
 	}
 
 	private static function onHxcppCrash(errorName:String) {
-		onCrash(errorName);
+		onCrash("Critical Error: " + errorName);
 	}
 
 	inline private static function getLogFilePath():String {

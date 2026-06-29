@@ -4249,8 +4249,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	}
 
 	//// 
-	// TODO: move this stuff somewhere else
-	static var textBgColor = 0xFF383A46;
+	// TODO: get rid of all this lollll	
 
 	static inline function newFlxUIButton(X:Float = 0, Y:Float = 0, ?Label:String, ?OnClick:Void->Void, ?LoadDefaultGraphics:Bool = true, ?LoadBlank:Bool = false, ?Color:FlxColor = FlxColor.WHITE)
 	{
@@ -4268,35 +4267,18 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	) 
 	@:privateAccess {
 		var stepper = new CustomFlxUINumericStepper(X, Y, StepSize, DefaultValue, Min, Max, Decimals, Stack, TextField, ButtonPlus, ButtonMinus, IsPercent);
-		
-		var fit = stepper.text_field;
-		if (fit is FlxInputText)
-			setupInputText(cast fit);
-
-		stepper.button_plus.label.color = FlxColor.WHITE;
-		stepper.button_minus.label.color = FlxColor.WHITE;
-
 		return stepper;
 	}
 
 	static inline function newFlxUIInputText(X:Float = 0, Y:Float = 0, Width:Int = 150, ?Text:String, size:Int = 8, TextColor:Int = FlxColor.BLACK,
 			BackgroundColor:Int = FlxColor.WHITE, EmbeddedFont:Bool = true) {
 		var fit = new CustomFlxUIInputText(X, Y, Width, Text, size, TextColor, BackgroundColor, EmbeddedFont);
-		setupInputText(fit);
 		return fit;
-	}
-
-	static inline function setupInputText(fit:FlxInputText) {
-		fit.backgroundColor = textBgColor;
-		fit.color = FlxColor.WHITE;
-		fit.caretColor = FlxColor.WHITE;
 	}
 
 	static inline function newFlxUIDropDownMenu(X:Float = 0, Y:Float = 0, DataList:Array<StrNameLabel>, ?Callback:String->Void, ?Header:FlxUIDropDownHeader,
 			?DropPanel:FlxUI9SliceSprite, ?ButtonList:Array<FlxUIButton>, ?UIControlCallback:Bool->FlxUIDropDownMenu->Void) {
 		var ddm = new CustomFlxUIDropDownMenu(X, Y, DataList, Callback, Header, DropPanel, ButtonList, UIControlCallback);
-		ddm.header.background.color = textBgColor;
-		ddm.header.text.color = FlxColor.WHITE;
 		return ddm;
 	}
 

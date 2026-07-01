@@ -1527,7 +1527,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	var eventStepperStrumTime:CustomFlxUINumericStepper;
 	var eventDropDown:FlxUIDropDownMenu;
 	var eventNameInput:FlxUIInputText;
-	var eventDescText:FlxText;
 	var selectedEventText:FlxText;
 
 	function setSelectedEventType(typeName:String)
@@ -1617,8 +1616,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		separateButton.label.color = FlxColor.WHITE;
 		separateButton.resize(0, eventStepperStrumTime.height);
 
-		eventDescText = new FlxText(10, 200, 0, "");
-
 		var leEvents:Array<String> = [""];
 		for (i in 0...eventStuff.length)
 			leEvents.push(eventStuff[i][0]);
@@ -1634,10 +1631,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 					if (data != null){
 						setSelectedEventType(data[0]);
 						eventNameInput.text = data[0];
-						eventDescText.text = data[1];
 					}
 				}else{
-					eventDescText.text = "Type a custom event!";
 					eventNameInput.text = "";
 					eventNameInput.exists = true;
 					eventNameInput.hasFocus = true;
@@ -1664,7 +1659,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		function onEnterEventName(eventName:String) {
 			setSelectedEventType(eventName);
 			eventDropDown.header.text.text = eventName;
-			eventDescText.text = "";
 			eventNameInput.exists = false;
 		}
 		eventNameInput.callback = (input:String, action:String) -> {
@@ -1727,8 +1721,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		tab_group_event.add(eventLabelStrumTime = new FlxText(eventStepperStrumTime.x, eventStepperStrumTime.y - 15, 0, 'Strum time:'));
 		tab_group_event.add(eventStepperStrumTime);
 		tab_group_event.add(separateButton);
-
-		tab_group_event.add(eventDescText);
 
 		tab_group_event.add(new FlxText(value1InputText.x, value1InputText.y - 20, 0, "Value 1:"));	
 		tab_group_event.add(value1InputText);
@@ -3642,7 +3634,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			if (selectedIdx >= 0) {
 				eventDropDown.selectedId = Std.string(selectedIdx);
 				eventDropDown.header.text.text = eventData.eventName;
-				eventDescText.text = eventStuff[selectedIdx][1];
 			}
 		}else {
 			selectedEventText.text = 'No event stack selected';

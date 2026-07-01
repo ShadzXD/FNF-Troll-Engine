@@ -1103,21 +1103,8 @@ class PlayState extends MusicBeatState
 		debugKeysCharacter = ClientPrefs.copyKey(ClientPrefs.keyBinds.get('debug_2'));
 		debugKeysBotplay = ClientPrefs.copyKey(ClientPrefs.keyBinds.get('botplay'));
 
-		keysArray = [
-			for (i in 0...keyCount) {
-				ClientPrefs.copyKey(ClientPrefs.keyBinds.get('${keyCount}_key_${i}'));
-			}
-		];
-
-		// trace(keysArray);
-
-
-		buttonsArray = [
-			ClientPrefs.copyKey(ClientPrefs.buttonBinds.get('note_left')),
-			ClientPrefs.copyKey(ClientPrefs.buttonBinds.get('note_down')),
-			ClientPrefs.copyKey(ClientPrefs.buttonBinds.get('note_up')),
-			ClientPrefs.copyKey(ClientPrefs.buttonBinds.get('note_right'))
-		];
+		keysArray = ClientPrefs.getNoteKeys(keyCount);
+		buttonsArray = ClientPrefs.getNoteButtons(keyCount);
 	}
 
 	function setStageData(stageData:StageFile)

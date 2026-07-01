@@ -1016,6 +1016,20 @@ class ClientPrefs {
 		FNFGame.volumeUpKeys = copyKey(keyBinds.get('volume_up'));
 	}
 
+	public static function getNoteKeys(keyCount:Int = 4):Array<Array<Int>>  {
+		return [
+			for (i in 0...keyCount)
+				copyKey(keyBinds.get('${keyCount}_key_${i}'))
+		];
+	}
+
+	public static function getNoteButtons(keyCount:Int = 4):Array<Array<Int>> {
+		return [
+			for (i in 0...keyCount)
+				copyKey(buttonBinds.get('${keyCount}_key_${i}'))
+		];
+	}
+
 	public static function copyKey(arrayToCopy:Array<Int>):Array<Int> {
 		var copiedArray:Array<Int> = arrayToCopy.copy();
 		var i:Int = 0;

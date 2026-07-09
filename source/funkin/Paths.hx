@@ -92,6 +92,8 @@ class Paths
 	}
 
 	public static function init() {
+		graphicDumpExclusions.push(FlxG.bitmap.whitePixel.parent);
+
 		#if READ_EMBEDDED_ASSETS
 		AltFilePaths.initPaths();
 		#end

@@ -3042,7 +3042,6 @@ class PlayState extends MusicBeatState
 			stats.judgements.set(judgeData.internalName, 0);
 
 		stats.judgements.set(judgeData.internalName, stats.judgements.get(judgeData.internalName) + 1);
-
 		stats.judged.push(hitData);
 
 		RecalculateRating();
@@ -3355,12 +3354,11 @@ class PlayState extends MusicBeatState
 		if(!practiceMode) stats.score -= 10;
 		if(!endingSong) songMisses++;
 
-		breakCombo();
-		displayCombo(-stats.cbCombo);
-
 		// i dont think this should reduce acc lol
 		//totalPlayed++;
-		//RecalculateRating();
+
+		breakCombo();
+		displayCombo(-stats.cbCombo);
 
 		if (field != null) {
 			for (track in field.tracks)

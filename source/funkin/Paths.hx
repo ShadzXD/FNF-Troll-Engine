@@ -409,12 +409,12 @@ class Paths
 		);
 	}
 
-	inline static public function packerAtlas(key:String, ?library:String):FlxAtlasFrames
+	inline static public function packerAtlas(key:String, ?library:String, allowGPU:Bool = true):FlxAtlasFrames
 	{
-		var txtPath:String = getPath('images/$key.txt');
-		return FlxAtlasFrames.fromSpriteSheetPacker(
-			image(key, library),
-			exists(txtPath) ? getContent(txtPath) : txtPath
+		var rawTxt:String = Paths.getContent(getPath('images/$key.txt'));
+		return rawTxt == null ? null : FlxAtlasFrames.fromSpriteSheetPacker(
+			image(key, library, allowGPU),
+			rawTxt
 		);
 	}
 
@@ -430,15 +430,15 @@ class Paths
 
 	#if ALLOW_DEPRECATION
 	@:deprecated("getSparrowAtlas is deprecated, use sparrowAtlas instead.")
-	inline static public function getSparrowAtlas(key:String, ?library:String):FlxAtlasFrames
+	inline static public function getSparrowAtlas(key:String, ?library:String, allowGPU:Bool = true):FlxAtlasFrames
 	{
-		return sparrowAtlas(key, library);
+		return sparrowAtlas(key, library, allowGPU);
 	}
 
 	@:deprecated("getPackerAtlas is deprecated, use packerAtlas instead.")
-	inline static public function getPackerAtlas(key:String, ?library:String):FlxAtlasFrames
+	inline static public function getPackerAtlas(key:String, ?library:String, allowGPU:Bool = true):FlxAtlasFrames
 	{
-		return packerAtlas(key, library);
+		return packerAtlas(key, library, allowGPU);
 	}
 
 	@:deprecated("getTextureAtlas is deprecated, use animateAtlas instead.")

@@ -275,6 +275,12 @@ class TitleState extends MusicBeatState
 
 	function generateSequence() {
 		// this could prob be replaced with a json, yaml or even a whole "TitleSequence" script?? :shrug:
+		// > State extension scripts can override this function to make their own intro stuff ^.^
+
+		FlxTween.tween(intro.bg, {alpha: 0.86}, Conductor.crochet * 0.005, {
+			ease: FlxEase.quadInOut,
+			songBased: true,
+		});
 
 		var ngSpr = new FlxSprite(0, FlxG.height * 0.52, Paths.image('newgrounds_logo'));
 		ngSpr.exists = false;
@@ -507,22 +513,15 @@ class TitleSequence extends FlxBasic {
 }
 
 class IntroSequence extends FlxTypedGroup<FlxBasic> {
-	var bg:FlxSprite;
-	var textGroup:FlxTypedGroup<Alphabet>;
+	public var bg:FlxSprite;
+	public var textGroup:FlxTypedGroup<Alphabet>;
 
 	public function new() {
 		super();
 
 		//
-		bg = new FlxSprite().makeGraphic(1, 1, FlxColor.BLACK);
-		bg.scale.set(FlxG.width, FlxG.height);
-		bg.updateHitbox();
+		bg = CoolUtil.blankSprite(FlxG.width, FlxG.height, FlxColor.BLACK);
 		add(bg);
-		
-		FlxTween.tween(bg, {alpha: 0.86}, Conductor.crochet * 0.005, {
-			ease: FlxEase.quadInOut,
-			songBased: true,
-		});
 
 		//
 		textGroup = new FlxTypedGroup<Alphabet>();

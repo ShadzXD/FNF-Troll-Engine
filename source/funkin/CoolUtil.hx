@@ -138,10 +138,10 @@ class CoolUtil {
 	}
 
 	////
-	inline public static function blankSprite(width, height, color=0xFFFFFFFF) {
+	inline public static function blankSprite(width:Float, height:Float, color=0xFFFFFFFF) {
 		var spr = new FlxSprite();
 		spr.frame = FlxG.bitmap.whitePixel;
-		spr.scale.set(width, height);
+		spr.scale.set(width / spr.frameWidth, height / spr.frameHeight);
 		spr.updateHitbox();
 		spr.color = color;
 		return spr;

@@ -26,6 +26,16 @@ typedef OptionData = {
 	var data:Map<String, Dynamic>;
 }
 
+private inline function getRefreshRate() {
+	#if macro
+	return 60;
+	#elseif linux
+	return funkin.api.Linux.getMonitorRefreshRate();
+	#else
+	return FlxG.stage?.application.window.displayMode.refreshRate ?? 60;
+	#end
+}
+
 #if !macro
 @:build(funkin.macros.OptionMacro.build())
 #end
@@ -247,14 +257,6 @@ class ClientPrefs {
 					"step" => 5,
 					"type" => "percent" // saved value is value / 100
 				]
-			},
-			"fieldFramerate" => {
-				display:"Notefield Framerate",
-				desc:"How many times per-second the notefield is rendered.",
-				type:Number,
-				value:#if !macro FlxG.stage != null ? FlxG.stage.application.window.displayMode.refreshRate : #end
-				60,
-				data:["suffix" => " FPS", "min" => 5, "max" => 360, "step" => 1,]
 			},
 			"countUnpause" => {
 				display: "Countdown on Resume",
@@ -643,9 +645,15 @@ class ClientPrefs {
 				display:"Max Framerate",
 				desc:"The highest framerate the game can hit.",
 				type:Number,
-				value:#if !macro FlxG.stage != null ? FlxG.stage.application.window.displayMode.refreshRate : #end
-				60,
-				data:["suffix" => " FPS", "min" => 5, "max" => 360, "step" => 1,]
+				value: ClientPrefs.getRefreshRate(),
+				data:["suffix" => " FPS", "min" => 10, "max" => 360, "step" => 1,]
+			},
+			"fieldFramerate" => {
+				display:"Notefield Framerate",
+				desc: "How many times per-second the notefield is rendered.\nRecommended to set this to your monitor's refresh rate.",
+				type:Number,
+				value: ClientPrefs.getRefreshRate(),
+				data:["suffix" => " FPS", "min" => 10, "max" => 360, "step" => 1,]
 			},
 			"lowQuality" => {
 				display: "Low Quality",
@@ -906,11 +914,8 @@ class ClientPrefs {
 	static var optionSave:FlxSave = new FlxSave();
 
 	public static function initialize() {
-		#if linux
-		defaultOptionDefinitions.get("framerate").value = funkin.api.Linux.getMonitorRefreshRate();
-		#else
-		defaultOptionDefinitions.get("framerate").value = FlxG.stage.application.window.displayMode.refreshRate;
-		#end
+		defaultOptionDefinitions.get("framerate").value = getRefreshRate();
+		defaultOptionDefinitions.get("fieldFramerate").value = getRefreshRate();
 
 		// locale = openfl.system.Capabilities.language;
 

@@ -76,7 +76,7 @@ class NotefieldRenderer extends FlxBasic {
 		fieldTimer += FlxG.elapsed;
 
 		if (fieldTimer >= 1.0/ClientPrefs.fieldFramerate) {
-			finalDrawQueue = [];
+			finalDrawQueue.resize(0);
 			fieldTimer = 0;
 			// Get all the drawing stuff from the fields
 			for(field in members){

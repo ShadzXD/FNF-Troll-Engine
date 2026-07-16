@@ -48,8 +48,7 @@ class DebugDisplay extends TextField {
 				align = #if mobile CENTER #else LEFT #end;
 		});
 
-		addEventListener(Event.ENTER_FRAME, onEnterFrame);
-
+		FlxG.signals.preDraw.add(onEnterFrame);
 		FlxG.signals.gameResized.add(onGameResized);
 
 		FlxG.signals.preStateCreate.add((nextState) -> {
@@ -67,7 +66,7 @@ class DebugDisplay extends TextField {
 	private var _previousTime:Float = 0;
 	private var _updateClock:Float = 999999;
 
-	private function onEnterFrame(e:Event):Void {
+	private function onEnterFrame():Void {
 		_framesPassed++;
 		final deltaTime:Float = Math.max(Main.getTime() - _previousTime, 0);
 		_updateClock += deltaTime;

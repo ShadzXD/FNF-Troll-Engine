@@ -3122,8 +3122,11 @@ class PlayState extends MusicBeatState
 
 		note.ratingMod = judgeData.accuracy * 0.01;
 		note.rating = judgeData.internalName;
-		if (!note.noteSplashDisabled && judgeData.noteSplash)
-			spawnNoteSplashOnNote(note, field);
+
+		if (ClientPrefs.noteSplashes && !note.noteSplashDisabled && judgeData.noteSplash)
+			note.noteSplash = spawnNoteSplashOnNote(note, field);
+		else
+			note.noteSplash = null;
 
 		if (ClientPrefs.showMS && !note.hitResult.bot && !judgeData.hideJudge)
 		{
@@ -3532,14 +3535,11 @@ class PlayState extends MusicBeatState
 	}
 
 	public function spawnNoteSplashOnNote(note:Note, ?field:PlayField) {
-		if (ClientPrefs.noteSplashes && note != null) {
-			field ??= getFieldFromNote(note);
-
-			var strum:StrumNote = field.strumNotes[note.column];
-			if(strum != null) {
-				field.spawnSplash(note, splashSkin);
-			}
-		}
+		field ??= getFieldFromNote(note);
+		if (field.strumNotes[note.column] != null)
+			return field.spawnSplash(note, splashSkin)
+		else
+			return null;
 	}
 
 	#if HSCRIPT_ALLOWED

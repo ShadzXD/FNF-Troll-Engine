@@ -176,6 +176,12 @@ class Note extends NoteObject {
 		If this note hasn't been judged, the value will be `0`
 	**/
 	public var ratingMod:Float = 0; // 0 = unknown, 0.25 = shit, 0.5 = bad, 0.75 = good, 1 = sick
+	
+	/**
+		`NoteSplash` instance that was used when this note was hit.  
+		If a note splash wasn't spawned when hitting this note, this will be `null`
+	**/
+	public var noteSplash:Null<NoteSplash> = null;
 	#end
 
 	//// note type/customizable shit

@@ -35,11 +35,6 @@ private typedef NoteScriptState = {
 }
 
 class Note extends NoteObject {
-	/** Whether holds should "glow" / increase in alpha when held */
-	public var holdGlow:Bool = true;
-
-	public var baseAlpha:Float = 1;
-
 	public static var spriteScales:Array<Float> = [0.9, 0.85, 0.8, 0.7, 0.66, 0.6, 0.55, 0.5, 0.46, 0.4];
 	public static var spriteScale:Float = spriteScales[3];
 	public static var swagWidth(default, set):Float = 160 * spriteScale;
@@ -122,8 +117,11 @@ class Note extends NoteObject {
 	/** Whether this note is the last segment of a hold **/
 	public var isSustainEnd:Bool = false;
 
+	/** Parent note of a hold segment, should be `null` if this isn't a hold segment **/
 	public var parent:Note = null;
+	/** Hold segments corresponding to this note, should be an empty array if this isn't a hold note **/
 	public var tail:Array<Note> = [];
+	/** Unhit hold segments corresponding to this note, should be an empty array if this isn't a hold note **/
 	public var unhitTail:Array<Note> = [];
 
 	/**
@@ -141,27 +139,54 @@ class Note extends NoteObject {
 	/** Whether the loaded texture is a quant texture.*/
 	public var isQuant:Bool = false;
 
-	// note status
+	#if true //// note status
+	/** Whether this Note has spawned to be shown on screen **/
 	public var spawned:Bool = false;
+	/** Whether this Note went beyond the hit window **/
 	public var tooLate:Bool = false;
+	/** Whether this Note was hit **/
 	public var wasGoodHit:Bool = false;
+	/** Whether this Note was missed, This isn't affected by `ignoreNote` **/
 	public var causedMiss:Bool = false;
-	public var canBeHit(get, never):Bool;
+	/** If `true` this Note won't be hittable and miss callbacks won't be called **/
 	public var ignoreNote:Bool = false;
+	/** Whether hitting this note results in a judgement **/
+	public var canBeHit(get, never):Bool;
 
+	// hold status
 	public var isHeld:Bool = false;
 	public var holdingTime:Float = 0;
 	public var tripProgress:Float = 1;
+	#end
 
+	#if true
+	/**
+		Data container for this note's result (judgment, hit time, hit difference, botplay, etc.)
+	**/
 	public var hitResult:HitResult = {judgment: UNJUDGED, hitDiff: 0}
+	
+	/** 
+		`internalName` of the `JudgementData` acquired when judging this note.  
+		If this note hasn't been judged, the value will be `"unknown"`
+	**/
 	public var rating:String = 'unknown';
+	
+	/** 
+		`accuracy` of the `JudgementData` acquired when judging this note.  
+		If this note hasn't been judged, the value will be `0`
+	**/
 	public var ratingMod:Float = 0; // 0 = unknown, 0.25 = shit, 0.5 = bad, 0.75 = good, 1 = sick
+	#end
 
 	//// note type/customizable shit
 	public var noteMod(default, set):String = null;
 	public var noteType(default, set):String = null; // the note type
 	public var texture(default, set):String; // texture for the note
-	public var canQuant:Bool = true; // whether a quant texture should be searched for or not
+
+	/** 
+		Whether a quant texture should be searched for when updating this note's texture
+	**/
+	public var canQuant:Bool = true;
 	
 	/**
 		Whether this note uses the default note colours (lets you change colours in options menu)  
@@ -206,7 +231,7 @@ class Note extends NoteObject {
 	public var maxReleaseTime:Float = 0.25;
 
 	#if true
-	/** Which characters sing this note, if it's blank then the playfield's characters are used **/
+	/** Which characters sing this note, if `null` then the playfield's characters are used **/
 	public var characters:Array<Character> = null;
 
 	/** Whether if gf should also sing this note **/
@@ -254,6 +279,7 @@ class Note extends NoteObject {
 
 	// mod manager
 	public var garbage:Bool = false; // if this is true, the note will be removed in the next update cycle
+	public var baseAlpha:Float = 1;
 	public var alphaMod:Float = 1;
 	public var alphaMod2:Float = 1; // TODO: unhardcode this shit lmao
 	// What is this even used for anymore??
@@ -263,10 +289,8 @@ class Note extends NoteObject {
 	public var typeOffsetAngle:Float = 0;
 	public var multSpeed:Float = 1.0;
 
-	// do not tuch
-	public var baseScaleX:Float = 1;
-	public var baseScaleY:Float = 1;
-	public var z:Float = 0;
+	/** Whether holds should "glow" / increase in alpha when held */
+	public var holdGlow:Bool = true;
 
 	// Determines how the note can be modified by the modchart system
 	// Could be moved into NoteObject? idk lol
@@ -276,7 +300,15 @@ class Note extends NoteObject {
 	public var copyVerts:Bool = true;
 
 	#if ALLOW_DEPRECATION
-	public var desiredZIndex:Float = 0; // unused (?)
+	@:noCompletion @:deprecated("This variable is not in use.")
+	public var baseScaleX:Float = 1;
+	@:noCompletion @:deprecated("This variable is not in use.")
+	public var baseScaleY:Float = 1;
+
+	@:noCompletion @:deprecated("This variable is not in use.")
+	public var z:Float = 0;
+	@:noCompletion @:deprecated("This variable is not in use.")
+	public var desiredZIndex:Float = 0;
 
 	// Angle is controlled by verts in the modchart system
 	@:noCompletion public var copyAngle(get, set):Bool;
@@ -293,7 +325,8 @@ class Note extends NoteObject {
 	@:noCompletion inline function set_realNoteData(v:Int) return realColumn = v;
 	#end
 
-	@:noCompletion function get_canBeHit() return UNJUDGED != PlayState.instance.judgeManager.judgeNote(this, Conductor.songPosition);
+	@:noCompletion function get_canBeHit()
+		return UNJUDGED != PlayState.instance.judgeManager.judgeNote(this, Conductor.songPosition);
 
 	@:noCompletion inline function get_noteSplashDisabled() return noteSplashBehaviour == DISABLED;
 	@:noCompletion inline function set_noteSplashDisabled(val:Bool) {

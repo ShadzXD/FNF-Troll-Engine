@@ -3020,14 +3020,13 @@ class PlayState extends MusicBeatState
 			return;
 
 		stats.score += Math.floor(judgeData.score * playbackRate);
-		health += (judgeData.health * 0.02) * (judgeData.health < 0 ? healthLoss : healthGain);
-		songHits++;
-
 		stats.calculateAccuracy(judgeData, hitData.hitDiff); // deals with accuracy calculations
 
-		if (perfectMode && stats.totalNotesHit < stats.totalPlayed)
-			doDeathCheck(true);
+		if (!stats.judgements.exists(judgeData.internalName))
+			stats.judgements[judgeData.internalName] = 0;
 
+		stats.judgements[judgeData.internalName]++;
+		stats.judged.push(hitData);
 
 		switch(judgeData.comboBehaviour){
 			default:
@@ -3038,11 +3037,12 @@ class PlayState extends MusicBeatState
 			case IGNORE:
 		}
 
-		if (!stats.judgements.exists(judgeData.internalName))
-			stats.judgements.set(judgeData.internalName, 0);
+		////
+		health += (judgeData.health * 0.02) * (judgeData.health < 0 ? healthLoss : healthGain);
+		songHits++;
 
-		stats.judgements.set(judgeData.internalName, stats.judgements.get(judgeData.internalName) + 1);
-		stats.judged.push(hitData);
+		if (perfectMode && stats.totalNotesHit < stats.totalPlayed)
+			doDeathCheck(true);
 
 		RecalculateRating();
 

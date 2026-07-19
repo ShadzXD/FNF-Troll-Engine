@@ -302,8 +302,8 @@ class Note extends NoteObject {
 	}
 
 	////
-	var instance(get, never):NoteScriptState;
-	inline function get_instance():NoteScriptState
+	var state(get, never):NoteScriptState;
+	inline function get_state():NoteScriptState
 		return inEditor ? ChartingState.instance : PlayState.instance;
 
 	private function set_texture(value:String):String {
@@ -335,7 +335,7 @@ class Note extends NoteObject {
 		updateColours();
 
 		////
-		genScript = instance?.getHudSkinScript(value);
+		genScript = state?.getHudSkinScript(value);
 
 		////
 		var loaded:Bool;
@@ -380,7 +380,7 @@ class Note extends NoteObject {
 
 		if (noteType != value) {
 			noteType = value;
-			noteScript = instance?.notetypeScripts.get(value);
+			noteScript = state?.notetypeScripts.get(value);
 			
 			if (noteScript != null)
 				noteScript.executeFunc("setupNote", [this], null, ["super" => _setupNoteType]);

@@ -96,7 +96,7 @@ class Paths
 	public static function init() {
 		{ //ACTUAL white pixel, instead of 10x10 white pixels fuck flixel piece of shit good for nothing
 			var bd = new BitmapData(1, 1, true, 0xFFFFFFFF);
-			var graphic:FlxGraphic = FlxG.bitmap.add(bd, true, "whitePixels");
+			var graphic:FlxGraphic = FlxG.bitmap.add(bd, true, "whitePixel");
 			graphic.persist = true;
 			whitePixel = graphic.imageFrame.frame;
 			graphicDumpExclusions.push(graphic);

@@ -20,6 +20,7 @@ import funkin.objects.notes.*;
 import funkin.objects.ui.CustomFlxUI;
 import funkin.objects.CoolMenuBG;
 
+import funkin.util.FileUtil;
 import math.CoolMath;
 import math.CoolMath.floorDecimal;
 
@@ -61,6 +62,7 @@ using Lambda;
 typedef ChartingStateOptions = {
 	var ?autosave:String;
 	var ignoreWarnings:Bool;
+	var showHistoryDisplay:Bool;
 	var vortex:Bool;
 	var mouseScrollingQuant:Bool;
 	var noAutoScroll:Bool;
@@ -89,6 +91,10 @@ typedef ChartingStateSession = {
 	var trackVolumes:Map<String, Float>;
 }
 
+private var editor(get, never):ChartingState;
+private inline function get_editor()
+	return ChartingState.instance;
+
 @:access(flixel.sound.FlxSound._sound)
 @:access(openfl.media.Sound.__buffer)
 @:allow(funkin.states.editors.ChartingState)
@@ -106,6 +112,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	public static function getDefaultOptions():ChartingStateOptions return {
 		autosave: null,
 		ignoreWarnings: false,
+		showHistoryDisplay: true,
 		vortex: false,
 		mouseScrollingQuant: false,
 		noAutoScroll: false,
@@ -617,7 +624,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 	function onChartLoaded() {
 		if (_song == null) {
-			var ss = new SongSelectState(FlxColor.fromRGB(0,0,0,240));
+			var ss = new SongSelectState();
+			ss.bgColor = FlxColor.fromRGB(0,0,0,240);
 			ss.onSelectChart = function(song:BaseSong, chartId:String) {
 				Song.loadSong(song, chartId);
 				_song = PlayState.SONG;
@@ -664,7 +672,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		progressBar.maxValue = songLength;
 		progressBar.maxLabel.text = formatTime(songLength);
 
-		//historyDisplay.exists = true;
+		historyDisplay.exists = options.showHistoryDisplay;
 
 		if (UI_box != null) {
 			UI_box.destroy();
@@ -952,51 +960,13 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		var saveZipButton = newFlxUIButton(110, saveEventJson.y + 30, 'Save as ZIP', saveSongZIP);
 
 		///
-		var reloadSongJson:FlxUIButton = newFlxUIButton(saveButton.x + 90, saveButton.y, "Reload JSON", function()
-		{
-			showWarning('This action will clear current progress.\n\nProceed?', loadJson.bind(_song.song));
-		});
+		var reloadSongJson:FlxUIButton = newFlxUIButton(saveButton.x + 90, saveButton.y, "Reload JSON", reloadSongJSON);
 		reloadSongJson.color = 0xFFFF0000;
 
-		var loadAutosaveBtn:FlxUIButton = newFlxUIButton(reloadSongJson.x, reloadSongJson.y + 30, 'Load Autosave', function()
-		{
-			var autosaved:Dynamic = options.autosave;
-			if (autosaved == null) {
-				showPopup("There is no autosaved data");
-			}else if (!Std.isOfType(autosaved, String)) {
-				showPopup("Invalid autosaved data");
-			}else{
-				var _song:Dynamic = Json.parse(autosaved);
-				
-				// Ugh
-				var _session:ChartingStateSession = Reflect.field(_song, "_chartEditor");
-				if (_session.trackVolumes != null && !Std.isOfType(_session.trackVolumes, haxe.ds.StringMap) && Reflect.isObject(_session.trackVolumes))
-					_session.trackVolumes = cast CoolUtil.structureToMap(_session.trackVolumes);
-
-				MusicBeatState.switchState(new ChartingState(_song));
-			}
-		});
+		var loadAutosaveBtn:FlxUIButton = newFlxUIButton(reloadSongJson.x, reloadSongJson.y + 30, 'Load Autosave', loadAutosave);
 
 		////
-		function onOpenEvents(resource) {
-			var data:Dynamic = Json.parse((resource:Bytes).toString());
-
-			var song:SwagSong = Reflect.field(data, "song"); 
-			if (song == null)
-				return;
-		
-			var events = ChartData.onLoadEvents(data.song).events;
-			if (events == null)
-				return;
-
-			_song.events = events;
-			doUpdateGridObjects = true;
-		}
-
-		var loadEventJson:FlxUIButton = newFlxUIButton(loadAutosaveBtn.x, loadAutosaveBtn.y + 30, 'Open Events', function() {
-			final openEvents:Void->Void = CoolUtil.showOpenDialog.bind('Open Events', getSongPath('events.json'), ['*.json'], onOpenEvents);
-			showWarning('This action will clear the current events.\n\nProceed?', openEvents);
-		});
+		var loadEventJson:FlxUIButton = newFlxUIButton(loadAutosaveBtn.x, loadAutosaveBtn.y + 30, 'Open Events', openEventsJSON);
 
 		////
 		var editTracksButton:FlxUIButton = newFlxUIButton(loadAutosaveBtn.x, loadEventJson.y + 40, 'Edit Tracks', function() {
@@ -1008,11 +978,11 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		fix_oob_notes.color = FlxColor.PINK;
 		fix_oob_notes.label.color = FlxColor.WHITE;
 
-		var clear_events:FlxUIButton = newFlxUIButton(loadAutosaveBtn.x, 300, 'Clear events', showWarning.bind('Clear notes?\n\nThis action cannot be undone.', clearEvents));
+		var clear_events:FlxUIButton = newFlxUIButton(loadAutosaveBtn.x, 300, 'Clear events', showWarning.bind('Clear events?\n\nThis action cannot be undone.', clearEvents));
 		clear_events.color = FlxColor.RED;
 		clear_events.label.color = FlxColor.WHITE;
 
-		var clear_notes:FlxUIButton = newFlxUIButton(clear_events.x, clear_events.y + 30, 'Clear notes', showWarning.bind('Clear events?\n\nThis action cannot be undone.', clearNotes));
+		var clear_notes:FlxUIButton = newFlxUIButton(clear_events.x, clear_events.y + 30, 'Clear notes', showWarning.bind('Clear notes?\n\nThis action cannot be undone.', clearNotes));
 		clear_notes.color = FlxColor.RED;
 		clear_notes.label.color = FlxColor.WHITE;
 
@@ -1230,12 +1200,13 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			doUpdateGridObjects = true;
 	}
 
-	function swapNoteSides(notes:Array<NoteData>) {
+	function swapNoteSides(notes:Array<ChartObject>) {
 		var shitToDo:Array<ChartingAction> = [];
 
 		for (note in notes) {
 			if (!NoteData.isNoteData(note))
 				continue;
+			var note:NoteData = cast note;
 
 			var ogCol = note.column;
 			var nuCol = (note.column + _song.keyCount) % (_song.keyCount * 2);
@@ -1250,12 +1221,12 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		}
 	}
 
-	function duetNotes(toCopy:Array<NoteData>) {
+	function duetNotes(toCopy:Array<ChartObject>) {
 		if (toCopy.length == 0)
 			return;
 
 		//var copiedNotes:Array<NoteData> = [for (note in toCopy) note.clone()];
-		var copiedNotes:Array<NoteData> = [for (note in toCopy) if (NoteData.isNoteData(note)) note.clone()];
+		var copiedNotes:Array<NoteData> = [for (note in toCopy) if (NoteData.isNoteData(note)) (cast note:NoteData).clone()];
 		
 		for (note in copiedNotes) {
 			if (Math.floor(note.column / _song.keyCount) % 2 == 1)
@@ -1288,12 +1259,13 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		note.column += fieldIndex * _song.keyCount;
 	}
 
-	function mirrorNotes(notes:Array<NoteData>) {
+	function mirrorNotes(notes:Array<ChartObject>) {
 		var shitToDo:Array<ChartingAction> = [];
 		for (note in notes) {
 			if (!NoteData.isNoteData(note))
 				continue;
 
+			var note:NoteData = cast note;
 			var f = _mirrorNote.bind(note);
 			shitToDo.push(new DynamicAction(f, f));
 		}
@@ -1872,7 +1844,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		}
 
 		var loadButton = newFlxUIButton(10, extraInfoInputText.y + 30, "Load Metadata", function() {			
-			CoolUtil.showOpenDialog("Load Metadata", getSongPath("metadata.json"), ["JSON file", "*.json"], onOpenMetadata);
+			FileUtil.showOpenDialog("Load Metadata", getSongPath("metadata.json"), ["JSON file", "*.json"], onOpenMetadata);
 		});
 
 		////
@@ -1885,7 +1857,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			_song.metadata.extraInfo = extraInfoInputText.text.length == 0 ? [] : extraInfoInputText.text.split(',');
 
 			var data:String = Json.stringify(_song.metadata, "\t");
-			CoolUtil.showSaveDialog(data, "Save Metadata", getSongPath("metadata.json"), ["JSON file", "*.json"]);
+			FileUtil.showSaveDialog(data, "Save Metadata", getSongPath("metadata.json"), ["JSON file", "*.json"]);
 		});
 
 		////
@@ -2564,6 +2536,9 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	}
 
 	function checkCanMouseScroll():Bool {
+		if (historyDisplay.exists && FlxG.mouse.overlaps(historyDisplay))
+			return false;
+
 		for (dropDownMenu in blockPressWhileScrolling) {
 			if (dropDownMenu.header.button.status == FlxButton.HIGHLIGHT)
 				return false;
@@ -2687,7 +2662,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 		playedSound.resize(0);
 		curRenderedNotes.forEachAlive(function(note:Note) {
-			if (selectedNotes.contains(note.chartData) || note.chartData == curSelectedEvent)
+			if (selectedNotes.contains(note.chartData) /*|| note.chartData == curSelectedEvent*/)
 				note.color = sineColor;
 			else
 				note.color = 0xFFFFFFFF;
@@ -2784,7 +2759,12 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			if (FlxG.keys.justPressed.DELETE) {
 				new GroupAction(
 					"Remove Notes",
-					[for (note in selectedNotes.copy()) new RemoveNoteAction(curSection, note)]
+					[for (obj in selectedNotes.copy()) {
+						if (NoteData.isNoteData(obj))
+							new RemoveNoteAction(curSection, cast obj);
+						else
+							new RemoveEventNoteAction(cast obj);
+					}]
 				);
 			}
 		}
@@ -2929,6 +2909,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		
 		if (FlxG.keys.justPressed.F6) {
 			historyDisplay.exists = !historyDisplay.exists;
+			options.showHistoryDisplay = historyDisplay.exists;
 		}
 
 		if (FlxG.keys.justPressed.ENTER) {
@@ -3154,7 +3135,10 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 				if (FlxG.keys.pressed.CONTROL) {
 					// Add
 					list = selectedNotes.copy();
-					for (data in overlapped) list.add(data);
+					for (data in overlapped) {
+						if (!list.contains(data))
+							list.add(data);
+					}
 				}
 				else if (FlxG.keys.pressed.ALT) {
 					// Subtract
@@ -3185,7 +3169,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	}
 
 	function openSongSelect() {
-		var ss = new SongSelectState(FlxColor.fromRGB(0,0,0,240));
+		var ss = new SongSelectState();
+		ss.bgColor = FlxColor.fromRGB(0,0,0,240);
 		ss.songs = SongSelectState.getEverySong();
 		ss.curSelected = CoolUtil.indexOfSong(ss.songs, PlayState.song);
 		if (ss.curSelected == -1) ss.curSelected = 0;
@@ -3330,94 +3315,88 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	}
 
 	var wavData:Array<Array<Array<Float>>> = [[[0], [0]], [[0], [0]]];
+	var bitchRect:Rectangle = new Rectangle();
 	function updateWaveform() 
 	{
 		#if desktop
-		var gSize:Int = Std.int(GRID_SIZE * _song.keyCount * 2);
-		var hSize:Int = Std.int(gSize* 0.5);
-
 		if (waveformTrack == null) {
 			waveformSprite.visible = false;
 			return;
 		}
 
-		waveformSprite.visible = true;
-		waveformSprite.makeGraphic(gSize, Std.int(gridBG.height), 0x00FFFFFF);
-		waveformSprite.pixels.fillRect(new Rectangle(0, 0, gridBG.width, gridBG.height), 0x00FFFFFF);
-		waveformSprite.x = GRID_SIZE + GRID_SIZE * _song.keyCount - hSize;
-
-		wavData[0][0] = [];
-		wavData[0][1] = [];
-		wavData[1][0] = [];
-		wavData[1][1] = [];
+		var gSize:Int = Std.int(GRID_SIZE * _song.keyCount * 2);
+		var hSize:Int = Std.int(gSize * 0.5);
 
 		var steps:Int = Math.round(currentSectionBeats * 4);
 		var st:Float = currentSectionStart;
 		var et:Float = st + (Conductor.stepCrochet * steps);
 
-		var sound:FlxSound = waveformTrack;
-		if (sound._sound != null && sound._sound.__buffer != null) {
-			var bytes:Bytes = sound._sound.__buffer.data.toBytes();
+		waveformSprite.visible = true;
+		waveformSprite.x = GRID_SIZE + GRID_SIZE * _song.keyCount - hSize;
+		waveformSprite.makeGraphic(gSize, Std.int(gridBG.height), 0, false, 'waveformSprite');
 
-			wavData = waveformData(
-				sound._sound.__buffer,
-				bytes,
-				st,
-				et,
-				1,
-				wavData,
-				Std.int(gridBG.height)
-			);
-		}
+		bitchRect.setTo(0, 0, waveformSprite.pixels.width, waveformSprite.pixels.height);
+		waveformSprite.pixels.fillRect(bitchRect, 0);
+
+		wavData[0][0].resize(0);
+		wavData[0][1].resize(0);
+		wavData[1][0].resize(0);
+		wavData[1][1].resize(0);
+		wavData = waveformData(
+			waveformTrack._sound.__buffer,
+			st,
+			et,
+			1,
+			wavData,
+			waveformSprite.frameHeight
+		);
 
 		// Draws
-		var lmin:Float = 0;
-		var lmax:Float = 0;
+		var leftLength:Int = FlxMath.maxInt(wavData[0][0].length, wavData[0][1].length);
+		var rightLength:Int = FlxMath.maxInt(wavData[1][0].length, wavData[1][1].length);
+		var length:Int = FlxMath.maxInt(leftLength, rightLength);
 
-		var rmin:Float = 0;
-		var rmax:Float = 0;
-
-		var size:Float = 1;
-
-		var leftLength:Int = (
-			wavData[0][0].length > wavData[0][1].length ? wavData[0][0].length : wavData[0][1].length
-		);
-
-		var rightLength:Int = (
-			wavData[1][0].length > wavData[1][1].length ? wavData[1][0].length : wavData[1][1].length
-		);
-
-		var length:Int = leftLength > rightLength ? leftLength : rightLength;
-
-		var index:Int;
 		for (i in 0...length) {
-			index = i;
+			var lmin = FlxMath.bound((i < wavData[0][0].length ? wavData[0][0][i] : 0) * (gSize / 1.12), -hSize, hSize) * 0.5;
+			var lmax = FlxMath.bound((i < wavData[0][1].length ? wavData[0][1][i] : 0) * (gSize / 1.12), -hSize, hSize) * 0.5;
 
-			lmin = FlxMath.bound(((index < wavData[0][0].length && index >= 0) ? wavData[0][0][index] : 0) * (gSize / 1.12), -hSize, hSize)* 0.5;
-			lmax = FlxMath.bound(((index < wavData[0][1].length && index >= 0) ? wavData[0][1][index] : 0) * (gSize / 1.12), -hSize, hSize)* 0.5;
+			var rmin = FlxMath.bound((i < wavData[1][0].length ? wavData[1][0][i] : 0) * (gSize / 1.12), -hSize, hSize) * 0.5;
+			var rmax = FlxMath.bound((i < wavData[1][1].length ? wavData[1][1][i] : 0) * (gSize / 1.12), -hSize, hSize) * 0.5;
 
-			rmin = FlxMath.bound(((index < wavData[1][0].length && index >= 0) ? wavData[1][0][index] : 0) * (gSize / 1.12), -hSize, hSize)* 0.5;
-			rmax = FlxMath.bound(((index < wavData[1][1].length && index >= 0) ? wavData[1][1][index] : 0) * (gSize / 1.12), -hSize, hSize)* 0.5;
-
-			waveformSprite.pixels.fillRect(new Rectangle(hSize - (lmin + rmin), i * size, (lmin + rmin) + (lmax + rmax), size), FlxColor.BLUE);
+			final scale:Float = 1;
+			bitchRect.setTo(
+				hSize - (lmin + rmin), 
+				i * scale, 
+				(lmin + rmin) + (lmax + rmax), 
+				scale
+			);
+			waveformSprite.pixels.fillRect(bitchRect, FlxColor.BLUE);
 		}
 		#end
 	}
 
-	function waveformData(buffer:AudioBuffer, bytes:Bytes, time:Float, endTime:Float, multiply:Float = 1, ?array:Array<Array<Array<Float>>>, ?steps:Float):Array<Array<Array<Float>>>
+	function waveformData(buffer:AudioBuffer, startTime:Float, endTime:Float, multiply:Float = 1, ?array:Array<Array<Array<Float>>>, steps:Float = 1280):Array<Array<Array<Float>>>
 	{
+		if (array == null) {
+			array = [[[0], [0]], [[0], [0]]];
+		}
+		else {
+			array[0][0].resize(1);
+			array[0][1].resize(1);
+		}
+
 		#if (lime_cffi && !macro)
-		if (buffer == null || buffer.data == null) return [[[0], [0]], [[0], [0]]];
+		if (buffer?.data == null)
+			return array;
+
+		var bytes:Bytes = buffer.data.toBytes();
 
 		var khz:Float = (buffer.sampleRate / 1000);
 		var channels:Int = buffer.channels;
 
-		var index:Int = Std.int(time * khz);
+		var index:Int = Std.int(startTime * khz);
 
-		var samples:Float = ((endTime - time) * khz);
-
-		if (steps == null) steps = 1280;
-
+		var samples:Float = (endTime - startTime) * khz;
 		var samplesPerRow:Float = samples / steps;
 		var samplesPerRowI:Int = Std.int(samplesPerRow);
 
@@ -3433,8 +3412,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 		var simpleSample:Bool = true;//samples > 17200;
 		var v1:Bool = false;
-
-		if (array == null) array = [[[0], [0]], [[0], [0]]];
 
 		while (index < (bytes.length - 1)) {
 			if (index >= 0) {
@@ -3478,25 +3455,23 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 				var rRMin:Float = Math.abs(rmin) * multiply;
 				var rRMax:Float = rmax * multiply;
 
-				if (gotIndex > array[0][0].length) array[0][0].push(lRMin);
-					else array[0][0][gotIndex - 1] = array[0][0][gotIndex - 1] + lRMin;
+				inline function push(array:Array<Float>, v:Float):Void {
+					if (gotIndex > array.length)
+						array.push(v);
+					else
+						array[gotIndex - 1] += v;
+				}
 
-				if (gotIndex > array[0][1].length) array[0][1].push(lRMax);
-					else array[0][1][gotIndex - 1] = array[0][1][gotIndex - 1] + lRMax;
+				push(array[0][0], lRMin);
+				push(array[0][1], lRMax);
 
 				if (channels >= 2) {
-					if (gotIndex > array[1][0].length) array[1][0].push(rRMin);
-						else array[1][0][gotIndex - 1] = array[1][0][gotIndex - 1] + rRMin;
-
-					if (gotIndex > array[1][1].length) array[1][1].push(rRMax);
-						else array[1][1][gotIndex - 1] = array[1][1][gotIndex - 1] + rRMax;
+					push(array[1][0], rRMin);
+					push(array[1][1], rRMax);
 				}
 				else {
-					if (gotIndex > array[1][0].length) array[1][0].push(lRMin);
-						else array[1][0][gotIndex - 1] = array[1][0][gotIndex - 1] + lRMin;
-
-					if (gotIndex > array[1][1].length) array[1][1].push(lRMax);
-						else array[1][1][gotIndex - 1] = array[1][1][gotIndex - 1] + lRMax;
+					push(array[1][0], lRMin);
+					push(array[1][1], lRMax);
 				}
 
 				lmin = 0;
@@ -3510,11 +3485,9 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			rows++;
 			if(gotIndex > steps) break;
 		}
+		#end
 
 		return array;
-		#else
-		return [[[0], [0]], [[0], [0]]];
-		#end
 	}
 
 	function changeSection(sec:Int = 0, ?updateMusic:Bool = true):Void
@@ -3592,28 +3565,42 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 		var strumTime = selectedNotes.strumTime;
 		var strumStep:Float = Conductor.getStep(strumTime);
-		var endStep:Float = strumStep;
-		var sustainSteps:Float = 0;
+		var commonSustainLength:Null<Float> = selectedNotes.commonSustainLength;
 
-		if (selectedNotes.length > 0) {
-			var endTime = selectedNotes.endTime;
-			if (endTime != strumTime) {
-				endStep = Conductor.getStep(selectedNotes.endTime);
-				sustainSteps = endStep - strumStep;
+		////
+		var endStep:Float = {
+			var endTime:Float = strumTime;
+			for (note in selectedNotes) {
+				var noteEnd = note.strumTime;
+				if (NoteData.isNoteData(note))
+					noteEnd += (cast note:NoteData).sustainLength;
+				if (noteEnd > endTime)
+					endTime = noteEnd;
 			}
-		}
+			(endTime == strumTime) ? strumStep : Conductor.getStep(endTime);
+		};
 
-		labelSusLength.text = 'Sustain Length: (${Math.round(sustainSteps)} Steps)';
-		labelStrumTime.text = 'Strum Time: (Step ${sustainSteps > 0 ? '$strumStep - $endStep' : '$strumStep'})';
+		labelStrumTime.text = 'Strum Time: (Step ${endStep != strumStep ? '$strumStep - $endStep' : '$strumStep'})';
+
+		////
+		if (commonSustainLength == 0) {
+			labelSusLength.text = 'Sustain Length: (0 Steps)';
+		}
+		else if (commonSustainLength == null || strumStep != endStep) {
+			labelSusLength.text = 'Sustain Length: (---)';
+		}
+		else {
+			var endStep:Float = Conductor.getStep(strumTime + commonSustainLength);
+			labelSusLength.text = 'Sustain Length: (${Math.round(endStep - strumStep)} Steps)';
+		}
 	}
 
 	function updateNoteUI():Void
 	{
 		labelSelectedNotes.text = '${selectedNotes.length == 0 ? 'No' : Std.string(selectedNotes.length)} notes selected';
+		updateNoteSteps();
 
 		if (selectedNotes.length > 0) {
-			updateNoteSteps();
-
 			stepperStrumTime.value = selectedNotes.strumTime;
 			if (selectedNotes.commonSustainLength != null)
 				stepperSusLength.value = selectedNotes.commonSustainLength;
@@ -3984,7 +3971,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			var currentSection = _song.notes[curSection];
 			for (i in currentSection.sectionNotes) {
 				if (i != note.chartData) continue;
-				new RemoveNoteAction(curSection, i);
+				new RemoveNoteAction(curSection, cast i);
 				break;
 			}
 		}else {
@@ -4136,6 +4123,51 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		}
 	}
 
+	function onOpenEventsFile(resource:Bytes) {
+		var data:Dynamic = Json.parse(resource.toString());
+
+		var song:SwagSong = Reflect.field(data, "song"); 
+		if (song == null)
+			return;
+	
+		var events = ChartData.onLoadEvents(data.song).events;
+		if (events == null)
+			return;
+
+		_song.events = events;
+		doUpdateGridObjects = true;
+	}
+
+	function reloadSongJSON()
+	{
+		showWarning('This action will clear current progress.\n\nProceed?', loadJson.bind(_song.song));
+	}
+
+	function loadAutosave()
+	{
+		var autosaved:Dynamic = options.autosave;
+		if (autosaved == null) {
+			showPopup("There is no autosaved data");
+		}else if (!Std.isOfType(autosaved, String)) {
+			showPopup("Invalid autosaved data");
+		}else{
+			var _song:Dynamic = Json.parse(autosaved);
+			showPopup('Load autosave?\n\nThis will clear the current progress.', function() {
+				// Ugh
+				var _session:ChartingStateSession = Reflect.field(_song, "_chartEditor");
+				if (_session.trackVolumes != null && !Std.isOfType(_session.trackVolumes, haxe.ds.StringMap) && Reflect.isObject(_session.trackVolumes))
+					_session.trackVolumes = cast CoolUtil.structureToMap(_session.trackVolumes);
+	
+				MusicBeatState.switchState(new ChartingState(_song));
+			});
+		}
+	}
+
+	function openEventsJSON() {
+		final openEvents:Void->Void = FileUtil.showOpenDialog.bind('Open Events', getSongPath('events.json'), ['*.json'], onOpenEventsFile);
+		showWarning('This action will clear the current events.\n\nProceed?', openEvents);
+	}
+
 	function sortNotesByTime(Obj1:NoteData, Obj2:NoteData):Int
 		return FlxSort.byValues(FlxSort.ASCENDING, Obj1.strumTime, Obj2.strumTime);
 	
@@ -4167,7 +4199,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		var fileName:String = getChartFileName();
 		var data:String = encodeChartJson();
 		if (data != null && data.length > 0) {
-			CoolUtil.showSaveDialog(data.trim(), "Save Chart", getSongPath(fileName), ["JSON file", "*.json"], onSaveComplete, onSaveCancel);
+			FileUtil.showSaveDialog(data.trim(), "Save Chart", getSongPath(fileName), ["JSON file", "*.json"], onSaveComplete, onSaveCancel);
 		}
 	}
 
@@ -4177,7 +4209,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 		var json = {"song": {"events": _song.events}}
 		var data:String = Json.stringify(json, "\t");
-		CoolUtil.showSaveDialog(data, 'Save Events', getSongPath('events.json'), ["JSON file", '*.json']);
+		FileUtil.showSaveDialog(data, 'Save Events', getSongPath('events.json'), ["JSON file", '*.json']);
 	}
 
 	function saveSongZIP() {
@@ -4192,7 +4224,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			if (b != null) zip.addBytes(b, name);
 		}
 
-		CoolUtil.showSaveDialog(zip.finalize(), "Save File", getSongPath(_song.song + ".zip"), ["ZIP File", "*.zip"]);
+		FileUtil.showSaveDialog(zip.finalize(), "Save File", getSongPath(_song.song + ".zip"), ["ZIP File", "*.zip"]);
 	}
 
 	function onSaveComplete(_):Void
@@ -4241,8 +4273,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	}
 
 	//// 
-	// TODO: move this stuff somewhere else
-	static var textBgColor = 0xFF383A46;
+	// TODO: get rid of all this lollll	
 
 	static inline function newFlxUIButton(X:Float = 0, Y:Float = 0, ?Label:String, ?OnClick:Void->Void, ?LoadDefaultGraphics:Bool = true, ?LoadBlank:Bool = false, ?Color:FlxColor = FlxColor.WHITE)
 	{
@@ -4260,35 +4291,18 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	) 
 	@:privateAccess {
 		var stepper = new CustomFlxUINumericStepper(X, Y, StepSize, DefaultValue, Min, Max, Decimals, Stack, TextField, ButtonPlus, ButtonMinus, IsPercent);
-		
-		var fit = stepper.text_field;
-		if (fit is FlxInputText)
-			setupInputText(cast fit);
-
-		stepper.button_plus.label.color = FlxColor.WHITE;
-		stepper.button_minus.label.color = FlxColor.WHITE;
-
 		return stepper;
 	}
 
 	static inline function newFlxUIInputText(X:Float = 0, Y:Float = 0, Width:Int = 150, ?Text:String, size:Int = 8, TextColor:Int = FlxColor.BLACK,
 			BackgroundColor:Int = FlxColor.WHITE, EmbeddedFont:Bool = true) {
 		var fit = new CustomFlxUIInputText(X, Y, Width, Text, size, TextColor, BackgroundColor, EmbeddedFont);
-		setupInputText(fit);
 		return fit;
-	}
-
-	static inline function setupInputText(fit:FlxInputText) {
-		fit.backgroundColor = textBgColor;
-		fit.color = FlxColor.WHITE;
-		fit.caretColor = FlxColor.WHITE;
 	}
 
 	static inline function newFlxUIDropDownMenu(X:Float = 0, Y:Float = 0, DataList:Array<StrNameLabel>, ?Callback:String->Void, ?Header:FlxUIDropDownHeader,
 			?DropPanel:FlxUI9SliceSprite, ?ButtonList:Array<FlxUIButton>, ?UIControlCallback:Bool->FlxUIDropDownMenu->Void) {
 		var ddm = new CustomFlxUIDropDownMenu(X, Y, DataList, Callback, Header, DropPanel, ButtonList, UIControlCallback);
-		ddm.header.background.color = textBgColor;
-		ddm.header.text.color = FlxColor.WHITE;
 		return ddm;
 	}
 
@@ -4299,8 +4313,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	}
 }
 
-private abstract NoteSelection(Array<NoteData>) to Array<NoteData> {
-	public var array(get, never):Array<NoteData>;
+private abstract NoteSelection(Array<ChartObject>) to Array<ChartObject> {
+	public var array(get, never):Array<ChartObject>;
 	
 	public var length(get, never):Int;
 
@@ -4311,10 +4325,14 @@ private abstract NoteSelection(Array<NoteData>) to Array<NoteData> {
 	public var strumTime(get, set):Float;
 
 	/**
-		`lastNote.strumTime + lastNote.sustainLength`
+		Latest strum time between selected notes.
 	**/
-	public var endTime(get, never):Float;
+	public var lastStrumTime(get, set):Float;
 
+	/** 
+		Sustain length shared by all selected notes.  
+		If the selected notes don't have the same sustain length, this will be null.
+	**/
 	public var commonSustainLength(get, never):Null<Float>;
 
 	/** 
@@ -4324,21 +4342,25 @@ private abstract NoteSelection(Array<NoteData>) to Array<NoteData> {
 	public var noteType(get, never):Null<String>;
 
 	#if true
-	public function new(?arr:Array<NoteData>) {
+	public function new(?arr:Array<ChartObject>) {
 		this = arr ?? [];
 		sort();
 	}
 
-	public inline function add(note:NoteData) {
+	public inline function add(note:ChartObject) {
 		var i:Int = 0;
 		while (i < this.length && this[i].strumTime < note.strumTime) i++;
 		this.insert(i, note);
 	}
 
-	public inline function remove(note:NoteData)
+	public inline function applyOffset(timeOffset:Float)
+		for (note in this)
+			note.strumTime += timeOffset;
+
+	public inline function remove(note:ChartObject)
 		this.remove(note);
 
-	public inline function contains(note:NoteData):Bool
+	public inline function contains(note:ChartObject):Bool
 		return this.indexOf(note) >= 0;
 
 	public inline function copy():NoteSelection
@@ -4352,7 +4374,7 @@ private abstract NoteSelection(Array<NoteData>) to Array<NoteData> {
 	#end
 
 	#if true
-	inline function get_array():Array<NoteData>
+	inline function get_array():Array<ChartObject>
 		return this;
 
 	inline function get_length():Int
@@ -4362,37 +4384,64 @@ private abstract NoteSelection(Array<NoteData>) to Array<NoteData> {
 		return this[0].strumTime; // ARRAY SHOULD BE SORTED BY TIME
 
 	inline function set_strumTime(v:Float):Float {
-		var delta:Float = v - this[0].strumTime;
-		for (note in this)
-			note.strumTime += delta;
+		applyOffset(v - strumTime);
 		return v;
 	}
 
-	inline function get_commonSustainLength():Null<Float> {
-		var common:Null<Float> = this[0]?.sustainLength;
+	inline function get_lastStrumTime():Float
+		return this[this.length - 1].strumTime; // ARRAY SHOULD BE SORTED BY TIME
 
-		for (note in this) {
-			if (note.sustainLength != common) {
-				common = null;
-				break;
+	inline function set_lastStrumTime(v:Float):Float {
+		applyOffset(v - lastStrumTime);
+		return v;	
+	}
+
+	inline function get_commonSustainLength():Null<Float> {
+		var startIdx = -1;
+		var common:Null<Float> = null;
+
+		for (i => obj in this) {
+			if (NoteData.isNoteData(obj)) {
+				var obj:NoteData = cast obj;
+				startIdx = i;
+				common = obj.sustainLength;
+				break;	
+			}
+		}
+
+		if (startIdx != -1) {
+			for (i in startIdx...this.length) {
+				var note:NoteData = cast this[i];
+				if (NoteData.isNoteData(note) && note.sustainLength != common) {
+					common = null;
+					break;
+				}
 			}
 		}
 
 		return common;
 	}
 
-	inline function get_endTime():Float {
-		var lastNote = this[this.length - 1];
-		return lastNote.strumTime + lastNote.sustainLength;
-	}
-
 	inline function get_noteType():Null<String> {
-		var common:Null<String> = this[0]?.noteType;
+		var startIdx = -1;
+		var common:Null<String> = null;
 
-		for (note in this) {
-			if (note.noteType != common) {
-				common = null;
-				break;
+		for (i => obj in this) {
+			if (NoteData.isNoteData(obj)) {
+				var obj:NoteData = cast obj;
+				startIdx = i;
+				common = obj.noteType;
+				break;	
+			}
+		}
+
+		if (startIdx != -1) {
+			for (i in startIdx...this.length) {
+				var note:NoteData = cast this[i];
+				if (NoteData.isNoteData(note) && note.noteType != common) {
+					common = null;
+					break;
+				}
 			}
 		}
 
@@ -4401,7 +4450,7 @@ private abstract NoteSelection(Array<NoteData>) to Array<NoteData> {
 	#end
 
 	////
-	function _sort(a:NoteData, b:NoteData):Int
+	function _sort(a:ChartObject, b:ChartObject):Int
 		return FlxSort.byValues(FlxSort.ASCENDING, a.strumTime, b.strumTime);
 }
 
@@ -4467,6 +4516,7 @@ private class HistoryDisplay extends FlxSpriteGroup {
 				action = utRay[actionIdx];
 			}else {
 				action = null;
+				actionIdx = -1;
 			}
 
 			var txtIdx = txts.length - i;
@@ -4483,16 +4533,21 @@ private class HistoryDisplay extends FlxSpriteGroup {
 
 			txt.color = action_reverted ? 0xFF000000 : 0xFFFFFFFF;
 			txt.text = (action == null) ? " " : Std.string(action);
+			txt.ID = actionIdx;
 		}
 	}
 
 	override function update(elapsed:Float) {
-		if (FlxG.keys.justPressed.V) {
-			scrollIdx--;
-			updateDisplay();
-		}
-		if (FlxG.keys.justPressed.N) {
-			scrollIdx++;
+		var scrollChange:Int = FlxG.mouse.overlaps(this) ? -FlxG.mouse.wheel : 0;
+
+		if (FlxG.keys.justPressed.V)
+			scrollChange--;
+		
+		if (FlxG.keys.justPressed.N)
+			scrollChange++;
+		
+		if (scrollChange != 0) {
+			scrollIdx += scrollChange;
 			updateDisplay();
 		}
 
@@ -4500,6 +4555,23 @@ private class HistoryDisplay extends FlxSpriteGroup {
 			curIdx = ChartingState.instance.utIdx;
 			scrollIdx = 0;
 			updateDisplay();
+		}
+
+		if (FlxG.mouse.justPressed) {
+			for (txt in txts) {
+				if (!FlxG.mouse.overlaps(txt))
+					continue;
+				var actionIdx = txt.ID;
+				if (actionIdx == -1 || actionIdx == curIdx)
+					break;
+				else if (actionIdx < curIdx)
+					while (ChartingState.instance.utIdx != actionIdx)
+						ChartingState.instance.undo();
+				else
+					while (ChartingState.instance.utIdx != actionIdx)
+						ChartingState.instance.redo();
+				break;
+			}
 		}
 
 		for (obj in bgs) obj.update(elapsed);
@@ -4559,10 +4631,11 @@ private class ChangeMustHitSectionAction extends ChartingAction {
 private class ChangeSustainAction extends NoteAction {
 	public var change:Float;
 
-	public function new(noteData:NoteData, value:Float, isAbs:Bool = false) {
+	public function new(noteData:ChartObject, value:Float, isAbs:Bool = false) {
 		if (!NoteData.isNoteData(noteData))
 			return;
 
+		var noteData:NoteData = cast noteData;
 		this.noteData = noteData;
 		this.change = isAbs ? value - noteData.sustainLength : value;
 		if (this.change < 0)
@@ -4771,8 +4844,16 @@ private class RemoveEventNoteAction extends ChartingAction {
 private class AddEventNoteAction extends ChartingAction {
 	var eventData:PsychEventNote;
 
+	////
+	var previousSelected:NoteSelection;
+	var newSelected:NoteSelection;
+
 	public function new(eventData:PsychEventNote) {
 		this.eventData = eventData;
+		////
+		this.newSelected = new NoteSelection(cast [eventData]);
+		this.previousSelected = instance.selectedNotes;
+		////
 		super();
 	}
 
@@ -4783,6 +4864,11 @@ private class AddEventNoteAction extends ChartingAction {
 		instance.subEventIdx = 0;
 		instance.curSelectedEvent = eventData;
 		instance.changeEventSelected();
+
+		////
+		instance.selectedNotes = newSelected;
+		instance.colorSine = 0.0;
+		instance.doUpdateNoteUI = true;
 	}
 
 	public function undo() {
@@ -4794,6 +4880,11 @@ private class AddEventNoteAction extends ChartingAction {
 			instance.curSelectedEvent = null;
 			instance.changeEventSelected();
 		}
+
+		////
+		instance.selectedNotes = previousSelected;
+		instance.colorSine = 0.0;
+		instance.doUpdateNoteUI = true;
 	}
 
 	public function toString() {
@@ -4837,7 +4928,7 @@ private class SelectNotesAction extends ChartingAction {
 	public var prevSelected:NoteSelection;
 	public var prevNoteType:String;
 
-	public function new(list:Array<NoteData>) {
+	public function new(list:Array<ChartObject>) {
 		// if selecting notes, or deselecting notes
 		if (list.length > 0 || instance.selectedNotes.length > 0) {
 			this.list = new NoteSelection(list);
@@ -4944,7 +5035,11 @@ private class ChangeNoteTypeAction extends NoteAction {
 	public var newType:String;
 	public var prevType:String;
 
-	public function new(noteData:NoteData, newType:String) {
+	public function new(noteData:ChartObject, newType:String) {
+		if (!NoteData.isNoteData(noteData))
+			return;
+
+		var noteData:NoteData = cast noteData;
 		this.noteData = noteData;
 		this.newType = newType;
 		this.prevType = noteData.noteType;
@@ -5026,12 +5121,10 @@ private class GroupAction extends ChartingAction {
 	final name:String;
 	
 	public function new(name:String, actions:Array<ChartingAction>) {
-		if (actions.length > 0) {
-			if (actions.length > 1) {
-				this.name = name;
-				for (action in actions)
-					action.silent = true;
-			}
+		if (actions.length > 1) {
+			this.name = name;
+			for (action in actions)
+				action.silent = true;
 			super();
 		}
 	}

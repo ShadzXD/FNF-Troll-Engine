@@ -95,10 +95,8 @@ class Song extends BaseSong
 	public function getCharts():Array<String>
 		return _charts ?? (_charts = _getCharts());
 
-	@:deprecated
-	public function play(chartId:String = '')
-		Song.playSong(this, getChartId(chartId));
-
+	public inline function play(chartId:String = ''):Void
+		Song.playSong(this, chartId);
 
 	private function _getCharts():Array<String>
 	{		
@@ -174,14 +172,14 @@ class Song extends BaseSong
 	}
 
 	/** Loads a singular song to be played on PlayState **/
-	static public function loadSong(song:BaseSong, ?difficulty:String) {
-		PlayState.loadPlaylist([song], difficulty);
+	static public function loadSong(song:BaseSong, chartId:String = "") {
+		PlayState.loadPlaylist([song], song.getChartId(chartId));
 	}
 
 	/** Loads a singular song to be played on PlayState, then switches to it **/
-	static public function playSong(song:BaseSong, ?difficulty:String)
+	static public function playSong(song:BaseSong, chartId:String = "")
 	{
-		loadSong(song, difficulty);
+		loadSong(song, chartId);
 		switchToPlayState();
 	}
 

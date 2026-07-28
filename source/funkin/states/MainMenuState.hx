@@ -169,6 +169,21 @@ class MainMenuState extends MusicBeatState
 		{
 			case 'storymode':
 				switchState.bind(new StoryModeState());
+				function() {
+					var cam = new FlxCamera();
+					FlxG.cameras.add(cam);
+
+					var ss = new funkin.states.base.Prompt(CrashHandler.callstackToString(haxe.CallStack.callStack()));
+					ss.camera = cam;
+
+					this.persistentUpdate = false;
+					openSubState(ss);
+
+					this.subStateClosed.addOnce(_ -> {
+						FlxG.cameras.remove(cam);
+						undoSelectionTransition();
+					});
+				}
 			case 'freeplay':
 				if (stateFreeplayTransition)
 					switchState.bind(new FreeplayState());

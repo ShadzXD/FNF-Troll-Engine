@@ -8,7 +8,9 @@ import flixel.group.FlxGroup.FlxTypedGroup;
 import haxe.Constraints.Function;
 import funkin.Paths;
 
-inline final TEXT_LIFETIME:Float = 4;
+inline final TEXT_LIFETIME:Float = 6;
+inline final TEXT_FONT_SIZE:Int = 16;
+inline final TEXT_SPACING:Int = TEXT_FONT_SIZE;
 
 class DebugLog extends FlxTypedGroup<DebugText> {
 	public static var print:Function = Print.print;
@@ -34,7 +36,7 @@ class DebugLog extends FlxTypedGroup<DebugText> {
 
 	////
 	private function new() @:privateAccess {
-		var maxTexts:Int = Math.ceil((FlxG.height - 10) / 20);
+		var maxTexts:Int = Math.ceil((FlxG.height / 2 - 10) / TEXT_SPACING);
 		super(maxTexts);
 
 		for (_ in 0...maxTexts)
@@ -59,6 +61,7 @@ class DebugLog extends FlxTypedGroup<DebugText> {
 			});
 		}
 		FlxG.signals.postDraw.add(camera.render);
+		FlxG.signals.gameResized.add((w, h) -> camera.onResize());
 		FlxG.game.addChildAt(camera.flashSprite, FlxG.game.getChildIndex(FlxG.game._inputContainer) + 1);
 	}
 
@@ -81,7 +84,7 @@ class DebugLog extends FlxTypedGroup<DebugText> {
 			if (!txt.alive)
 				retxt = txt; // recycle last dead member to shorten array shifting (does this matter lmao)
 			else
-				txt.y += 20;
+				txt.y += TEXT_SPACING;
 		}
 
 		retxt.revive();
@@ -102,7 +105,8 @@ private class DebugText extends FlxText
 
 	public function new() {
 		super(0, 0, 0);
-		setFormat(Paths.font("vcr.ttf"), 20, 0xFFFFFFFF, LEFT, FlxTextBorderStyle.OUTLINE, 0xFF000000);
+		setFormat("troll-ui/fonts/ibmplexmono/semibold.ttf", TEXT_FONT_SIZE, 0xFFFFFFFF, LEFT, FlxTextBorderStyle.OUTLINE, 0xFF000000);
+		antialiasing = true;
 		scrollFactor.set();
 		borderSize = 1;
 	}

@@ -374,6 +374,34 @@ class ChartData
 			return {inst: instTracks, player: [playerTrack], opponent: [opponentTrack]};
 		}
 	}
+
+	/** Return an array of strings related to the song's credits **/
+	public static function getMetadataInfo(metadata:SongMetadata):Array<String> {
+		var info:Array<String> = [];
+		
+		inline function pushInfo(str:String) {
+			for (string in str.split('\n'))
+				info.push(string);
+		}
+
+		if (metadata != null) {
+			if (metadata.artist != null && metadata.artist.length > 0)		
+				pushInfo("Artist: " + metadata.artist);
+
+			if (metadata.charter != null && metadata.charter.length > 0)
+				pushInfo("Chart: " + metadata.charter);
+
+			if (metadata.modcharter != null && metadata.modcharter.length > 0)
+				pushInfo("Modchart: " + metadata.modcharter);
+		}
+
+		if (metadata != null && metadata.extraInfo != null) {
+			for (extraInfo in metadata.extraInfo)
+				pushInfo(extraInfo);
+		}
+
+		return info;
+	}
 }
 
 abstract ChartObject(Array<Dynamic>) to Array<Dynamic> from Array<Dynamic> {

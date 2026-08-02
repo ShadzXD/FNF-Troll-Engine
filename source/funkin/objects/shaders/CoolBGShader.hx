@@ -14,22 +14,36 @@ const vec4 colorTransformMult = vec4(-vec3(1.0), 1.0);
 vec4 flixel_color()
 {
 	vec4 color = vec4(1.0);
-	if (!(hasTransform || openfl_HasColorTransform))
-		return color;
-	
-	if (openfl_HasColorTransform || hasColorTransform)
+	if (!hasTransform)
 	{
-		color = vec4 (color.rgb / color.a, color.a);
-		vec4 mult = vec4 (openfl_ColorMultiplierv.rgb, 1.0);
-		color = clamp (openfl_ColorOffsetv + (color * mult), 0.0, 1.0);
-		
-		if (color.a == 0.0)
-			return vec4 (0.0, 0.0, 0.0, 0.0);
-		
-		return vec4 (color.rgb * color.a * openfl_Alphav, color.a * openfl_Alphav);
+		return color;
 	}
-	
-	return color * openfl_Alphav;
+
+	if (color.a == 0.0)
+	{
+		return vec4(0.0, 0.0, 0.0, 0.0);
+	}
+
+	if (!hasColorTransform)
+	{
+		return color * openfl_Alphav;
+	}
+
+	color = vec4(color.rgb / color.a, color.a);
+
+	mat4 colorMultiplier = mat4(0);
+	colorMultiplier[0][0] = openfl_ColorMultiplierv.x;
+	colorMultiplier[1][1] = openfl_ColorMultiplierv.y;
+	colorMultiplier[2][2] = openfl_ColorMultiplierv.z;
+	colorMultiplier[3][3] = openfl_ColorMultiplierv.w;
+
+	color = clamp(openfl_ColorOffsetv + (color * colorMultiplier), 0.0, 1.0);
+
+	if (color.a > 0.0)
+	{
+		return vec4(color.rgb * color.a * openfl_Alphav, color.a * openfl_Alphav);
+	}
+	return vec4(0.0, 0.0, 0.0, 0.0);
 }
 
 vec4 getGridColor(vec2 uv) {

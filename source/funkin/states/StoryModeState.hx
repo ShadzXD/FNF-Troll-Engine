@@ -282,7 +282,7 @@ class StoryModeState extends MusicBeatState {
 		add(difficultyRight);
 
 		for (idx => level in levels) {
-			Paths.currentPackId = level.folder;
+			Paths.currentPackId = level.packId;
 
 			var title = level.createTitle();
 			title.alpha = idx==selectedLevel ? 1 : 0;
@@ -436,7 +436,7 @@ class StoryModeState extends MusicBeatState {
 
 		selectedLevel = newLevel;
 
-		Paths.currentPackId = levels[selectedLevel].folder;
+		Paths.currentPackId = levels[selectedLevel].packId;
 
 		if (!silent)
 			FlxG.sound.play(Paths.sound("scrollMenu"));

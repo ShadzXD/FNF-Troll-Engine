@@ -362,8 +362,8 @@ class Note extends NoteObject {
 		var hsb = isQuant ? ClientPrefs.quantHSV[quants.indexOf(quant)] : getNoteColours(currentAnimations);
 		colorSwap.setHSBIntArray(hsb);
 
-		noteScript?.call("onUpdateColours", [this]);
-		genScript?.call("onUpdateColours", [this]);
+		noteScript?.executeFunc("onUpdateColours", [this]);
+		genScript?.executeFunc("onUpdateColours", [this]);
 	}
 
 	@:noCompletion
@@ -382,7 +382,7 @@ class Note extends NoteObject {
 		if (genScript == null) {
 			loaded = false;
 		} else if (genScript.exists("setupNoteTexture")) {
-			genScript.call("setupNoteTexture", [this]);
+			genScript.executeFunc("setupNoteTexture", [this]);
 			loaded = true;
 		} else {
 			if (genScript.exists("textureSuffix")) {
@@ -426,7 +426,7 @@ class Note extends NoteObject {
 			else
 				_setupNoteType();
 
-			genScript?.call("onNoteTypeSet", [this]);
+			genScript?.executeFunc("onNoteTypeSet", [this]);
 		}
 
 		if (usesDefaultColours) {
@@ -443,8 +443,8 @@ class Note extends NoteObject {
 
 		////
 
-		noteScript?.call("onSetupNotePost", [this]);
-		genScript?.call("onNoteTypeSetPost", [this]);
+		noteScript?.executeFunc("onSetupNotePost", [this]);
+		genScript?.executeFunc("onNoteTypeSetPost", [this]);
 
 		////
 		if (isQuant && Paths.imageExists('QUANT' + noteSplashTexture))
@@ -590,8 +590,8 @@ class Note extends NoteObject {
 		defScale.copyFrom(scale);
 		updateHitbox();
 		////
-		genScript?.call("onReloadNotePost", [this, texture, suffix]);
-		noteScript?.call("onReloadNotePost", [this, texture, suffix]);
+		genScript?.executeFunc("onReloadNotePost", [this, texture, suffix]);
+		noteScript?.executeFunc("onReloadNotePost", [this, texture, suffix]);
 	}
 
 	public function loadNoteAnims() {
@@ -652,8 +652,8 @@ class Note extends NoteObject {
 			return;
 
 
-		noteScript?.call("onNoteUpdate", [this, elapsed]);
-		genScript?.call("onNoteUpdate", [this, elapsed]);
+		noteScript?.executeFunc("onNoteUpdate", [this, elapsed]);
+		genScript?.executeFunc("onNoteUpdate", [this, elapsed]);
 
 		var diff = (strumTime - Conductor.songPosition);
 		if (diff < -ClientPrefs.hitWindow && !wasGoodHit)
@@ -677,7 +677,7 @@ class Note extends NoteObject {
 		switch(noteType){
 
 			default:
-				var ret:Dynamic = noteScript?.call("transformJudgeData", [this]);
+				var ret:Dynamic = noteScript?.executeFunc("transformJudgeData", [this]);
 				if (ret != null && ret != null)
 					return cast ret;
 		}

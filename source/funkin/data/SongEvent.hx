@@ -60,7 +60,7 @@ class ScriptedSongEvent extends SongEvent implements IScriptedClass {
 	}
 
 	public function callOnScript(func:String, ?args:Array<Dynamic>):Dynamic
-		return script.call(func, args);
+		return script.executeFunc(func, args);
 	
 	public function existsOnScript(func:String):Bool
 		return script.exists(func);

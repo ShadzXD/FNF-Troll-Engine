@@ -78,7 +78,7 @@ class StrumNote extends NoteObject {
 			texture = PlayState.arrowSkin;
 
 		}else if (genScript.exists("setupReceptorTexture")) {
-			genScript.call("setupReceptorTexture", [this]);
+			genScript.executeFunc("setupReceptorTexture", [this]);
 		
 		}else {
 			var newTex:String = PlayState.arrowSkin;

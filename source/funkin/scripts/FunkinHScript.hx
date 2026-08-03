@@ -1,22 +1,18 @@
 package funkin.scripts;
 
+import funkin.scripts.FunkinScript.ScriptType;
 import funkin.scripts.*;
 import funkin.scripts.Globals.*;
 
 import funkin.states.PlayState;
 import funkin.states.base.MusicBeatState;
 import funkin.states.base.MusicBeatSubstate;
-import funkin.Conductor;
-import funkin.ClientPrefs;
 
 import funkin.input.Controls;
 import funkin.api.Windows;
 
 import flixel.FlxG;
 
-#if linc_filedialogs
-import filedialogs.FileDialogs;
-#end
 import lime.app.Application;
 import haxe.Constraints.Function;
 
@@ -24,7 +20,7 @@ import hscript.*;
 
 using StringTools;
 
-class FunkinHScript
+class FunkinHScript extends FunkinScript
 {
 	public static final parser:Parser = {
 		var parser = new Parser();
@@ -58,11 +54,11 @@ class FunkinHScript
 			return _parseString(script, name);
 		}
 		catch (e:haxe.Exception) {
-			final msg = e.message;
-			print(msg);
+			var errMsg = 'Error parsing hscript! ' #if hscriptPos + '$name:' + parser.line + ', ' #end + e.message;
+			trace(errMsg);
 
 			#if desktop
-			Application.current.window.alert(msg, "Error parsing script!");
+			Application.current.window.alert(errMsg, "Error on haxe script!");
 			#end
 		}
 
@@ -81,20 +77,18 @@ class FunkinHScript
 			}
 		}
 		catch(e:haxe.Exception) {
-			final title = "Error parsing script!";
-			final msg = e.message;
+			var msg = "Error parsing hscript! " + e.message;
 			print(e.message);
 
-			#if WINDOWS_CRASH_HANDLER
+			#if desktop
+			var title = "Error parsing haxe script!";
+
+			#if (cpp && windows)
 			if (Windows.msgBox(msg, title, RETRYCANCEL | ERROR) == RETRY)
 				return parseFile(file, name);
-			/* I get weird cpp compile errors so IDK
-			#elseif (UNIX_CRASH_HANDLER && linc_filedialogs)
-			if (FileDialogs.message(title, msg, Choice.Retry_Cancel, Icon.Error) == Button.Retry)
-				return parseFile(file, name);
-			*/
 			#else
 			Application.current.window.alert(msg, title);
+			#end
 			#end
 		}
 
@@ -162,15 +156,13 @@ class FunkinHScript
 	}
 
 	////
-	public var scriptName:String;
-
 	private var interpreter(default, null):Interp;
 
 	public function new(?parsed:Expr, ?name:String, ?additionalVars:Map<String, Any>, ?doCreateCall:Bool = true, ?interp:Interp)
 	{
 		name ??= parsed?.origin ?? "HScript";
 		interpreter = interp ??= new Interp();
-		this.scriptName = name;
+		super(name, ScriptType.HSCRIPT);
 
 		set("Std", Std);
 		set("Type", Type);
@@ -192,7 +184,7 @@ class FunkinHScript
 		set("importClass", importClass);
 		set("importEnum", importEnum);
 
-		set("print", Print.print);
+		set("print", print);
 		set("debugPrint", DebugLog.print);
 		
 		set("script", this);
@@ -227,61 +219,16 @@ class FunkinHScript
 		Helper function
 		Sets a bunch of basic variables for the script depending on the state
 	**/
-	inline function setDefaultVars() {
-		set("scriptName", scriptName);
-
-		set('Function_Halt', Globals.Function_Halt);
-		set('Function_Stop', Globals.Function_Stop);
-		set('Function_Continue', Globals.Function_Continue);
-		set('Function_StopLua', Globals.Function_Halt); // DEPRECATED
-
-		set('teVersion', StringTools.trim(Main.Version.displayedVersion));
-		set("trollEngine", true); // so if any psych mods wanna add troll engine specific stuff well there they go
-
-		#if windows
-		set('buildTarget', 'windows');
-		#elseif linux
-		set('buildTarget', 'linux');
-		#elseif mac
-		set('buildTarget', 'mac');
-		#elseif html5
-		set('buildTarget', 'browser');
-		#elseif android
-		set('buildTarget', 'android');
-		#else
-		set('buildTarget', 'unknown');
-		#end
-		
-		set('curBpm', Conductor.bpm);
-		set('crochet', Conductor.crochet);
-		set('stepCrochet', Conductor.stepCrochet);
-
-		set('curBeat', 0);
-		set('curStep', 0);
-		set('curDecBeat', 0.0);
-		set('curDecStep', 0.0);
+	override function setDefaultVars() {
+		super.setDefaultVars();
 
 		var currentState = flixel.FlxG.state;
-
-		set("inTitlescreen", (currentState is funkin.states.TitleState));
-		set('inGameOver', false);
-		set('inChartEditor', false);
-
-		if (currentState is PlayState && currentState == PlayState.instance) {
-			set("inPlaystate", true);
-			
-			set("curSection", -1);
-			set("sectionData", null);
-		}else{
-			set("inPlaystate", false);
-			set("showDebugTraces", Main.showDebugTraces);
-		}
 		
 		set("state", currentState);
 		set("game", PlayState.instance);
 	}
 
-	inline function setFlixelVars() 
+	private function setFlixelVars() 
 	{
 		set("FlxG", FlxG);
 		set("FlxSprite", FlxSprite);
@@ -331,25 +278,25 @@ class FunkinHScript
 		set("ShaderFilter", openfl.filters.ShaderFilter);
 	}
 
-	inline function setFNFVars() {
+	private function setFNFVars() {
 		// FNF-specific things
 		set("controls", Controls.firstActive);
 		set("get_controls", () -> return Controls.firstActive);
-		set("newShader", Paths.getShader);
 		
 		set("Paths", funkin.Paths);
+		set("Conductor", funkin.Conductor);
 		set("ClientPrefs", funkin.ClientPrefs);
 		set("CoolUtil", funkin.CoolUtil);
-		set("Conductor", funkin.Conductor);
-		set("Song", funkin.data.Song);
-		set("Highscore", funkin.data.Highscore); // Useful for stuff like levels showing diff songs before and after finishing (i.e Weekend 1)
 
+		set("newShader", Paths.getShader);
+
+		set("PlayState", PlayState);
 		set("MusicBeatState", MusicBeatState);
 		set("MusicBeatSubstate", MusicBeatSubstate);
-		set("HScriptedState", funkin.states.scripting.HScriptedState);
-		set("HScriptedSubstate", funkin.states.scripting.HScriptedSubstate);
-		set("PlayState", PlayState);
 		set("GameOverSubstate", funkin.states.GameOverSubstate);
+		set("Song", funkin.data.Song);
+		set("BGSprite", funkin.objects.BGSprite);
+		set("RatingSprite", funkin.objects.hud.RatingGroup.RatingSprite);
 
 		set("Note", funkin.objects.notes.Note);
 		set("NoteObject", funkin.objects.notes.NoteObject);
@@ -360,9 +307,8 @@ class FunkinHScript
 
 		set("ProxyField", funkin.objects.proxies.ProxyField);
 		set("ProxySprite", funkin.objects.proxies.ProxySprite);
-
-		set("BGSprite", funkin.objects.BGSprite);
 		set("AltBGSprite", funkin.objects.BGSprite.AltBGSprite);
+
 		set("FlxSprite3D", funkin.objects.FlxSprite3D);
 
 		set("AttachedSprite", funkin.objects.AttachedSprite);
@@ -370,12 +316,11 @@ class FunkinHScript
 
 		set("Character", funkin.objects.Character);
 		set("HealthIcon", funkin.objects.hud.HealthIcon);
-		set("RatingSprite", funkin.objects.hud.RatingGroup.RatingSprite);
 
-		set("JudgmentManager", funkin.data.JudgmentManager);
-		set("Judgement", Wrappers.Judgment);
 		set("Wife3", funkin.data.JudgmentManager.Wife3);
 		set("PBot", funkin.data.JudgmentManager.PBot);
+		set("JudgmentManager", funkin.data.JudgmentManager);
+		set("Judgement", Wrappers.Judgment);
 
 		set("ModManager", funkin.modchart.ModManager);
 		set("Modifier", funkin.modchart.Modifier);
@@ -390,6 +335,11 @@ class FunkinHScript
 
 		set("HScriptedHUD", funkin.objects.huds.HScriptedHUD);
 		set("HScriptModifier", funkin.modchart.HScriptModifier);
+
+		set("HScriptedState", funkin.states.scripting.HScriptedState);
+		set("HScriptedSubstate", funkin.states.scripting.HScriptedSubstate);
+
+		set("Highscore", funkin.data.Highscore); // Useful for stuff like levels showing diff songs before and after finishing (i.e Weekend 1)
 	} 
 
 	function importClass(className:String)
@@ -447,25 +397,25 @@ class FunkinHScript
 		try {
 			return interpreter.execute(parsed);
 		}
-		catch(e:Dynamic) {
-			onError(e);
+		catch (e:haxe.Exception)
+		{
+			var posInfo = interpreter.posInfos();
+			var message = trim_redundant_error_trace(e.message, posInfo);
+			
+			haxe.Log.trace(message, posInfo);
 		}
 		return null;
 	}
 
-	public dynamic function onError(e:Dynamic) {
-		traceException(e);
-	}
+	public function stop()
+	{
+		//trace('stopping $scriptName');
 
-	inline function traceException(e:Dynamic):Void {
-		final str = e.toString();
-		print(str);
-		DebugLog.addMessage(str, 0xFFFF0000);
-		/*
-		var posInfo = interpreter.posInfos();
-		var message = trim_redundant_error_trace(e.message, posInfo);
-		print(haxe.Log.formatOutput(message, posInfo));
-		*/
+		// idk if there's really a stop function or anythin for hscript so
+		if (interpreter != null && interpreter.variables != null)
+			interpreter.variables.clear();
+
+		interpreter = null;
 	}
 
 	public function get(varName:String):Dynamic
@@ -484,29 +434,11 @@ class FunkinHScript
 		return interpreter != null && interpreter.variables.exists(varName);
 	}
 
-	/**
-	 * Calls a function within the script
-	**/
-	public function call(funcName:String, ?parameters:Array<Dynamic>):Dynamic
+	public function call(func:String, ?parameters:Array<Dynamic>, ?extraVars:Map<String, Dynamic>):Dynamic
 	{
-		var daFunc:Function = get(funcName);
-		if (daFunc == null)
-			return null;
-
-		if (parameters == null)
-			parameters = [];
-
-		var returnVal:Dynamic = null;
-		try {
-			returnVal = Reflect.callMethod(null, daFunc, parameters);
-		}
-		catch (e:Dynamic)
-		{
-			print('$scriptName: Error calling `$funcName(' +  parameters.join(', ') + ')`');
-			onError(e);
-		}
-
-		return returnVal;
+		var returnValue:Dynamic = executeFunc(func, parameters, null, extraVars);
+		
+		return returnValue == null ? Function_Continue : returnValue;
 	}
 
 	/**
@@ -515,7 +447,8 @@ class FunkinHScript
 	public function executeFunc(funcName:String, ?parameters:Array<Dynamic>, ?parentObject:Any, ?extraVars:Map<String, Dynamic>):Dynamic
 	{
 		var daFunc:Function = get(funcName);
-		if (daFunc == null)
+
+		if (!Reflect.isFunction(daFunc))
 			return null;
 
 		if (parameters == null)
@@ -541,10 +474,13 @@ class FunkinHScript
 		try {
 			returnVal = Reflect.callMethod(parentObject, daFunc, parameters);
 		}
-		catch (e:Dynamic)
+		catch (e:haxe.Exception)
 		{
-			print('$scriptName: Error executing `$funcName(' +  parameters.join(', ') + ')`');
-			onError(e);
+			var posInfo = interpreter.posInfos();
+			var message = trim_redundant_error_trace(e.message, posInfo);
+
+			print('$scriptName: Error executing $funcName(${  parameters.join(', ')  })');
+			print(haxe.Log.formatOutput(message, posInfo));
 		}
 
 		if (prevVals != null) {
@@ -553,16 +489,5 @@ class FunkinHScript
 		}
 
 		return returnVal;
-	}
-
-	public function stop()
-	{
-		//trace('stopping $scriptName');
-
-		// idk if there's really a stop function or anythin for hscript so
-		if (interpreter != null && interpreter.variables != null)
-			interpreter.variables.clear();
-
-		interpreter = null;
 	}
 }

@@ -69,7 +69,6 @@ class Main extends Sprite
 	public static var instance:Main;
 	public static var game:FNFGame;
 	public static var fpsVar:DebugDisplay;
-	public static var bread:Bitmap;
 
 	#if ALLOW_DEPRECATION
 	@:noCompletion @:deprecated("volumeChangedEvent is deprecated, use FlxG.sound.onVolumeChange, instead") 

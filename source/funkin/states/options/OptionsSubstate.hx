@@ -175,10 +175,6 @@ class OptionsSubstate extends MusicBeatSubstate
 				"video",
 				[
 					"fpsBG",
-					#if FUNNY_ALLOWED
-					"bread",
-					"fish",
-					#end
 				]
 			],
 		],

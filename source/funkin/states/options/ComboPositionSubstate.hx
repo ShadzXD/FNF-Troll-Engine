@@ -107,13 +107,7 @@ class ComboPositionSubstate extends MusicBeatSubstate
 			var swagOffset = Note.halfWidth + 45;
 			var top = swagOffset;
 			var bot = (FlxG.height - swagOffset);
-			var y:Float;
-			
-			#if FUNNY_ALLOWED
-			if (ClientPrefs.middleScroll)
-				y = (top + bot) * 0.5;
-			else #end
-				y = (ClientPrefs.downScroll ? bot : top);
+			var y:Float = ClientPrefs.downScroll ? bot : top;
 
 			for (player in 0...totalPlayers) {
 				var keyCount = 4;

@@ -15,6 +15,11 @@ inline final TEXT_SPACING:Int = TEXT_FONT_SIZE;
 class DebugLog extends FlxTypedGroup<DebugText> {
 	public static var print:Function = Print.print;
 	
+	/** Whether messages should appear on the right of the screen **/
+	public static var flipX(default, set):Bool = false;
+	/** Whether messages should appear on the bottom of the screen **/
+	public static var flipY(default, set):Bool = false;
+
 	private static var instance(default, null):DebugLog;
 	private static var _lastMsg:String;
 
@@ -84,18 +89,41 @@ class DebugLog extends FlxTypedGroup<DebugText> {
 			if (!txt.alive)
 				retxt = txt; // recycle last dead member to shorten array shifting (does this matter lmao)
 			else
-				txt.y += TEXT_SPACING;
+				txt.y += flipY ? -TEXT_SPACING : TEXT_SPACING;
 		}
 
 		retxt.revive();
 		retxt.text = msg;
 		retxt.color = color;
 		retxt.setPosition(10, 10);
+		if (flipX) retxt.x = FlxG.width - retxt.width - retxt.x;
+		if (flipY) retxt.y = FlxG.height - retxt.height - retxt.y;		
 		retxt.ID = 1;
 		members.remove(retxt);
 		members.push(retxt);
 
 		_lastMsg = msg;
+	}
+
+	////
+	private static inline function set_flipX(v:Bool) {
+		if (flipX == v)
+			return v;
+
+		for (txt in instance.members)
+			txt.x = FlxG.width - txt.width - txt.x;
+
+		return flipX = v;
+	}
+
+	private static inline function set_flipY(v:Bool) {
+		if (flipY == v)
+			return v;
+
+		for (txt in instance.members)
+			txt.y = FlxG.height - txt.height - txt.y;
+
+		return flipY = v;
 	}
 }
 

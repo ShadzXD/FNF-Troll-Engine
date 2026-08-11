@@ -11,7 +11,7 @@ import openfl.text.TextFormatAlign;
 
 class DebugDisplay extends TextField {
 	/** Allows the FPS counter to lie about your framerate because Lime sucks and framerates goes above whats desired **/
-	public var canLie:Bool = true;
+	public var canLie:Bool = false;
 
 	/** The current frame rate, expressed using frames-per-second **/
 	public var currentFPS(default, null):Int = 0;
@@ -48,8 +48,7 @@ class DebugDisplay extends TextField {
 				align = #if mobile CENTER #else LEFT #end;
 		});
 
-		addEventListener(Event.ENTER_FRAME, onEnterFrame);
-
+		FlxG.signals.preDraw.add(onEnterFrame);
 		FlxG.signals.gameResized.add(onGameResized);
 
 		FlxG.signals.preStateCreate.add((nextState) -> {
@@ -67,7 +66,7 @@ class DebugDisplay extends TextField {
 	private var _previousTime:Float = 0;
 	private var _updateClock:Float = 999999;
 
-	private function onEnterFrame(e:Event):Void {
+	private function onEnterFrame():Void {
 		_framesPassed++;
 		final deltaTime:Float = Math.max(Main.getTime() - _previousTime, 0);
 		_updateClock += deltaTime;
@@ -76,7 +75,7 @@ class DebugDisplay extends TextField {
 		if (_updateClock >= 1000) {
 			currentFPS = (canLie && FlxG.drawFramerate > 0) ? FlxMath.minInt(_framesPassed, FlxG.drawFramerate) : _framesPassed;
 
-			if (currentFPS <= FlxG.drawFramerate * 0.5)
+			if (!FNFGame.uncappedFramerate && currentFPS <= FlxG.drawFramerate * 0.5)
 				textColor = 0xFFFF0000;
 			else
 				textColor = 0xFFFFFFFF;

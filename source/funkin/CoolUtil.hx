@@ -33,7 +33,7 @@ class CoolUtil {
 	public static function indexOfSong(songList:Array<BaseSong>, song:BaseSong):Int {
 		// return songList.indexOf(song);
 		if (song != null) for (i => s in songList) {
-			if (song.songId == s.songId && song.folder == s.folder) {
+			if (song.songId == s.songId && song.packId == s.packId) {
 				return i;
 			}
 		}
@@ -307,6 +307,26 @@ class CoolUtil {
  			case "instant": (t:Float) -> return 1.0;
 			default: FlxEase.linear;
 		}
+	}
+
+	public static function parseFloatArray(str:String):Array<Float> {
+		var arr = new Array<Float>();
+		for (s in str.split(',')) {
+			if (s.length != 0) {
+				arr.push(Std.parseFloat(s));
+			}
+		}
+		return arr;
+	}
+	
+	public static function parseIntArray(str:String):Array<Int> {
+		var arr = new Array<Int>();
+		for (s in str.split(',')) {
+			if (s.length != 0) {
+				arr.push(Std.parseInt(s));
+			}
+		}
+		return arr;
 	}
 
 	public static inline function browserLoad(site:String) {

@@ -106,7 +106,7 @@ typedef StageFile =
 	@:optional var preload:Array<funkin.data.Cache.AssetPreload>; // incase you would like to add more information, though you shouldnt really need to
 }
 
-typedef StageReference = {id:String, folder:String};
+typedef StageReference = {id:String, packId:String};
 
 class StageData {
 	public static function getStageFile(stageId:String):Null<StageFile> 
@@ -119,7 +119,7 @@ class StageData {
 		return json;
 	}
 	/**
-		Return an array with the names in the stageList file(s).
+		Returns an array with references to stages defined in the `titleStageList.txt` files.
 	**/ 
 	public static function getTitleStages():Array<StageReference>
 	{
@@ -128,7 +128,7 @@ class StageData {
 		for (cid in Paths.packList) {
 			var cunt = Paths.packMap.get(cid);
 			for (stageId in cunt.getTitleStages())
-				daList.push({id: stageId, folder: cid});
+				daList.push({id: stageId, packId: cid});
 		}
 
 		return daList;

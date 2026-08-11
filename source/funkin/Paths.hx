@@ -153,8 +153,7 @@ class Paths
 	inline static function destroyGraphic(graphic:FlxGraphic)
 	{
 		// free some gpu memory
-		if (graphic != null && graphic.bitmap != null && graphic.bitmap.__texture != null)
-			graphic.bitmap.__texture.dispose();
+		graphic?.bitmap?.__texture?.dispose();
 		FlxG.bitmap.remove(graphic);
 	}
 
@@ -217,6 +216,11 @@ class Paths
 		return [for (pack in PackManager.readList)
 			'${pack.path}/$dir/'
 		];
+
+	public static inline function getPaths(key:String)
+		return new PackPathsIterator(key);
+
+	//public static function packFolderIterator(dir:String)
 
 	/*
 	inline static public function txt(key:String):String
@@ -626,7 +630,7 @@ class Paths
 
 	public static function image(key:String, ?pack:String, allowGPU:Bool = true):Null<FlxGraphic>
 	{
-		return graphic('images/$key');
+		return graphic('images/$key', pack, allowGPU);
 	}
 
 	inline public static function imagePath(key:String, ?pack:String):Null<String>
@@ -739,6 +743,24 @@ class Paths
 
 	public static inline function getString(key:String):Null<String>{
 		return currentStrings.get(key);
+	}
+}
+
+class PackPathsIterator {
+	var key:String;
+	var i:Int = 0;
+
+	public inline function new(key:String) {
+		this.key = key;
+		i = 0;
+	}
+
+	public inline function hasNext():Bool {
+		return i < PackManager.readList.length;
+	}
+
+	public inline function next():{k:Pack, v:String} {
+		return {k: PackManager.readList[i++], v: PackManager.readList[i].getPath(key)};
 	}
 }
 

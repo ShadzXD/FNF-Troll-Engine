@@ -226,7 +226,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 	var selectedNotes = new NoteSelection();
 
-	var curSelectedEvent(default, set):PsychEventNote = null;
+	var curSelectedEvent(default, set):EventBunch = null;
 	var subEventIdx:Int = 0;
 
 	/** HELD NOTE FROM CLICKING **/
@@ -293,6 +293,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		96,
 		192
 	];
+
+	var eventUI:funkin.states.editors.charting.EventUI = null;
 
 	var noteTypeList:Array<String>;
 	var songNoteTypeList:Array<String> = [];
@@ -610,6 +612,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		add(tipGroup);
 		add(progressBG);
 		add(progressBar);
+		add(new TopBarOptions());
 
 		////
 		FlxG.mouse.visible = true;
@@ -687,6 +690,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			{name: "Editor", label: 'Editor'},
 			{name: "Note", label: 'Note'},
 			{name: "Event", label: 'Event'},
+			{name: "Event v2", label: 'Event (v2)'},
 			{name: "Section", label: 'Section'},
 			{name: "Song", label: 'Song'},
 			{name: "Metadata", label: 'Metadata'},
@@ -702,6 +706,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		addSectionUI();
 		addNoteUI();
 		addEventsUI();
+		addEventsUIv2();
 		addChartingUI();
 		addPreferencesUI();
 		addTracksUI();
@@ -906,9 +911,9 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	}
 
 	function fixEvents(){
-		var rawEventsData:Array<PsychEventNote> = _song.events;
+		var rawEventsData:Array<EventBunch> = _song.events;
 		rawEventsData.sort((a, b) -> return Std.int(a.strumTime - b.strumTime));
-		var eventsData:Array<PsychEventNote> = [];
+		var eventsData:Array<EventBunch> = [];
 		for (event in rawEventsData)
 		{
 			var last = eventsData[eventsData.length - 1];
@@ -921,8 +926,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 				if (Math.abs(last.strumTime - event.strumTime) <= Conductor.jackLimit)
 				{
 					var fuck = eventsData[eventsData.length - 1];
-					for (shit in event.subEventsData)
-						fuck.subEventsData.push(shit);
+					for (shit in event.eventData)
+						fuck.eventData.push(shit);
 				}
 				else
 				{
@@ -951,31 +956,16 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 	function addSongUI():Void
 	{
-		var selectSongButton = newFlxUIButton(10, 20, "Select Song", openSongSelect);
-		var saveButton = newFlxUIButton(110, 20, "Save Chart", saveChartFile);
-		var saveEventJson = newFlxUIButton(110, saveButton.y + 30, 'Save Events', saveEventsFile);
-		var saveZipButton = newFlxUIButton(110, saveEventJson.y + 30, 'Save as ZIP', saveSongZIP);
-
-		///
-		var reloadSongJson:FlxUIButton = newFlxUIButton(saveButton.x + 90, saveButton.y, "Reload JSON", reloadSongJSON);
-		reloadSongJson.color = 0xFFFF0000;
-
-		var loadAutosaveBtn:FlxUIButton = newFlxUIButton(reloadSongJson.x, reloadSongJson.y + 30, 'Load Autosave', loadAutosave);
-
-		////
-		var loadEventJson:FlxUIButton = newFlxUIButton(loadAutosaveBtn.x, loadAutosaveBtn.y + 30, 'Open Events', openEventsJSON);
-
-		////
-		var editTracksButton:FlxUIButton = newFlxUIButton(loadAutosaveBtn.x, loadEventJson.y + 40, 'Edit Tracks', function() {
+		var editTracksButton:FlxUIButton = newFlxUIButton(10, 20, 'Edit Tracks', function() {
 			UI_box.selected_tab_id = "Tracks";
 		});
 
 		////
-		var fix_oob_notes:FlxUIButton = newFlxUIButton(loadAutosaveBtn.x, 300 - 40, 'Fix Notes', showWarning.bind('This action will fix notes that are outside of their corresponding section.\n\nProceed?', fixOOBNotes));
+		var fix_oob_notes:FlxUIButton = newFlxUIButton(200, 300 - 40, 'Fix Notes', showWarning.bind('This action will fix notes that are outside of their corresponding section.\n\nProceed?', fixOOBNotes));
 		fix_oob_notes.color = FlxColor.PINK;
 		fix_oob_notes.label.color = FlxColor.WHITE;
 
-		var clear_events:FlxUIButton = newFlxUIButton(loadAutosaveBtn.x, 300, 'Clear events', showWarning.bind('Clear events?\n\nThis action cannot be undone.', clearEvents));
+		var clear_events:FlxUIButton = newFlxUIButton(200, 300, 'Clear events', showWarning.bind('Clear events?\n\nThis action cannot be undone.', clearEvents));
 		clear_events.color = FlxColor.RED;
 		clear_events.label.color = FlxColor.WHITE;
 
@@ -983,17 +973,18 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		clear_notes.color = FlxColor.RED;
 		clear_notes.label.color = FlxColor.WHITE;
 
-		var stepperSpeed = newFlxUINumericStepper(10, selectSongButton.y + 35, 0.1, 1, 0.1, 10, 1);
+		////
+		var stepperSpeed = newFlxUINumericStepper(10, 60, 0.1, 1, 0.1, 10, 1);
 		stepperSpeed.value = _song.speed;
 		stepperSpeed.name = 'song_speed';
 		blockPressWhileTypingOnStepper.push(stepperSpeed);
 
-		var stepperBPM = newFlxUINumericStepper(10, stepperSpeed.y + 35, 1, 1, 1, 9000, 3);
+		var stepperBPM = newFlxUINumericStepper(110, stepperSpeed.y, 1, 1, 1, 9000, 3);
 		stepperBPM.value = Conductor.bpm;
 		stepperBPM.name = 'song_bpm';
 		blockPressWhileTypingOnStepper.push(stepperBPM);
 
-		var stepperKeyCount = newFlxUINumericStepper(10, stepperBPM.y + 35, 1, 4, Note.minKeyCount, Note.maxKeyCount, 0);
+		var stepperKeyCount = newFlxUINumericStepper(210, stepperBPM.y, 1, 4, Note.minKeyCount, Note.maxKeyCount, 0);
 		stepperKeyCount.value = _song.keyCount;
 		stepperKeyCount.name = 'song_keyCount';
 		blockPressWhileTypingOnStepper.push(stepperKeyCount);
@@ -1072,26 +1063,19 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		
 		var tab_group_song = new FlxUI(null, UI_box);
 		tab_group_song.name = "Song";
-		tab_group_song.add(selectSongButton);
 
 		tab_group_song.add(fix_oob_notes);
 		tab_group_song.add(clear_events);
 		tab_group_song.add(clear_notes);
-		tab_group_song.add(saveButton);
-		tab_group_song.add(saveEventJson);
-		tab_group_song.add(saveZipButton);
 		tab_group_song.add(editTracksButton);
 
-		tab_group_song.add(reloadSongJson);
-		tab_group_song.add(loadAutosaveBtn);
-		tab_group_song.add(loadEventJson);
 		tab_group_song.add(stepperSpeed);
 		tab_group_song.add(stepperBPM);
 		tab_group_song.add(stepperKeyCount);
 		tab_group_song.add(noteSkinInputText);
 		tab_group_song.add(noteSplashesInputText);
 
-		tab_group_song.add(new FlxText(selectSongButton.x, selectSongButton.y - 15, 0, Std.string(PlayState.song)));
+		tab_group_song.add(new FlxText(editTracksButton.x, editTracksButton.y - 15, 0, Std.string(PlayState.song)));
 
 		tab_group_song.add(new FlxText(stepperSpeed.x, stepperSpeed.y - 15, 0, 'Note Speed:'));
 		tab_group_song.add(new FlxText(stepperBPM.x, stepperBPM.y - 15, 0, 'Song BPM:'));
@@ -1130,8 +1114,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	inline function updateLastSectionLabel()
 		lastSectionLabel.text = '(Section ${curSection - stepperCopy.value})';
 
-	inline function getEventsInRange(startTime:Float, endTime:Float):Array<PsychEventNote> {
-		return _song.events.filter(function(event:PsychEventNote) {
+	inline function getEventsInRange(startTime:Float, endTime:Float):Array<EventBunch> {
+		return _song.events.filter(function(event:EventBunch) {
 			var strumTime:Float = fuckFloatingPoints(event.strumTime);
 			return startTime <= strumTime && strumTime < endTime;
 		});
@@ -1185,7 +1169,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			var sectionEvents = getEventsInRange(sectionStart, sectionEnd);
 
 			for (event in sectionEvents) {
-				var copiedEvent:PsychEventNote = event.clone();
+				var copiedEvent:EventBunch = event.clone();
 				copiedEvent.strumTime = fuckFloatingPoints(event.strumTime) + addToTime;
 				_song.events.push(copiedEvent);
 			}
@@ -1543,16 +1527,17 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	var eventStepperStrumTime:CustomFlxUINumericStepper;
 	var eventDropDown:FlxUIDropDownMenu;
 	var eventNameInput:FlxUIInputText;
-	var eventDescText:FlxText;
 	var selectedEventText:FlxText;
 
 	function setSelectedEventType(typeName:String)
 	{
+		#if EVENT_TODO
 		if (curSelectedEvent != null) {
-			curSelectedEvent.subEventsData[subEventIdx][0] = typeName;
+			curSelectedEvent.eventData[subEventIdx][0] = typeName;
 
 			doUpdateGridObjects = true;
 		}
+		#end
 	}
 
 	// New event buttons
@@ -1598,8 +1583,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	{
 		if (curSelectedEvent != null) {
 			subEventIdx = isAbs ? value : subEventIdx + value;
-			if(subEventIdx < 0) subEventIdx = Std.int(curSelectedEvent.subEventsData.length) - 1;
-			else if(subEventIdx >= curSelectedEvent.subEventsData.length) subEventIdx = 0;
+			if(subEventIdx < 0) subEventIdx = Std.int(curSelectedEvent.eventData.length) - 1;
+			else if(subEventIdx >= curSelectedEvent.eventData.length) subEventIdx = 0;
 		}else {
 			subEventIdx = 0;
 		}
@@ -1610,7 +1595,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		if (curSelectedEvent == null)
 			return;
 
-		if (curSelectedEvent.subEventsData.length <= 1)
+		if (curSelectedEvent.eventData.length <= 1)
 			return;
 
 		new SeparateSubEventAction(curSelectedEvent, subEventIdx);
@@ -1633,8 +1618,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		separateButton.label.color = FlxColor.WHITE;
 		separateButton.resize(0, eventStepperStrumTime.height);
 
-		eventDescText = new FlxText(10, 200, 0, "");
-
 		var leEvents:Array<String> = [""];
 		for (i in 0...eventStuff.length)
 			leEvents.push(eventStuff[i][0]);
@@ -1650,10 +1633,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 					if (data != null){
 						setSelectedEventType(data[0]);
 						eventNameInput.text = data[0];
-						eventDescText.text = data[1];
 					}
 				}else{
-					eventDescText.text = "Type a custom event!";
 					eventNameInput.text = "";
 					eventNameInput.exists = true;
 					eventNameInput.hasFocus = true;
@@ -1680,7 +1661,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		function onEnterEventName(eventName:String) {
 			setSelectedEventType(eventName);
 			eventDropDown.header.text.text = eventName;
-			eventDescText.text = "";
 			eventNameInput.exists = false;
 		}
 		eventNameInput.callback = (input:String, action:String) -> {
@@ -1696,6 +1676,33 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		value2InputText.name = 'event_value2';
 
 		////
+		tab_group_event.add(eventLabelStrumTime = new FlxText(eventStepperStrumTime.x, eventStepperStrumTime.y - 15, 0, 'Strum time:'));
+		tab_group_event.add(eventStepperStrumTime);
+		tab_group_event.add(separateButton);
+
+		tab_group_event.add(new FlxText(value1InputText.x, value1InputText.y - 20, 0, "Value 1:"));	
+		tab_group_event.add(value1InputText);
+		tab_group_event.add(new FlxText(value2InputText.x, value2InputText.y - 20, 0, "Value 2:"));
+		tab_group_event.add(value2InputText);
+		tab_group_event.add(new FlxText(eventDropDown.x, eventDropDown.y - 20, 0, "Event:"));
+		tab_group_event.add(eventDropDown);
+
+
+		UI_box.addGroup(tab_group_event);
+	}
+
+	function addEventsUIv2():Void
+	{
+		var tab_group_event = new FlxUI(null, UI_box);
+		tab_group_event.name = 'Event v2';
+
+		eventUI = new funkin.states.editors.charting.EventUI(10, 80);
+		var eventDropDown = eventUI.makeEventListDropdown();
+		eventDropDown.setPosition(eventUI.x, eventUI.y);
+		eventUI.y += eventDropDown.header.height + 20;
+
+		blockPressWhileScrolling.push(eventDropDown);
+
 		var removeButton = newFlxUIButton(eventDropDown.x + eventDropDown.width + 20, eventDropDown.y, '-', removeSubEvent, false);
 		removeButton.name = 'event_removeSub';
 		removeButton.color = FlxColor.RED;
@@ -1733,30 +1740,21 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		td.style.bodyWidth = 172;
 		tooltips.add(moveRightButton, td);
 
-		tooltips.add(separateButton, simpleTip("Separate", "Separate the selected Sub-Event into its own event note"));
+		//tooltips.add(separateButton, simpleTip("Separate", "Separate the selected Sub-Event into its own event note"));
 
 		/* wow thanks for the tip i would have never guessed otherwise */
 		tooltips.add(addButton, oneLineTip("Add event", 100));
 		tooltips.add(removeButton, oneLineTip("Remove event", 100));
 
 		////
-		tab_group_event.add(eventLabelStrumTime = new FlxText(eventStepperStrumTime.x, eventStepperStrumTime.y - 15, 0, 'Strum time:'));
-		tab_group_event.add(eventStepperStrumTime);
-		tab_group_event.add(separateButton);
-
-		tab_group_event.add(eventDescText);
-
-		tab_group_event.add(new FlxText(value1InputText.x, value1InputText.y - 20, 0, "Value 1:"));	
-		tab_group_event.add(value1InputText);
-		tab_group_event.add(new FlxText(value2InputText.x, value2InputText.y - 20, 0, "Value 2:"));
-		tab_group_event.add(value2InputText);
-		tab_group_event.add(new FlxText(eventDropDown.x, eventDropDown.y - 20, 0, "Event:"));
+		tab_group_event.add(eventUI);
 		tab_group_event.add(eventDropDown);
 
 		tab_group_event.add(removeButton);
 		tab_group_event.add(addButton);
 		tab_group_event.add(moveLeftButton);
 		tab_group_event.add(moveRightButton);
+
 		tab_group_event.add(selectedEventText);
 
 		UI_box.addGroup(tab_group_event);
@@ -2391,17 +2389,19 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 				case 'song_noteSplashes':
 					PlayState.splashSkin = _song.splashSkin = sender.text;
 
+				#if EVENT_TODO
 				case 'event_value1':
 					if (curSelectedEvent != null) {
-						curSelectedEvent.subEventsData[subEventIdx][1] = sender.text;
+						curSelectedEvent.eventData[subEventIdx].value1 = sender.text;
 						doUpdateGridObjects = true;
 					}
 
 				case 'event_value2':
 					if (curSelectedEvent != null) {
-						curSelectedEvent.subEventsData[subEventIdx][2] = sender.text;
+						curSelectedEvent.eventData[subEventIdx].value2 = sender.text;
 						doUpdateGridObjects = true;
 					}
+				#end
 
 				case 'metadata_songName':
 					_song.metadata.songName = sender.text;
@@ -2652,17 +2652,17 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		}
 
 		////
-		var sineColor:Float = 0.7 - 0.3 * Math.cos(Math.PI * colorSine);
-		var sineColor:Int = Math.round(sineColor * 255);
-		var sineColor = FlxColor.fromRGB(sineColor, sineColor, sineColor);
+		var sineCol:FlxColor = 0xFF87BDD9;
+		var sineBrt:Float = 255 * 0.15 * Math.cos(Math.PI * colorSine);
 		colorSine += elapsed;
 
 		playedSound.resize(0);
 		curRenderedNotes.forEachAlive(function(note:Note) {
-			if (selectedNotes.contains(note.chartData) /*|| note.chartData == curSelectedEvent*/)
-				note.color = sineColor;
+			if (selectedNotes.contains(note.chartData) /*|| note.chartData == curSelectedEvent*/) {
+				note.setColorTransform(sineCol.redFloat, sineCol.greenFloat, sineCol.blueFloat, 1.0, sineBrt, sineBrt, sineBrt, 0);
+			}
 			else
-				note.color = 0xFFFFFFFF;
+				note.setColorTransform(1.0, 1.0, 1.0, 1.0, 0, 0, 0, 0);
 			
 			if (note.strumTime <= Conductor.songPosition) {
 				if (inst.playing && !note.wasGoodHit) {
@@ -3021,7 +3021,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		inline function selectObject(obj:Note, additional:Bool = false) {
 			if (obj.column < 0) {
 				curSelectedEvent = obj.chartData;
-				subEventIdx = Std.int(curSelectedEvent.subEventsData.length) - 1;
+				subEventIdx = Std.int(curSelectedEvent.eventData.length) - 1;
 				changeEventSelected();
 			}
 
@@ -3617,13 +3617,14 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	function updateEventsUI():Void
 	{
 		updateEventSteps();
-
+	
+		#if EVENT_TODO
 		if (curSelectedEvent != null) {
 			eventStepperStrumTime.value = curSelectedEvent.strumTime;
 
-			selectedEventText.text = 'Selected Event: ' + (subEventIdx + 1) + ' / ' + curSelectedEvent.subEventsData.length;
+			selectedEventText.text = 'Selected Event: ' + (subEventIdx + 1) + ' / ' + curSelectedEvent.eventData.length;
 
-			var eventData:PsychSubEventData = curSelectedEvent.subEventsData[subEventIdx];
+			var eventData:EventChildData = curSelectedEvent.eventData[subEventIdx];
 
 			eventDropDown.selectedLabel = eventNameInput.text = eventData.eventName;
 			value1InputText.text = eventData.value1;
@@ -3640,11 +3641,11 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			if (selectedIdx >= 0) {
 				eventDropDown.selectedId = Std.string(selectedIdx);
 				eventDropDown.header.text.text = eventData.eventName;
-				eventDescText.text = eventStuff[selectedIdx][1];
 			}
 		}else {
 			selectedEventText.text = 'No event stack selected';
 		}
+		#end
 	}
 
 	function updateEventSteps() {
@@ -3858,19 +3859,19 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
         return map.songTime + ((strumTime - map.songTime) / crochet * Conductor.crochet);
     }
 
-	function setupEventData(i:PsychEventNote, sectionNumber:Int) {
+	function setupEventData(i:EventBunch, sectionNumber:Int) {
 		var note:Note = new Note(i.strumTime, -1, null, -1, 0, true, hudSkin);
 		note.realColumn -1;
 		note.chartData = i;
 		note.usesDefaultColours = false;
 
 		note.loadGraphic(Paths.image('charteditor/eventArrow'));
-		note.eventName = getEventName(i.subEventsData);
-		note.eventLength = i.subEventsData.length;
-		if (i.subEventsData.length < 2)
+		note.eventName = getEventName(i.eventData);
+		note.eventLength = i.eventData.length;
+		if (i.eventData.length < 2)
 		{
-			note.eventVal1 = i.subEventsData[0].value1;
-			note.eventVal2 = i.subEventsData[0].value2;
+			note.eventVal1 = i.eventData[0].value1;
+			note.eventVal2 = i.eventData[0].value2;
 		}
 
 		//note.wasGoodHit = note.beat <= Conductor.curBeat;
@@ -3883,14 +3884,14 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		return note;
 	}
 
-	function getEventName(names:Array<Array<String>>):String
+	function getEventName(names:Array<EventChildData>):String
 	{
 		var retStr:String = '';
 		var addedOne:Bool = false;
 		for (i in 0...names.length)
 		{
 			if(addedOne) retStr += ', ';
-			retStr += names[i][0];
+			retStr += names[i].eventId;
 			addedOne = true;
 		}
 		return retStr;
@@ -4015,8 +4016,10 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		var text1:String = value1InputText.text;
 		var text2:String = value2InputText.text;
 
-		var e = PsychEventNote.fromValues(noteStrum, [[eventType, text1, text2]]);
-		new AddEventNoteAction(e);
+		var child:EventChildData = {eventId: eventType};
+		child.setValue('value1', text1);
+		child.setValue('value2', text2);
+		new AddEventNoteAction(EventBunch.fromValues(noteStrum, [child]));
 	}
 
 	////
@@ -4168,7 +4171,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 	function sortNotesByTime(Obj1:NoteData, Obj2:NoteData):Int
 		return FlxSort.byValues(FlxSort.ASCENDING, Obj1.strumTime, Obj2.strumTime);
 	
-	function sortEventsByTime(Obj1:PsychEventNote, Obj2:PsychEventNote):Int
+	function sortEventsByTime(Obj1:EventBunch, Obj2:EventBunch):Int
 		return FlxSort.byValues(FlxSort.ASCENDING, Obj1.strumTime, Obj2.strumTime);
 
 
@@ -4204,7 +4207,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		if (_song.events != null && _song.events.length > 1)
 			_song.events.sort(sortEventsByTime);
 
-		var json = {"song": {"events": _song.events}}
+		var json = {"song": {"events": _song.events, "trollEngine": funkin.data.ChartData.ChartVersion.CURRENT}}
 		var data:String = Json.stringify(json, "\t");
 		FileUtil.showSaveDialog(data, 'Save Events', getSongPath('events.json'), ["JSON file", '*.json']);
 	}
@@ -4451,6 +4454,92 @@ private abstract NoteSelection(Array<ChartObject>) to Array<ChartObject> {
 		return FlxSort.byValues(FlxSort.ASCENDING, a.strumTime, b.strumTime);
 }
 
+private class TBOptionData {
+	public final label:String;
+	public final func:Void -> Void;
+	inline public function new(label:String, ?func:Void -> Void) {
+		this.label = label;
+		this.func = func;
+	}
+}
+
+private class TopBarOptions extends FlxTypedGroup<FlxBasic> {
+	var mainButtons = new FlxTypedGroup<FlxButton>();
+	var buttonGroups = new FlxTypedGroup<FlxTypedGroup<FlxButton>>();
+
+	var curOpen:Int = -1;
+
+	public function new() {
+		super();
+
+		var btnData:Array<{label:String, options:Array<TBOptionData>}> = [
+			{label: 'File', options: [
+				new TBOptionData('Open Song', editor.openSongSelect), 
+				//new TBOptionData('Autosaves'), 
+				new TBOptionData('Load Autosave', editor.loadAutosave), 
+				new TBOptionData('Reload JSON', editor.reloadSongJSON), 
+				new TBOptionData('Save Chart', editor.saveChartFile), 
+				new TBOptionData('Export as ZIP', editor.saveSongZIP), 
+				new TBOptionData('Open Events', editor.openEventsJSON), 
+				new TBOptionData('Save Events', editor.saveEventsFile), 
+				new TBOptionData('Exit Editor')
+			]},
+			{label: 'Edit', options: [
+				new TBOptionData('Preferences'), 
+				new TBOptionData('Fix Notes'), 
+				new TBOptionData('Clear Notes'), 
+				new TBOptionData('Clear Events')
+			]},
+		];
+
+		add(mainButtons);
+		add(buttonGroups);
+
+		for (i => data in btnData) {
+			var mainButton = new FlxButton(data.label);
+			mainButton.setPosition(5 + (80 + 5) * i, 5);
+			mainButton.onUp.callback = openGroup.bind(i); 
+			mainButton.ID = i;
+			mainButton.scrollFactor.set();
+			mainButtons.add(mainButton);
+			
+			var grp = new FlxTypedGroup<FlxButton>();
+			grp.exists = false;
+			buttonGroups.add(grp);
+			
+			for (i => optionData in data.options) {
+				var button = new FlxButton(optionData.label);
+				button.setPosition(mainButton.x, mainButton.y + (i + 1) * 20);
+				//button.onUp.callback = onSelect.bind(data.label, label);
+				button.onUp.callback = optionData.func;
+				button.ID = i;
+				button.scrollFactor.set();
+				grp.add(button);	
+			}
+		}
+	}
+
+	var _ignoreClosing = false;
+	override function update(elapsed:Float) {
+		super.update(elapsed);
+		if (FlxG.mouse.justReleased && curOpen != -1 && !_ignoreClosing)
+			openGroup(-1);
+		_ignoreClosing = false;
+	}
+
+	public function openGroup(index:Int = -1) {
+		for (i => grp in buttonGroups) {
+			grp.exists = i == index && i != curOpen;
+		}
+		curOpen = (curOpen != index) ? index : -1;
+		_ignoreClosing = true;
+	}
+
+	public function onSelect(group:String, option:String) {
+		trace(group, option);
+	}
+}
+
 private class HistoryDisplay extends FlxSpriteGroup {
 	public var uaWidth = 250;
 	public var uaHeight = 16;
@@ -4660,18 +4749,18 @@ private class ChangeSustainAction extends NoteAction {
 
 private class SeparateSubEventAction extends AddEventNoteAction {
 	var subEventIdx:Int;
-	var ogEventData:PsychEventNote;
+	var ogEventData:EventBunch;
 
-	public function new(eventData:PsychEventNote, subEventIdx:Int) {
+	public function new(eventData:EventBunch, subEventIdx:Int) {
 		this.ogEventData = eventData;
 		this.subEventIdx = subEventIdx;
 		super(null);
 	}
 
 	override function redo() {
-		var subEvents = ogEventData.subEventsData.splice(subEventIdx, 1);
+		var subEvents = ogEventData.eventData.splice(subEventIdx, 1);
 
-		eventData = PsychEventNote.fromValues(ogEventData.strumTime, subEvents);
+		eventData = EventBunch.fromValues(ogEventData.strumTime, subEvents);
 		super.redo();
 	}
 
@@ -4686,7 +4775,7 @@ private class SeparateSubEventAction extends AddEventNoteAction {
 			instance.changeEventSelected();
 		}
 
-		ogEventData.subEventsData.insert(subEventIdx, eventData.subEventsData[0]);
+		ogEventData.eventData.insert(subEventIdx, eventData.eventData[0]);
 		instance.doUpdateGridObjects = true;
 	}
 
@@ -4696,31 +4785,31 @@ private class SeparateSubEventAction extends AddEventNoteAction {
 }
 
 private class MoveSubEventAction extends ChartingAction {
-	var eventData:PsychEventNote;
+	var eventData:EventBunch;
 	var subEventIdx:Int;
 	var swapIdx:Int;
 
-	public function new(eventData:PsychEventNote, subEventIdx:Int, direction:Int) {
+	public function new(eventData:EventBunch, subEventIdx:Int, direction:Int) {
 		this.eventData = eventData;
 		this.subEventIdx = subEventIdx;
-		this.swapIdx = CoolUtil.updateIndex(subEventIdx, direction, eventData.subEventsData.length);
+		this.swapIdx = CoolUtil.updateIndex(subEventIdx, direction, eventData.eventData.length);
 
 		super();
 	}
 
 	public function redo() {
-		var temp = eventData.subEventsData[subEventIdx];
-		eventData.subEventsData[subEventIdx] = eventData.subEventsData[swapIdx];
-		eventData.subEventsData[swapIdx] = temp;
+		var temp = eventData.eventData[subEventIdx];
+		eventData.eventData[subEventIdx] = eventData.eventData[swapIdx];
+		eventData.eventData[swapIdx] = temp;
 
 		instance.changeEventSelected(swapIdx, true);
 		instance.doUpdateGridObjects = true;
 	}
 
 	public function undo() {
-		var temp = eventData.subEventsData[subEventIdx];
-		eventData.subEventsData[subEventIdx] = eventData.subEventsData[swapIdx];
-		eventData.subEventsData[swapIdx] = temp;
+		var temp = eventData.eventData[subEventIdx];
+		eventData.eventData[subEventIdx] = eventData.eventData[swapIdx];
+		eventData.eventData[swapIdx] = temp;
 
 		instance.changeEventSelected(subEventIdx, true);
 		instance.doUpdateGridObjects = true;
@@ -4732,13 +4821,13 @@ private class MoveSubEventAction extends ChartingAction {
 }
 
 private class RemoveSubEventAction extends RemoveEventNoteAction {
-	//var eventData:PsychEventNote;
-	var subEventData:PsychSubEventData;
+	//var eventData:EventBunch;
+	var subEventData:EventChildData;
 	var subEventIdx:Int;
 
-	public function new(eventData:PsychEventNote, subEventIdx:Int) {
+	public function new(eventData:EventBunch, subEventIdx:Int) {
 		this.subEventIdx = subEventIdx;
-		this.subEventData = eventData.subEventsData[subEventIdx];
+		this.subEventData = eventData.eventData[subEventIdx];
 
 		if (subEventData == null)
 			throw 'Sub-Event data cannot be null for RemoveSubEventAction (Index was $subEventIdx)';
@@ -4747,9 +4836,9 @@ private class RemoveSubEventAction extends RemoveEventNoteAction {
 	}
 
 	override function redo() {
-		eventData.subEventsData.remove(subEventData);
+		eventData.eventData.remove(subEventData);
 		
-		if (eventData.subEventsData.length == 0)
+		if (eventData.eventData.length == 0)
 			super.redo();
 		else {
 			instance.changeEventSelected(-1);
@@ -4758,11 +4847,11 @@ private class RemoveSubEventAction extends RemoveEventNoteAction {
 	}
 
 	override function undo() {
-		if (eventData.subEventsData.length == 0) {
-			eventData.subEventsData.push(subEventData);
+		if (eventData.eventData.length == 0) {
+			eventData.eventData.push(subEventData);
 			super.undo();
 		}else {
-			eventData.subEventsData.insert(subEventIdx, subEventData);
+			eventData.eventData.insert(subEventIdx, subEventData);
 			instance.changeEventSelected(subEventIdx, true);
 			instance.doUpdateGridObjects = true;
 		}
@@ -4774,29 +4863,29 @@ private class RemoveSubEventAction extends RemoveEventNoteAction {
 }
 
 private class AddNewSubEventAction extends ChartingAction {
-	var eventData:PsychEventNote;
+	var eventData:EventBunch;
 	var subEventIdx:Int;
-	var subEventData:PsychSubEventData;
+	var subEventData:EventChildData;
 
-	public function new(eventData:PsychEventNote, index:Int = -1) {
+	public function new(eventData:EventBunch, index:Int = -1) {
 		if (eventData == null)
 			throw 'Event data cannot be null for AddNewSubEventAction';
 		
 		this.eventData = eventData;
-		this.subEventIdx = index < 0 ? eventData.subEventsData.length : index;
-		this.subEventData = ['', '', ''];
+		this.subEventIdx = index < 0 ? eventData.eventData.length : index;
+		this.subEventData = {eventId: ''};
 
 		super();
 	}
 
 	public function redo() {
-		eventData.subEventsData.insert(subEventIdx, subEventData);
+		eventData.eventData.insert(subEventIdx, subEventData);
 		instance.changeEventSelected(subEventIdx, true);
 		instance.doUpdateGridObjects = true;
 	}
 
 	public function undo() {
-		eventData.subEventsData.remove(subEventData);
+		eventData.eventData.remove(subEventData);
 		instance.doUpdateGridObjects = true;
 	}
 
@@ -4806,9 +4895,9 @@ private class AddNewSubEventAction extends ChartingAction {
 }
 
 private class RemoveEventNoteAction extends ChartingAction {
-	var eventData:PsychEventNote;
+	var eventData:EventBunch;
 
-	public function new(eventData:PsychEventNote) {
+	public function new(eventData:EventBunch) {
 		this.eventData = eventData;
 		super();
 	}
@@ -4839,13 +4928,13 @@ private class RemoveEventNoteAction extends ChartingAction {
 }
 
 private class AddEventNoteAction extends ChartingAction {
-	var eventData:PsychEventNote;
+	var eventData:EventBunch;
 
 	////
 	var previousSelected:NoteSelection;
 	var newSelected:NoteSelection;
 
-	public function new(eventData:PsychEventNote) {
+	public function new(eventData:EventBunch) {
 		this.eventData = eventData;
 		////
 		this.newSelected = new NoteSelection(cast [eventData]);

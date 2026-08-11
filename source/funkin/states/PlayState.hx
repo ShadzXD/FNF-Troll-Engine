@@ -1,5 +1,6 @@
 package funkin.states;
 
+import funkin.data.content.PackManager;
 import funkin.objects.notes.NoteAnimations;
 import funkin.objects.cutscenes.Cutscene;
 #if VIDEOS_ALLOWED
@@ -14,6 +15,7 @@ import funkin.data.BaseSong;
 import funkin.data.ChartData;
 import funkin.data.StageData;
 import funkin.data.CharacterData;
+import funkin.data.SongEventData;
 import funkin.objects.notes.Note;
 import funkin.objects.notes.NoteSplash;
 import funkin.objects.notes.StrumNote;
@@ -33,7 +35,6 @@ import funkin.states.editors.CharacterEditorState;
 import funkin.states.editors.ChartingState;
 import funkin.states.options.OptionsSubstate;
 import funkin.scripts.*;
-import funkin.scripts.Util;
 import flixel.*;
 import flixel.util.*;
 import flixel.util.FlxSignal;
@@ -151,7 +152,7 @@ class PlayState extends MusicBeatState
 	}
 
 	public static function loadSong(song:BaseSong, chartId:String) {
-		Paths.currentPackId = song.folder;
+		Paths.currentPackId = song.packId;
 		PlayState.song = song;
 		PlayState.SONG = song.getSwagSong(chartId);
 		PlayState.difficultyName = chartId;
@@ -382,7 +383,7 @@ class PlayState extends MusicBeatState
 	public var notes = new FlxTypedGroup<Note>();
 	public var unspawnNotes:Array<Note> = [];
 	public var allNotes:Array<Note> = []; // all notes
-	public var eventNotes:Array<PsychEvent> = [];
+	public var eventNotes:Array<EventInstanceData> = [];
 
 	var speedChanges:Array<SpeedEvent> = [];
 	public var currentSV:SpeedEvent = {position: 0, startTime: 0, speed: 1, #if EASED_SVs startSpeed: 1, #end};
@@ -751,7 +752,7 @@ class PlayState extends MusicBeatState
 		setDefaultHScripts("newPlayField", newPlayfield);
 		setDefaultHScripts("initPlayfield", initPlayfield);
 
-		//// GLOBAL SONG SCRIPTS
+		//// GLOBAL PLAYSTATE SCRIPTS
 		var filesPushed:Array<String> = [];
 		for (folder in Paths.getFolders('scripts')) {
 			//// Create scripts in order from the list file first
@@ -788,14 +789,10 @@ class PlayState extends MusicBeatState
 		setStageData(stageData);
 
 		// SONG SPECIFIC SCRIPTS
-		var filesPushed:Array<String> = [];
-		for (folder in Paths.getFolders('songs/$songId')) {
-			for (file in Paths.readDirectory(folder)) {
-				if (Paths.isHScript(file) && !filesPushed.contains(file)) {
-					createHScript(folder + file);
-					filesPushed.push(file);
-				}
-			}
+		var songPath = song.getSongFile('');
+		for (file in Paths.readDirectory(songPath)) {
+			if (Paths.isHScript(file))
+				createHScript(songPath + file);
 		}
 
 		//// Asset precaching start
@@ -1120,7 +1117,8 @@ class PlayState extends MusicBeatState
 	}
 
 	inline function onCreatePost() {
-		callOnAllScripts("onCreatePost");
+		for (script in funkyScripts)
+			script.call("onCreatePost");
 		signals.onCreatePost.dispatch();
 	}
 
@@ -1168,15 +1166,12 @@ class PlayState extends MusicBeatState
 		gfGroup.y = GF_Y;
 	}
 
-	public function addTextToDebug(text:String, ?color:FlxColor = FlxColor.WHITE) {
-		debugPrintGroup.forEachAlive(function(spr:DebugText) {
-			spr.y += 20;
-		});
-
-		var txt = debugPrintGroup.recycle(DebugText, () -> new DebugText(debugPrintGroup));
-		txt.text = text;
-		txt.setPosition(10, 10);
+	#if ALLOW_DEPRECATION
+	@:deprecated("addTextToDebug is deprecated! Use `DebugLog.addMessage` instead")
+	public inline function addTextToDebug(text:String, ?color:FlxColor = FlxColor.WHITE) {
+		DebugLog.addMessage(text, color);
 	}
+	#end
 
 	public function reloadHealthBarColors() {
 		// TODO: fuck this move it to hud.changedCharacter
@@ -1507,16 +1502,16 @@ class PlayState extends MusicBeatState
 		callOnScripts('onSongStart');
 	}
 
-	function shouldPush(event:PsychEvent){
-		return eventManager.get(event.event)?.shouldPush(event) ?? true;
+	function shouldPush(event:EventInstanceData){
+		return eventManager.get(event.eventId)?.shouldPush(event) ?? true;
 	}
 
-	static function eventNoteSort(a:PsychEvent, b:PsychEvent)
+	static function eventNoteSort(a:EventInstanceData, b:EventInstanceData)
 		return Std.int(a.strumTime - b.strumTime);
 
-	function getSongEventNotes():Array<PsychEvent>
+	function getSongEventNotes():Array<EventInstanceData>
 	{
-		var allEvents:Array<PsychEvent> = [];
+		var allEvents:Array<EventInstanceData> = [];
 
 		if (song != null) {
 			var eventsJSON:JsonEvents = ChartData.parseEventsJson(song.getSongFile('events.json'));
@@ -1648,7 +1643,7 @@ class PlayState extends MusicBeatState
 
 		var eventPushedMap:Map<String, Bool> = [];
 		for (eventNote in daEvents)
-			eventPushedMap.set(eventNote.event, true);
+			eventPushedMap.set(eventNote.eventId, true);
 
 		// create note type scripts
 		for (notetype in noteTypeMap.keys()) {
@@ -1877,22 +1872,19 @@ class PlayState extends MusicBeatState
 		return event;
 	}
 
-	function eventNoteEarlyTrigger(event:PsychEvent):Float {
-		var ret:Dynamic = callOnAllScripts('eventEarlyTrigger', [event.event, event.value1, event.value2]);
+	function eventNoteEarlyTrigger(event:EventInstanceData):Float {
+		var ret:Dynamic = callOnScripts('eventEarlyTrigger', [event]);
 		if (ret != null && (ret is Int || ret is Float))
 			return ret;
 
-		return (eventManager.get(event.event)?.getOffset(event)) ?? 0.0;
+		return (eventManager.get(event.eventId)?.getOffset(event)) ?? 0.0;
 	}
 
 	// called for every event note
-	function eventPushed(event:PsychEvent)
+	function eventPushed(event:EventInstanceData)
 	{
-		if (event.value1 == null) event.value1 = '';
-		if (event.value2 == null) event.value2 = '';
-
-		eventManager.get(event.event)?.onPush(event);
-		callOnScripts("eventPushed", [event]);
+		eventManager.get(event.eventId)?.onPush(event);
+		callOnScripts("onEventPushed", [event]);
 	}
 
 	// called only once for each different event
@@ -2229,11 +2221,12 @@ class PlayState extends MusicBeatState
 
 	private var svIndex:Int =0;
 	private inline function updateVisualPosition() {
+		final visualPos:Float = Conductor.songPosition - ClientPrefs.visualOffset;
 		var event:SpeedEvent = null;
 
 		for (i in svIndex+1...speedChanges.length) {
 			var nextEvent = speedChanges[i];
-			if (nextEvent.startTime > Conductor.songPosition)
+			if (nextEvent.startTime > visualPos)
 				break;
 
 			svIndex = i;
@@ -2241,7 +2234,7 @@ class PlayState extends MusicBeatState
 		}
 		event ??= speedChanges[svIndex];
 
-		Conductor.visualPosition = getTimeFromSV(Conductor.songPosition, event);
+		Conductor.visualPosition = getTimeFromSV(visualPos, event);
 		FlxG.watch.addQuick("visualPos", Conductor.visualPosition);
 	}
 
@@ -2392,6 +2385,12 @@ class PlayState extends MusicBeatState
 			stats.npsPeak = nps;
 
 		////
+		super.update(elapsed);
+		updateVisualPosition();
+		danceCharacters(); // Update characters dancing
+		checkEventNote();
+		modManager.update(elapsed, curDecBeat, curDecStep);
+
 		if (!endingSong){
 			//// time travel
 			if (startedSong #if !debug && chartingMode #end){
@@ -2429,13 +2428,6 @@ class PlayState extends MusicBeatState
 
 		if (controls.PAUSE && canPause)
 			doPauseShit();
-
-		////
-		super.update(elapsed);
-		updateVisualPosition();
-		danceCharacters(); // Update characters dancing
-		checkEventNote();
-		modManager.update(elapsed, curDecBeat, curDecStep);
 
 		if (generatedMusic && !isDead) {
 			if (ClientPrefs.controllerMode) {
@@ -2492,12 +2484,10 @@ class PlayState extends MusicBeatState
 		return false;
 	}
 
-	function doGameOver()
+	function doGameOver():Bool
 	{
-		switch(callOnScripts('onGameOver')) {
-			case Globals.Function_Stop: return false;
-			case Globals.Function_Halt: return true;
-		}
+		if (callOnScripts('onGameOver') == Globals.Function_Stop)
+			return false;
 
 		isDead = true;
 		deathCounter++;
@@ -2598,19 +2588,18 @@ class PlayState extends MusicBeatState
 	public static function getCharacterTypeFromString(str:String):CharacterType
 		return CharacterType.fromString(str);
 
-	public function triggerEventNote(eventName:String = "", value1:String = "", value2:String = "", ?time:Float) {
-		if (time==null)
-			time = Conductor.songPosition;
+	public function triggerEventNote(data:EventInstanceData, ?time:Float) {
+		time ??= Conductor.songPosition;
 
 		if(showDebugTraces)
-			trace('Event: ' + eventName + ', Value 1: ' + value1 + ', Value 2: ' + value2 + ', at Time: ' + time);
+			trace('Event: ' + data + ', at Time: ' + time);
 
-		callOnScripts('onEvent', [eventName, value1, value2, time]);
+		callOnScripts('onEvent', [data, time]);
 	}
 
-	public function triggerEvent(data:PsychEvent, ?time:Float) {
-		triggerEventNote(data.event, data.value1, data.value2, time);
-		eventManager.get(data.event)?.onTrigger(data, time);
+	public function triggerEvent(data:EventInstanceData, ?time:Float) {
+		triggerEventNote(data, time);
+		eventManager.get(data.eventId)?.onTrigger(data, time);
 	}
 
 	//// Kinda rewrote the camera shit so that its 'easier' to mod
@@ -3536,12 +3525,15 @@ class PlayState extends MusicBeatState
 		@returns A `FunkinHScript` instance
 	**/
 	public function createHScript(path:String, ?scriptName:String, ?ignoreCreateCall:Bool = false):FunkinHScript
-	{
-		var split = path.split("/");
-		var modName:String = split[0] == Paths.contentFolderName ? split[1] : 'assets';
-		var script = FunkinHScript.fromFile(path, scriptName, [
-			"modName" => modName
-		], ignoreCreateCall != true);
+	{		
+		var foundPack = null;
+		for (pack in PackManager.readList) {
+			if (path.startsWith(pack.path)) {
+				foundPack = pack;
+				break;
+			}
+		}
+		var script = FunkinHScript.fromFile(path, scriptName, ["modName" => foundPack?.id, "scriptPack" => foundPack], ignoreCreateCall != true);
 		funkyScripts.push(script);
 		return script;
 	}
@@ -3610,17 +3602,10 @@ class PlayState extends MusicBeatState
 		callOnScripts("onSectionHit");
 	}
 
-	inline public function callOnAllScripts(event:String, ?args:Array<Dynamic>, ignoreStops:Bool = false, ?exclusions:Array<String>, ?scriptArray:Array<Dynamic>,
-			?vars:Map<String, Dynamic>):Dynamic
-			return callOnScripts(event, args, ignoreStops, exclusions, scriptArray, vars, false);
-
 	inline public function isSpecialScript(script:FunkinScript)
 		return notetypeScripts.exists(script.scriptName) || hudSkinMap.exists(script.scriptName);
 
-	public function callOnScripts(event:String, ?args:Array<Dynamic>, ignoreStops:Bool = false, ?exclusions:Array<String>, ?scriptArray:Array<Dynamic>,
-			?vars:Map<String, Dynamic>, ?ignoreSpecialShit:Bool = true):Dynamic
-	{
-		#if (HSCRIPT_ALLOWED)
+	public function stopClosingScripts() {
 		while (scriptsToClose.length > 0){
 			var script = scriptsToClose.pop();
 
@@ -3628,28 +3613,47 @@ class PlayState extends MusicBeatState
 			funkyScripts.remove(script);
 			script.stop();
 		}
+	}
+
+	public function callOnScripts(funcName:String, ?args:Array<Dynamic>):Dynamic
+	{
+		#if (HSCRIPT_ALLOWED)
+		stopClosingScripts();
+
+		var scripts:Array<FunkinScript> = funkyScripts.filter(s -> !isSpecialScript(s));
+		return Globals.callOnScripts(scripts, funcName, args);
+		#else
+		return Globals.Function_Continue;
+		#end
+	}
+
+	public function callOnScriptsX(event:String, ?args:Array<Dynamic>, ignoreStops:Bool = false, ?exclusions:Array<String>, ?scriptArray:Array<FunkinScript>,
+			?vars:Map<String, Dynamic>, ?ignoreSpecialShit:Bool = true):Dynamic
+	{
+		#if (HSCRIPT_ALLOWED)
+		stopClosingScripts();
 
 		if (args == null) args = [];
 		if (scriptArray == null) scriptArray = funkyScripts;
 		if (exclusions == null) exclusions = [];
 
 		var returnVal:Dynamic = Globals.Function_Continue;
-		for (idx in 0...scriptArray.length)
+		for (script in scriptArray)
 		{
-			var script:FunkinScript = scriptArray[idx];
 			if (script==null || exclusions.contains(script.scriptName) || (ignoreSpecialShit && isSpecialScript(script)))
 				continue;
-			var ret:Dynamic = script.call(event, args, vars);
-			if (ret == Globals.Function_Halt){
-				ret = returnVal;
+			var ret:Dynamic = script.executeFunc(event, args, null, vars);
+			if (ret == Globals.Function_Halt) {
+				//returnVal = ret;
+				returnVal = Globals.Function_Stop;
 				if (!ignoreStops)
-					return returnVal;
+					break;
 			};
 			if (ret != Globals.Function_Continue && ret!=null)
 				returnVal = ret;
 		}
 
-		return (returnVal == null) ? Globals.Function_Continue : returnVal;
+		return returnVal;
 		#else
 		return Globals.Function_Continue;
 		#end
@@ -3666,29 +3670,32 @@ class PlayState extends MusicBeatState
 		}
 	}
 
-	public function callScript(script:Dynamic, event:String, ?args:Array<Dynamic>):Dynamic
+	public function callScript(scriptName:String, funcName:String, ?args:Array<Dynamic>):Dynamic
 	{
 		#if (HSCRIPT_ALLOWED) // no point in calling this code if you.. for whatever reason, disabled scripting.
-		if((script is FunkinScript)){
-			return callOnScripts(event, args, true, [], [script], [], false);
-		}
-		else if((script is Array)){
-			return callOnScripts(event, args, true, [], script, [], false);
-		}
-		else if((script is String)){
-			var scripts:Array<FunkinScript> = [];
-
-			for (idx in 0...funkyScripts.length)
-			{
-				var scr = funkyScripts[idx];
-				if(scr.scriptName == script)
-					scripts.push(scr);
-			}
-
-			return callOnScripts(event, args, true, [], scripts, [], false);
-		}
-		#end
+		var scripts:Array<FunkinScript> = funkyScripts.filter(scr -> scr.scriptName == scriptName);
+		return Globals.callOnScripts(scripts, funcName, args);
+		#else
 		return Globals.Function_Continue;
+		#end
+	}
+
+	public function cancelTween(tag:String) {
+		if (modchartTweens.exists(tag)) {
+			var twn = modchartTweens.get(tag);
+			twn.cancel();
+			twn.destroy();
+			modchartTweens.remove(tag);
+		}
+	}
+
+	public function cancelTimer(tag:String) {
+		if (modchartTimers.exists(tag)) {
+			var tmr = modchartTimers.get(tag);
+			tmr.cancel();
+			tmr.destroy();
+			modchartTimers.remove(tag);
+		}
 	}
 
 	#if HSCRIPT_ALLOWED

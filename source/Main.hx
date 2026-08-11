@@ -53,7 +53,7 @@ class Main extends Sprite
 	var initialState:Class<FlxState> = StartupState; // The FlxState the game starts with.
 	var nextState:Class<FlxState> = funkin.states.ContentManagerState; 
 	var framerate:Int = 60; // How many frames per second the game should run at.
-	var skipSplash:Bool = true; // Whether to skip the flixel splash screen that appears in release mode.
+	var skipSplash:Bool = Std.random(1000) != 1; // Whether to skip the flixel splash screen that appears in release mode.
 	var startFullscreen:Null<Bool> = null; // Whether to start the game in fullscreen on desktop targets
 
 	public static final UserAgent:String = 'TrollEngine/${Version.engineVersion}'; // used for http requests. if you end up forking the engine and making your own then make sure to change this!!
@@ -180,6 +180,8 @@ class Main extends Sprite
 		game = new FNFGame(gameWidth, gameHeight, initialState, framerate, framerate, skipSplash, startFullscreen);
 		addChild(game);
 
+		DebugLog.init();
+
 		fpsVar = new DebugDisplay(10, 3, 0xFFFFFF);
 		fpsVar.visible = false;
 		addChild(fpsVar);
@@ -188,15 +190,19 @@ class Main extends Sprite
 	public static function getTime():Float {
 		#if flash
 		return flash.Lib.getTimer();
-		#elseif ((js && !nodejs) || electron)
+		#elseif (js || electron)
 		return js.Browser.window.performance.now();
-		#elseif sys
-		return Sys.time() * 1000;
-		#elseif (lime_cffi && !macro)
+		#elseif (lime_cffi && !macro && !neko)
 		@:privateAccess
+		#if lime_funkin
+		return lime._internal.backend.native.NativeCFFI.lime_system_get_timer() / 1e+6;
+		#else
 		return cast lime._internal.backend.native.NativeCFFI.lime_system_get_timer();
+		#end
 		#elseif cpp
 		return untyped __global__.__time_stamp() * 1000;
+		#elseif sys
+		return Sys.time() * 1000;
 		#else
 		return 0;
 		#end

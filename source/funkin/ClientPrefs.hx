@@ -126,6 +126,19 @@ class ClientPrefs {
 					"options" => ["J1", "J2", "J3", "J4", "J5", "J6", "J7", "J8", "JUSTICE"]
 				]
 			},
+			"visualOffset" => {
+				display: "Visual Offset",
+				desc: "How much to visually delay notes, in milliseconds.",
+				type: Number,
+				value: 0,
+				data: [
+					"requiresRestart" => false,
+					"min" => -1000,
+					"max" => 1000,
+					"step" => 1,
+					"suffix" => "ms"
+				]
+			},
 			"noteOffset" => {
 				display: "Offset",
 				desc: "How much to offset notes, song events, etc.",
@@ -646,6 +659,22 @@ class ClientPrefs {
 				value: ClientPrefs.getRefreshRate(),
 				data:["suffix" => " FPS", "min" => 10, "max" => 360, "step" => 1,]
 			},
+			"uncappedFramerate" => {
+				display: "Uncapped Framerate",
+				desc: "",
+				type: Toggle,
+				value: false,
+				data: []
+			},
+			#if VSYNC_ALLOWED
+			"vsyncMode" => {
+				display: "V-Sync Mode",
+				desc: "",
+				type: Dropdown,
+				value: "Off",
+				data: ["options" => ["Off", "On", "Adaptive"]],
+			},
+			#end
 			"lowQuality" => {
 				display: "Low Quality",
 				desc: "When toggled, many assets won't be loaded to try to reduce strain on lower-end PCs.",
@@ -979,8 +1008,12 @@ class ClientPrefs {
 		FlxG.sound.volume = ClientPrefs.masterVolume;
 		FlxG.autoPause = ClientPrefs.autoPause;
 
-		Main.game.set_antialiasing(globalAntialiasing);
-		Main.game.set_framerate(framerate);
+		FNFGame.antialiasing = (globalAntialiasing);
+		FNFGame.framerate = framerate;
+		FNFGame.uncappedFramerate = uncappedFramerate;
+		#if VSYNC_ALLOWED
+		FNFGame.vsyncMode = vsyncMode;
+		#end
 
 		#if DISCORD_ALLOWED
 		DiscordClient.hideDetails = discordRPC_hideDetails;

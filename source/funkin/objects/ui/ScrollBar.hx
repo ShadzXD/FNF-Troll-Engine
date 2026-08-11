@@ -30,7 +30,15 @@ class ScrollBar extends FlxSprite {
 	/** Called when the bar is dragged **/
 	public var callback:(percent:Float) -> Void = null;
 	
-	public function new(x:Float = 0.0, y:Float = 0.0, pageHeight:Float, viewHeight:Float, barWidth:Float = -1, ?sprite:FlxSprite) {
+	/**
+		@param x The X position of the scrollbar
+		@param y The Y position of the scrollbar
+		@param pageHeight The height of the page that is being scrolled through
+		@param viewHeight The height of the viewable area that can show the page
+		@param barWidth The width of the bar sprite. If left at -1, it will use the width of the provided sprite or the default 12 if no sprite is provided.
+		@param sprite A sprite to use for the bar. If left as null, it will use a default gray rectangle.
+	**/
+	public function new(x:Float = 0.0, y:Float = 0.0, pageHeight:Float, viewHeight:Float, ?barWidth:Float, ?sprite:FlxSprite) {
 		super(x, y);
 		this.moves = false;
 		this.makeGraphic(1, 1);
@@ -40,7 +48,7 @@ class ScrollBar extends FlxSprite {
 		this.setPageSize(pageHeight, viewHeight, barWidth);
 	}
 
-	function setPageSize(pageHeight:Float, viewHeight:Float, barWidth:Float = -1) {
+	function setPageSize(pageHeight:Float, viewHeight:Float, ?barWidth:Float) {
 		this.pageHeight = pageHeight;
 		this.viewHeight = viewHeight;
 
@@ -48,8 +56,7 @@ class ScrollBar extends FlxSprite {
 		if (viewPercent >= 1.0) {
 			barSprite.visible = false;
 		}else {
-			if (barWidth < 0)
-				barWidth = barSprite.frameWidth;
+			this.barWidth = barWidth ?? barSprite.frameWidth;
 
 			var barHeight = Math.max(viewPercent * viewHeight, viewHeight / 10);
 
@@ -62,10 +69,6 @@ class ScrollBar extends FlxSprite {
 
 			barMaxY = this.y + viewHeight - barSprite.height;
 		}
-	}
-
-	function updateMouse(elapsed) {
-
 	}
 
 	////

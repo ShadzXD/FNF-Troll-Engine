@@ -1,5 +1,6 @@
 package funkin.states;
 
+import funkin.objects.shaders.WarmBGShader;
 import funkin.input.Controls;
 import funkin.objects.ui.CustomFlxUI.CustomFlxInputText;
 import funkin.objects.ChangingMenuBG;
@@ -38,6 +39,7 @@ class ContentManagerState extends MusicBeatState {
 	var dragging:Bool = false;
 
 	var bgManager:ChangingMenuBG;
+	var bgShader = new WarmBGShader();
 	
 	var rightCamera:FlxCamera;
 	var packCardBG:FlxSprite;
@@ -55,6 +57,14 @@ class ContentManagerState extends MusicBeatState {
 
 	final displayData = new PackDisplayData();
 
+	inline function stringToHue(str:String):Int {
+		var h = StringTools.fastCodeAt(str, 0);
+		for (i in 1...str.length) {
+			h = (h * 31 + StringTools.fastCodeAt(str, i)) & 0xFFFFFFFF;
+		}
+		return h % 360;
+	}
+
 	inline function getDisplayData(entry:PackEntry) {
 		final pack = PackManager.allPacks.get(entry.id);
 		final data:PackMetadata = pack.metadata ?? {};
@@ -67,28 +77,30 @@ class ContentManagerState extends MusicBeatState {
 		displayData.description = data.description ?? "No description provided";
 		displayData.author = data.author;//?? "Unknown";
 
-		displayData.bgColor = data.bgColor ?? data.accentColor ?? FlxColor.fromHSB(FlxG.random.int(64) * 5.625, 0.15, FlxG.random.float(0.467, 0.512)); //0xFFea71fd;
+		displayData.bgColor = data.bgColor ?? data.accentColor ?? FlxColor.fromHSB(stringToHue(entry.id), 0.75, FlxG.random.float(0.467, 0.512)); //0xFFea71fd;
 		displayData.accentColor = data.accentColor ?? FlxColor.WHITE;
 
 		displayData.bannerAsset = packGraphic(pack, 'packbanner');
-		displayData.bgAsset = packGraphic(pack, 'images/menuDesat') ?? packGraphic(PackManager.engineAssets, 'images/modsmenu/menuDesat') ?? FlxGraphic.fromRectangle(FlxG.width, FlxG.height, 0xFFE1E1E1, false, 'contentmanager_nobg');
+		displayData.bgAsset = packGraphic(pack, 'images/menuDesat') ?? packGraphic(PackManager.engineAssets, 'images/contentmenu/menuDesat') ?? FlxGraphic.fromRectangle(FlxG.width, FlxG.height, 0xFFE1E1E1, false, 'contentmanager_nobg');
+	
+		////
+		@:privateAccess
+		if (pack.loadException.length > 0) {
+			displayData.description = 'An error occurred when loading this pack:\n' + pack.loadException;
+		}
 	}
 
 	override function create() {
-		PackManager.reloadEntries();
+		PackManager.reloadPackList();
 		entries = PackManager.entries;
 
 		// Move disabled mods to the end of the list
 		entries.array.sort((a, b) -> (a.enabled == b.enabled) ? (a.enabled ? 0 : CoolUtil.alphabeticalSort(a.id, b.id)) : (b.enabled ? 1 : -1));
 
 		////
-		
 		if (FlxG.sound.music?.playing && FlxG.sound.music.volume > 0.1) {
-			FlxG.sound.music.fadeOut(
-				0.4,
-				0.0,
-				_ -> MusicBeatState.playMusic('contentmanager', true)
-			);
+			MusicBeatState.cacheMusic('contentmanager');
+			FlxG.sound.music.fadeOut(0.4, 0.0, _ -> MusicBeatState.playMusic('contentmanager', true));
 		}else {
 			MusicBeatState.playMusic('contentmanager');
 		}
@@ -150,7 +162,7 @@ class ContentManagerState extends MusicBeatState {
 
 		////
 		listCamera = new FlxCamera(listX, listY, listWidth, listHeight);
-		listCamera.bgColor = 0;
+		listCamera.bgColor = FlxColor.fromRGBFloat(0, 0, 0, 0.25);
 		//listCamera.targetOffset.y = -26; // what's up with this
 		//okay so it has something to do with using LOCKON target following but i don't wanna add camFollow camFollowPos bs here so suck it
 		listCamera.minScrollX = 0;
@@ -179,8 +191,7 @@ class ContentManagerState extends MusicBeatState {
 		updateListBoxes();
 		listCamera.maxScrollY = maxScrollY;
 
-		listScrollBar = new ScrollBar(0, 0, listCamera.maxScrollY, listCamera.height);
-		listScrollBar.barSprite.setGraphicSize(8, listScrollBar.barSprite.height);
+		listScrollBar = new ScrollBar(0, 0, listCamera.maxScrollY, listCamera.height, 8);
 		listScrollBar.camera = listCamera;
 		listScrollBar.x = listCamera.width - listScrollBar.width;
 		listScrollBar.scrollFactor.set();
@@ -199,7 +210,7 @@ class ContentManagerState extends MusicBeatState {
 			borderVPadding,
 			listCamera.width, 
 			64,
-			"modsmenu/9slice_top",
+			"contentmenu/9slice_top",
 			[4, 4, 24, 28]
 		);
 		topB.y -= topB.height;
@@ -220,7 +231,7 @@ class ContentManagerState extends MusicBeatState {
 			listCamera.y + listCamera.height,
 			listCamera.width, 
 			64,
-			"modsmenu/9slice_bot",
+			"contentmenu/9slice_bot",
 			[4, 4, 24, 28]
 		);
 		add(botB);
@@ -277,7 +288,9 @@ class ContentManagerState extends MusicBeatState {
 		add(packCardTitle);		
 		add(packCardAuthor);		
 
-		var offy = Std.int(packCardBGBorder.height + 16);		
+		var offy = Std.int(packCardBGBorder.height + 16);
+		offy += Std.int((rightCamera.height - offy) - packCardBGBorder.height); // copy pack height lol
+
 		rightCamera.y += offy;
 		rightCamera.height -= offy;
 
@@ -346,7 +359,7 @@ class ContentManagerState extends MusicBeatState {
 		final entry = entries.array[listSelectedIndex];
 
 		getDisplayData(entry);
-		trace(displayData);
+		//trace(displayData);
 		
 		if (displayData.author != null) {
 			var midY = packCardBG.y + packCardBG.height / 2;
@@ -373,9 +386,9 @@ class ContentManagerState extends MusicBeatState {
 			packCardBanner.setGraphicSize(0, packCardBG.height);
 			packCardBanner.updateHitbox();
 		}else {
-			packCardBannerGroup.fadeTo(packCardBG.graphic);
+			packCardBannerGroup.fadeTo(Paths.whitePixel.parent);
 			packCardBanner = packCardBannerGroup.curSprite;
-			packCardBanner.scale.set(packCardBG.width, packCardBG.height);
+			packCardBanner.setGraphicSize(packCardBG.width, packCardBG.height);
 			packCardBanner.updateHitbox();
 		}
 		packCardBanner.x = packCardBG.x + packCardBG.width - packCardBanner.width;
@@ -390,6 +403,7 @@ class ContentManagerState extends MusicBeatState {
 		packDescriptionText.text = descStr;
 
 		bgManager.fadeToBg(displayData.bgAsset, displayData.bgColor);
+		@:privateAccess bgManager.curBG.shader = bgShader;
 	}
 
 	function changeHovered(index:Int) {
@@ -443,7 +457,7 @@ class ContentManagerState extends MusicBeatState {
 		final options:Array<ModOption> = getEntryOptions(entry);
 		final strings:Array<String> = [
 			for (opt in options)
-				CoolerStringTools.snakeToPascal(opt)
+				Paths.getString('contentmanager_packoption_$opt') ?? CoolerStringTools.snakeToPascal(opt)
 		];
 
 		dropdown.exists = true;
@@ -461,7 +475,7 @@ class ContentManagerState extends MusicBeatState {
 				pack.launch();
 
 			case OPEN_MOD_LOCATION:
-				lime.system.System.openFile(CoolUtil.getSystemPath(pack.path));
+				lime.system.System.openFile(funkin.util.FileUtil.getSystemPath(pack.path));
 				dropdown.exists = false;
 
 			case OPEN_PACK_OPTIONS:
@@ -519,7 +533,7 @@ class ContentManagerState extends MusicBeatState {
 	}
 
 	function updateListKeyboardInput() {
-		var change:Int = uiVerticalInput;
+		var change:Int = Controls.firstActive.UI_VERTICAL_P;
 		if (change != 0)
 			FlxG.keys.pressed.SHIFT ? shiftSelectedOrder(change) : changeSelected(change);
 
@@ -533,8 +547,32 @@ class ContentManagerState extends MusicBeatState {
 			toggleEntry(listSelectedIndex);
 
 		if (controls.BACK) {
-			if (didChanges) {
+			handleBack();
+		}
+	}
+
+	function handleBack() {
+		if (didChanges) {
+			PackManager.entries = entries;
+			PackManager.flushEntryList();
+			PackManager.reloadPackList();
+		}
+
+		var packsWithErrors = [];
+		for (pack in PackManager.packMap) {
+			if (pack.loadException.length > 0) {
+				packsWithErrors.push(pack);
 			}
+		}
+
+		if (packsWithErrors.length != 0) {
+			var errorMsg = 'The following packs had errors and were disabled:\n\n';
+			for (pack in packsWithErrors) {
+				errorMsg += '- "${pack.id}"\n${pack.loadException}\n\n';
+			}
+			trace(errorMsg);
+			updateListBoxes();
+		}else {
 			MusicBeatState.switchState(new funkin.states.MainMenuState());
 		}
 	}
@@ -681,10 +719,6 @@ class ContentManagerState extends MusicBeatState {
 		super.destroy();
 
 		if (didChanges) {
-			PackManager.entries = entries;
-			PackManager.flushEntryList();
-			PackManager.reloadPackList();
-
 			FlxG.sound.destroy(true);
 			Paths.clearStoredMemory();
 			Paths.clearUnusedMemory();
@@ -719,6 +753,11 @@ private class PackDisplayData {
 		final arr:Array<String> = [];
 
 		for (fieldName in fields) {
+			if (fieldName == 'bgColor') {
+				arr.push('bgColor => ${bgColor.toHexString()}');
+				continue;
+			}
+
 			var value = Reflect.getProperty(this, fieldName);
 			
 			if (Reflect.isFunction(value))
@@ -739,16 +778,6 @@ private inline function packGraphic(pack:Pack, key:String):Null<FlxGraphic> {
 		var bmp = openfl.display.BitmapData.fromFile(path);
 		return (bmp==null) ? null : FlxG.bitmap.add(bmp, false, path);
 	}
-}
-
-private var uiVerticalInput(get, never):Int;
-private inline function get_uiVerticalInput():Int {
-	var change:Int = 0;
-	if (Controls.firstActive.UI_UP_P)
-		change--;
-	if (Controls.firstActive.UI_DOWN_P)
-		change++;
-	return change;
 }
 
 private enum abstract ModOption(String) from String to String {
@@ -843,7 +872,7 @@ private class Dropdown extends FlxTypedGroup<DropdownItem> {
 			changeSelected(hoverIdx, true);
 
 		////
-		var change:Int = uiVerticalInput;
+		var change:Int = Controls.firstActive.UI_VERTICAL_P;
 		if (change != 0)
 			changeSelected(change);
 
@@ -875,7 +904,7 @@ private class DropdownItem extends FlxGroup {
 			0,
 			0,
 			0,
-			"modsmenu/9slice",
+			"contentmenu/9slice",
 			[24, 24, 24, 28]
 		);
 		bg.useDefaultAntialiasing = true;
@@ -923,15 +952,20 @@ private class EntryBox extends FlxSpriteGroup {
 		super();
 		
 		bg = new FlxSprite();
-		bg.color = FlxColor.BLACK;
+		bg.color = FlxColor.WHITE;
 		bg.makeGraphic(1, 1);
 		bg.scale.set(width, height);
 		bg.updateHitbox();
 		add(bg);
 
 		dragSprite = new FlxSprite();
-		dragSprite.loadGraphic("modsmenu/item_draggable");
+		dragSprite.loadGraphic("contentmenu/item_draggable");
 		dragSprite.x = bg.x;
+		#if lime_funkin
+		dragSprite.blend = INVERT;
+		#else
+		dragSprite.color = FlxColor.BLACK;
+		#end
 		SpriteTools.objectCenter(dragSprite, bg, Y);
 		add(dragSprite);
 
@@ -939,7 +973,7 @@ private class EntryBox extends FlxSpriteGroup {
 		add(icon);
 
 		text = new FlxText(0, 0, 0, "unknown", 18);
-		text.setFormat(Paths.font("quanticob.ttf"), 18, 0xFFFFFFFF, LEFT);
+		text.setFormat(Paths.font("quanticob.ttf"), 18, 0xFF000000, LEFT);
 		text.alignment = LEFT;
 		//text.setFormat();
 		//text.color = 0xFF000000;
@@ -949,7 +983,7 @@ private class EntryBox extends FlxSpriteGroup {
 
 		////
 		toggleSprite = new FlxSprite();
-		var graphic = Paths.image("modsmenu/active_indicator");
+		var graphic = Paths.image("contentmenu/active_indicator");
 		toggleSprite.loadGraphic(graphic, true, Std.int(graphic.width / 2), graphic.height);
 		toggleSprite.animation.add("off", [0]);
 		toggleSprite.animation.add("on", [1]);
@@ -959,7 +993,9 @@ private class EntryBox extends FlxSpriteGroup {
 		SpriteTools.objectCenter(toggleSprite, bg, Y);
 
 		selectionHighlight = new FlxSprite();
-		selectionHighlight.loadGraphic(CoolUtil.makeOutlinedGraphic(Std.int(width), Std.int(height), FlxColor.TRANSPARENT, 4, FlxColor.WHITE));
+		selectionHighlight.color = FlxColor.BLACK;
+		selectionHighlight.alpha = 0.3;
+		selectionHighlight.makeGraphic(1, 1);
 		selectionHighlight.setGraphicSize(width, height);
 		selectionHighlight.updateHitbox();
 		add(selectionHighlight);
@@ -974,8 +1010,11 @@ private class EntryBox extends FlxSpriteGroup {
 		
 		@:privateAccess {
 			final pack = PackManager.allPacks.get(entry.id);
+
+			bg.color = pack.loadException.length > 0 ? FlxColor.RED : FlxColor.WHITE;
+
 			var graphic:FlxGraphic = packGraphic(pack, 'packicon');
-			graphic ??= Paths.image("modsmenu/pack");
+			graphic ??= Paths.image("contentmenu/pack");
 			icon.loadGraphic(graphic);
 			icon.checkEmptyFrame(); // flixel icon :o
 		}
@@ -994,17 +1033,17 @@ private class EntryBox extends FlxSpriteGroup {
 	}
 
 	public function onSelected() {
-		selectionHighlight.visible = true;
-		bg.alpha = 0.64;
-		remove(bg, true);
-		insert(0, bg);
+		selectionHighlight.visible = false;
+		bg.alpha = 0.75;
+		bg.blend = NORMAL;
+		text.alpha = 1.0;
 	}
 	
 	public function unSelected() {
-		selectionHighlight.visible = false;
-		bg.alpha = 0.64;// * 0.6;
-		remove(bg, true);
-		add(bg);
+		selectionHighlight.visible = true;
+		bg.alpha = 0.67;
+		bg.blend = OVERLAY;
+		text.alpha = 0.8;
 	}
 }
 

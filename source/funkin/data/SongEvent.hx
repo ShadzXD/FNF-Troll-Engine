@@ -8,7 +8,7 @@ import flixel.tweens.FlxEase;
 import funkin.objects.Character;
 import flixel.util.FlxColor;
 import funkin.scripts.Globals;
-import funkin.data.ChartData.PsychEvent as EventData;
+import funkin.data.SongEventData.EventInstanceData as EventData;
 import funkin.states.PlayState.instance as game;
 import funkin.states.PlayState;
 
@@ -60,7 +60,7 @@ class ScriptedSongEvent extends SongEvent implements IScriptedClass {
 	}
 
 	public function callOnScript(func:String, ?args:Array<Dynamic>):Dynamic
-		return script.executeFunc(func, args);
+		return script.call(func, args);
 	
 	public function existsOnScript(func:String):Bool
 		return script.exists(func);
@@ -78,7 +78,7 @@ class ScriptedSongEvent extends SongEvent implements IScriptedClass {
 
 class DefaultSongEvent extends SongEvent {
 	override function shouldPush(data:EventData):Bool {		
-		return switch(data.event) {
+		return switch(data.eventId) {
 			case 'Add Camera Zoom': (data.strumTime > Conductor.songPosition);
 			default: super.shouldPush(data);
 		}
@@ -86,10 +86,11 @@ class DefaultSongEvent extends SongEvent {
 
 	override function onPush(data:EventData) 
 	{
+		var data:{strumTime:Float, eventId:String, value1:String, value2:String} = cast data;
 		if (data.value1 == null) data.value1 = '';
 		if (data.value2 == null) data.value2 = '';
 
-		switch(data.event)
+		switch(data.eventId)
 		{
 			case 'Change Scroll Speed': // Negative duration means using the event time as the tween finish time
 				var duration = Std.parseFloat(data.value2);
@@ -100,7 +101,7 @@ class DefaultSongEvent extends SongEvent {
 
 			case 'Mult SV' | 'Constant SV':
 				var speed:Float = 1;
-				if(data.event == 'Constant SV'){
+				if(data.eventId == 'Constant SV'){
 					var b = Std.parseFloat(data.value1);
 					speed = Math.isNaN(b) ? 1 : (b / game.songSpeed);
 				}else{
@@ -159,7 +160,8 @@ class DefaultSongEvent extends SongEvent {
 	}
 
 	override function onTrigger(data:EventData, ?time:Float) {
-		var eventName:String = data.event;
+		var data:{strumTime:Float, eventId:String, value1:String, value2:String} = cast data;
+		var eventName:String = data.eventId;
 		var value1:String = data.value1;
 		var value2:String = data.value2;
 		time ??= funkin.Conductor.songPosition;
@@ -305,6 +307,7 @@ class DefaultSongEvent extends SongEvent {
 				}
 
 			case 'Set Property':
+				// Might replace this with the hscript interpreter :d
 				var value2:Dynamic = switch(value2){
 					case "true": true;
 					case "false": false;
@@ -312,7 +315,7 @@ class DefaultSongEvent extends SongEvent {
 				}
 
 				try{
-					funkin.scripts.Util.setProperty(value1, value2);					
+					funkin.scripts.PropertyUtil.setProperty(value1, value2);					
 				}catch (e:haxe.Exception){
 					trace('Set Property event error: $value1 | $value2');
 				}

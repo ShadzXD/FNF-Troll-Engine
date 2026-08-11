@@ -2,7 +2,7 @@ package funkin.data;
 
 import haxe.io.Path;
 
-private var defaultEventStuff = [ 
+private var psychEventStuff = [ 
 	['Hey!', "Plays the \"Hey!\" animation from Bopeebo,\nValue 1: BF = Only Boyfriend, GF = Only Girlfriend,\nSomething else = Both.\nValue 2: Custom animation duration,\nleave it blank for 0.6s"],
 	['Set GF Speed', "Sets GF head bopping speed,\nValue 1: 1 = Normal speed,\n2 = 1/2 speed, 4 = 1/4 speed etc.\nUsed on Fresh during the beatbox parts.\n\nWarning: Value must be integer!"],
 	['Add Camera Zoom', "Used on MILF on that one \"hard\" part\nValue 1: Camera zoom add (Default: 0.015)\nValue 2: UI zoom add (Default: 0.03)\nLeave the values blank if you want to use Default."],
@@ -39,7 +39,7 @@ private var defaultEventStuff = [
 
 class SongEventData {
 	public static function getEventStuff():Array<Array<String>> {
-		var eventStuff = defaultEventStuff.copy();
+		var eventStuff = psychEventStuff.copy();
 
 		var eventsLoaded:Map<String, Bool> = new Map();
 		for (directory in Paths.getFolders('events')) {
@@ -58,5 +58,297 @@ class SongEventData {
 		}
 
 		return eventStuff;
+	}
+
+	public static function getEventStuffV2():Array<EventDefinitionJSON> {
+		var eventStuff:Array<EventDefinitionJSON> = [];
+		var eventsLoaded:Map<String, Bool> = [];
+
+		for (stuff in psychEventStuff) {
+			eventsLoaded.set(stuff[0], true);
+			eventStuff.push({
+				id: stuff[0],
+				description: stuff[1],
+				fields: EventFieldDefUtil.getPsychFieldDefs()
+			});
+		}
+
+		for (directory in Paths.getFolders('events')) {
+			for (file in Paths.readDirectory(directory)) {
+				var eventId = Path.withoutExtension(file);
+				if (eventsLoaded.exists(eventId))
+					continue;
+
+				inline function push(data:Dynamic) {
+					data.id = eventId;
+					eventStuff.push(data);
+					eventsLoaded.set(eventId, true);
+				}
+				
+				var basePath:String = Path.join([directory, eventId]);
+				
+				var json:EventDefinitionJSON = Paths.getJson('$basePath.json');
+				if (json != null) {
+					trace('Found json: $basePath.json');
+					json.fields = EventFieldDefUtil.validateFields(json.fields);
+					push(json);
+					continue;
+				}
+
+				var description:Null<String> = Paths.getContent('$basePath.txt');
+				if (description != null || Paths.isHScript(file)) {
+					push({
+						description: description, 
+						fields: EventFieldDefUtil.getPsychFieldDefs()
+					});
+					continue;
+				}
+			}
+		}
+
+		return eventStuff;
+	}
+
+	public static function getEventInstanceData(bunches:Array<EventBunch>, ?resultArray:Array<EventInstanceData>):Array<EventInstanceData>
+	{
+		resultArray ??= [];		
+
+		for (event in bunches) {
+			for (event in event.getEvents()) {
+				event.strumTime += ClientPrefs.noteOffset;
+				resultArray.push(event);
+			}
+		}
+
+		return resultArray;
+	}
+}
+
+/** 
+	Event data structure used by `ChartingState` and the event chart format.
+**/
+abstract EventBunch(Array<Dynamic>) to funkin.data.ChartData.ChartObject// from Array<Dynamic> to Array<Dynamic>
+{
+	public var strumTime(get, set):Float;
+	public var eventData(get, set):Array<EventChildData>;
+
+	inline function get_strumTime() return this[0];
+	inline function set_strumTime(value:Float) return this[0] = value;
+
+	inline function get_eventData() return this[1];
+	inline function set_eventData(value:Array<EventChildData>) return this[1] = value;
+
+	public function clone():EventBunch {
+		var clonedSubEvents = [for (subEvent in eventData) subEvent.clone()];
+		return fromValues(strumTime, clonedSubEvents);
+	}
+
+	public function getEvents():Array<EventInstanceData> {
+		var events:Array<EventInstanceData> = [];
+		for (subEvent in eventData) {
+			var event:EventInstanceData = cast subEvent.clone();
+			event.strumTime = strumTime;
+			events.push(event);
+		}
+		return events;
+	}
+
+	private function new(data:Array<Dynamic>)
+		this = data;
+
+	public static function fromValues(strumTime:Float, eventData:Array<EventChildData>):EventBunch {
+		var data:Array<Dynamic> = [strumTime, eventData];
+		return new EventBunch(data);
+	}
+
+	public static function fromData(data:Array<Dynamic>):EventBunch
+		return isEventBunch(data) ? new EventBunch(data) : null;
+
+	public static function isEventBunch(data:Array<Dynamic>)
+		return data != null && Std.isOfType(data[0], Float) && Std.isOfType(data[1], Array);
+}
+
+/** 
+	Dynamic structure containing field values for a specific event.
+	Meant to be part of an `EventBunch`'s `eventData` array.  
+**/
+@:forward
+abstract EventChildData(Dynamic) from {eventId:String} {
+	public var eventId(get, set):String;
+	inline function get_eventId() return this.eventId;
+	inline function set_eventId(v) return this.eventId = v;
+
+	public inline function getValue(field:String):Null<Dynamic>
+		return Reflect.field(this, field);
+
+	public inline function setValue(field:String, value:Dynamic):Void
+		return Reflect.setField(this, field, value);
+
+	public inline function clone():EventChildData {
+		return Reflect.copy(this);
+	}
+
+	/** 
+		Deletes every field from this structure, except for `eventId` 
+	**/
+	public function wipe():Void {
+		for (fieldName in Reflect.fields(this)) {
+			if (fieldName != 'eventId')
+				Reflect.deleteField(this, fieldName);
+		}
+	}
+}
+
+/** 
+	Event data structure used by `PlayState`.  
+	Generated from an `EventBunch` structure.
+**/
+typedef EventInstanceData = {
+	/** Which event will handle this data **/
+	var eventId:String;
+	/** Song timestamp, in milliseconds, at which this data will be executed **/
+	var strumTime:Float;
+}
+
+////
+typedef EventDefinitionJSON = {
+	@:optional var id:String;
+
+	/** Name of this event to be shown in the chart editor  **/
+	@:optional var displayName:String;
+
+	/** A description of this event to be shown in the chart editor **/
+	var description:String;
+
+	/** Field definitions to be used in the chart editor events tab **/
+	var fields:Array<EventFieldDef>;
+
+	///** Whether the field definition is dynamic and should be handled by the event script **/
+	//@:optional var dynamicFields:Bool;
+} 
+
+enum abstract UIElementType(String) from String to String {
+	var TEXT_INPUT;
+	var DROPDOWN;
+	var NUM_STEPPER;
+	var SLIDER;
+	var CHECKBOX;
+	var COLOR_PICKER;
+
+	//// specialized dropdowns
+	var EASING_PICKER;
+	var CHARACTER_PICKER;
+	var STAGE_PICKER;
+}
+
+typedef EventFieldDef<T = Dynamic> = {
+	/** Name used to store the value of this field in the event's instance data **/
+	var fieldName:String;
+
+	/** UI element used to modify the value of this field in the chart editor **/
+	var uiElement:UIElementType;
+
+	/** Default value of this field **/
+	@:optional var defaultValue:T;
+
+	/** Display name used for this field in the chart editor **/
+	@:optional var displayName:String;
+
+	/** Tooltip message shown when hovering over this field's UI element in the chart editor. **/
+	@:optional var tooltip:String;
+}
+
+typedef InputTextDef = {
+	> EventFieldDef<String>,
+}
+
+typedef SliderDef = {
+	> EventFieldDef<Float>,
+	var min:Float; 
+	var max:Float;
+	@:optional var decimals:Int;
+}
+
+typedef CheckBoxDef = {
+	> EventFieldDef<Bool>,
+}
+
+typedef DropDownDef = {
+	> EventFieldDef<String>,
+	var optionsList:Array<String>;
+	@:optional var allowCustom:Bool;
+}
+
+typedef NumStepperDef = {
+	> EventFieldDef<Float>,
+	var stepSize:Float;
+	@:optional var min:Float;
+	@:optional var max:Float;
+	@:optional var decimals:Int;
+}
+
+class EventFieldDefUtil {
+	/**
+		Validates an event field definition.  
+		Adds default values whereever possible.  
+		@param data An `EventFieldDef` data structure
+		@returns `data` if valid or `null` if not.
+	**/
+	public static function validate(data:Dynamic):Null<Dynamic>
+	{
+		if (!Reflect.hasField(data, "fieldName"))
+			return null;
+
+		if (!Reflect.hasField(data, "uiElement"))
+			return null;
+
+		switch((data.fieldName:Null<String>)) {
+			case "strumTime": return null;
+			case "id": return null;
+			case null: return null;
+		}
+
+		data.displayName ??= data.fieldName;
+
+		return switch((data.uiElement:UIElementType)) {
+			case TEXT_INPUT:
+				data.defaultValue ??= "";
+				data;
+
+			case NUM_STEPPER:
+				data.stepSize ??= 1.0;
+				data.defaultValue ??= 0.0;
+				data.min ??= -999.0;
+				data.max ??= 999.0;
+				data.decimals ??= 0;
+				data;
+			
+			case SLIDER: 
+				data.decimals ??= 1;
+				data;
+
+			default: data;
+		}
+	}
+
+	public static function validateFields(fields:Array<Dynamic>) {
+		if (fields == null || !(fields is Array))
+			return [];
+
+		var offi = 0;
+		for (i => fieldDef in fields) {
+			fields[i - offi] = validate(fieldDef);
+			if (fields[i] == null) offi++;
+		}
+		fields.resize(fields.length - offi);
+
+		return fields;
+	}
+
+	public static function getPsychFieldDefs():Array<InputTextDef> {
+		return [
+			{fieldName: "value1", displayName: "Value 1", uiElement: TEXT_INPUT, defaultValue: ""},
+			{fieldName: "value2", displayName: "Value 2", uiElement: TEXT_INPUT, defaultValue: ""},
+		];
 	}
 }

@@ -28,7 +28,7 @@ using CoolerStringTools;
 	"changeDifficulty",
 	"positionHighscore"
 ])
-class FreeplayState extends MusicBeatState
+class FreeplayState extends MusicBeatSubstate
 {
 	public static var comingFromPlayState:Bool = false;
 
@@ -157,6 +157,13 @@ class FreeplayState extends MusicBeatState
 		diffText.font = scoreText.font;
 	}
 
+	override function close() {
+		if (this._parentState != null)
+			super.close();
+		else
+			MusicBeatState.switchState(new funkin.states.MainMenuState());
+	}
+
 	var songLoaded:String = null;
 	var selectedSong:String = null;
 	function onAccept() {
@@ -172,6 +179,8 @@ class FreeplayState extends MusicBeatState
 					PlayState.loadPlaylist([selectedSongData], curChartId);
 					proceed = PlayState.SONG != null;
 				}catch(e) {
+					Main.printExceptionStack();
+
 					var txt = 'ERROR LOADING SONG';
 					txt += '\n${e.message}';
 
@@ -274,7 +283,7 @@ class FreeplayState extends MusicBeatState
 		}else if (controls.BACK){
 			menu.controls = null;
 			FlxG.sound.play(Paths.sound('cancelMenu'));
-			MusicBeatState.switchState(new funkin.states.MainMenuState());	
+			close();
 			
 		}else if (FlxG.keys.justPressed.R){
 			openResetScorePrompt();
@@ -314,7 +323,7 @@ class FreeplayState extends MusicBeatState
 
 	function onSelectSong(data:BaseSong)
 	{	
-		Paths.currentPackId = data.folder;
+		Paths.currentPackId = data.packId;
 
 		selectedSongData = data;
 		selectedSongCharts = data.getCharts();
@@ -442,7 +451,7 @@ private class FreeplayMenu extends AlphabetMenu
 		var songName:String = metadata.songName;
 		var iconId:Null<String> = metadata.freeplayIcon;
 
-		Paths.currentPackId = song.folder;
+		Paths.currentPackId = song.packId;
 		addOption(songName, iconId);
 	}
 

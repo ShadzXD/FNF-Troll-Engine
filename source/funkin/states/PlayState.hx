@@ -403,7 +403,7 @@ class PlayState extends MusicBeatState
 	public var timingTxt:FlxText;
 
 	/** debugPrint text container **/
-	private var debugPrintGroup:FlxTypedGroup<DebugText> = new FlxTypedGroup<DebugText>();
+	//private var debugPrintGroup:FlxTypedGroup<DebugText> = new FlxTypedGroup<DebugText>();
 
 	////
 	public var generatedMusic:Bool = false;
@@ -1009,8 +1009,8 @@ class PlayState extends MusicBeatState
 		add(notefields);
 		add(timingTxt);
 
-		debugPrintGroup.cameras = [camOther];
-		add(debugPrintGroup);
+		//debugPrintGroup.cameras = [camOther];
+		//add(debugPrintGroup);
 
 		////
 		#if !tgt

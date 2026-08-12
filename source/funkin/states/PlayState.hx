@@ -1008,10 +1008,6 @@ class PlayState extends MusicBeatState
 		add(playfields);
 		add(notefields);
 		add(timingTxt);
-
-		//debugPrintGroup.cameras = [camOther];
-		//add(debugPrintGroup);
-
 		////
 		#if !tgt
 		if (prevCamFollowPos != null)

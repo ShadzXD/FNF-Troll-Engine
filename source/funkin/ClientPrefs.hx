@@ -2,11 +2,11 @@ package funkin;
 
 #if !macro
 import Main.Version;
-import funkin.input.Controls;
-import flixel.input.keyboard.FlxKey;
-import flixel.input.gamepad.FlxGamepadInputID;
-import flixel.util.FlxSave;
 import flixel.addons.ui.U as FlxU;
+import flixel.input.gamepad.FlxGamepadInputID;
+import flixel.input.keyboard.FlxKey;
+import flixel.util.FlxSave;
+import funkin.input.Controls;
 #if DISCORD_ALLOWED
 import funkin.api.Discord.DiscordClient;
 #end
@@ -59,7 +59,8 @@ class ClientPrefs {
 	 */
 	static var defaultOptionDefinitions = getOptionDefinitions();
 	static var manualLoads = ["gameplaySettings", "quantHSV", "arrowHSV", "comboOffset", "ratingPlacement"];
-
+	public static inline final scoreZoom:Bool = false;
+	public static inline final showWifeScore:Bool = false;
 	inline public static function getOptionDefinitions():Map<String, OptionData> {
 		return [
 			// gameplay

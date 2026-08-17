@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Created with Funkin Packer v0.1.3 https://neeeoo.github.io/funkin-packer/
+-->
+<TextureAtlas imagePath="holdCovers.png" width="1292" height="1411">
+	<SubTexture name="sustain cover end red0000" x="518" y="926" width="256" height="229" frameX="-0" frameY="-0" frameWidth="256" frameHeight="229"/>
+	<SubTexture name="sustain cover end red0001" x="518" y="926" width="256" height="229" frameX="-0" frameY="-0" frameWidth="256" frameHeight="229"/>
+	<SubTexture name="sustain cover end red0002" x="776" y="926" width="256" height="229" frameX="-0" frameY="-0" frameWidth="256" frameHeight="229"/>
+	<SubTexture name="sustain cover end red0003" x="1034" y="2" width="256" height="229" frameX="-0" frameY="-0" frameWidth="256" frameHeight="229"/>
+	<SubTexture name="sustain cover end red0004" x="1034" y="2" width="256" height="229" frameX="-0" frameY="-0" frameWidth="256" frameHeight="229"/>
+	<SubTexture name="sustain cover end red0005" x="1034" y="233" width="256" height="229" frameX="-0" frameY="-0" frameWidth="256" frameHeight="229"/>
+	<SubTexture name="sustain cover end red0006" x="1034" y="464" width="256" height="229" frameX="-0" frameY="-0" frameWidth="256" frameHeight="229"/>
+	<SubTexture name="sustain cover end red0007" x="1034" y="695" width="256" height="229" frameX="-0" frameY="-0" frameWidth="256" frameHeight="229"/>
+	<SubTexture name="sustain cover red0000" x="165" y="1284" width="161" height="125" frameX="-0" frameY="-0" frameWidth="161" frameHeight="125"/>
+	<SubTexture name="sustain cover red0001" x="328" y="1284" width="161" height="125" frameX="-0" frameY="-0" frameWidth="161" frameHeight="125"/>
+	<SubTexture name="sustain cover red0002" x="491" y="1284" width="161" height="125" frameX="-0" frameY="-0" frameWidth="161" frameHeight="125"/>
+	<SubTexture name="sustain cover blue0000" x="1034" y="926" width="161" height="125" frameX="-0" frameY="-0" frameWidth="161" frameHeight="125"/>
+	<SubTexture name="sustain cover blue0001" x="2" y="1157" width="161" height="125" frameX="-0" frameY="-0" frameWidth="161" frameHeight="125"/>
+	<SubTexture name="sustain cover blue0002" x="165" y="1157" width="161" height="125" frameX="-0" frameY="-0" frameWidth="161" frameHeight="125"/>
+	<SubTexture name="sustain cover end blue0000" x="2" y="2" width="256" height="229" frameX="-0" frameY="-0" frameWidth="256" frameHeight="229"/>
+	<SubTexture name="sustain cover end blue0001" x="2" y="2" width="256" height="229" frameX="-0" frameY="-0" frameWidth="256" frameHeight="229"/>
+	<SubTexture name="sustain cover end blue0002" x="2" y="233" width="256" height="229" frameX="-0" frameY="-0" frameWidth="256" frameHeight="229"/>
+	<SubTexture name="sustain cover end blue0003" x="260" y="2" width="256" height="229" frameX="-0" frameY="-0" frameWidth="256" frameHeight="229"/>
+	<SubTexture name="sustain cover end blue0004" x="260" y="2" width="256" height="229" frameX="-0" frameY="-0" frameWidth="256" frameHeight="229"/>
+	<SubTexture name="sustain cover end blue0005" x="260" y="233" width="256" height="229" frameX="-0" frameY="-0" frameWidth="256" frameHeight="229"/>
+	<SubTexture name="sustain cover end blue0006" x="2" y="464" width="256" height="229" frameX="-0" frameY="-0" frameWidth="256" frameHeight="229"/>
+	<SubTexture name="sustain cover end blue0007" x="260" y="464" width="256" height="229" frameX="-0" frameY="-0" frameWidth="256" frameHeight="229"/>
+	<SubTexture name="sustain cover end green0000" x="518" y="2" width="256" height="229" frameX="-0" frameY="-0" frameWidth="256" frameHeight="229"/>
+	<SubTexture name="sustain cover end green0001" x="518" y="2" width="256" height="229" frameX="-0" frameY="-0" frameWidth="256" frameHeight="229"/>
+	<SubTexture name="sustain cover end green0002" x="518" y="233" width="256" height="229" frameX="-0" frameY="-0" frameWidth="256" frameHeight="229"/>
+	<SubTexture name="sustain cover end green0003" x="518" y="464" width="256" height="229" frameX="-0" frameY="-0" frameWidth="256" frameHeight="229"/>
+	<SubTexture name="sustain cover end green0004" x="518" y="464" width="256" height="229" frameX="-0" frameY="-0" frameWidth="256" frameHeight="229"/>
+	<SubTexture name="sustain cover end green0005" x="2" y="695" width="256" height="229" frameX="-0" frameY="-0" frameWidth="256" frameHeight="229"/>
+	<SubTexture name="sustain cover end green0006" x="260" y="695" width="256" height="229" frameX="-0" frameY="-0" frameWidth="256" frameHeight="229"/>
+	<SubTexture name="sustain cover end green0007" x="518" y="695" width="256" height="229" frameX="-0" frameY="-0" frameWidth="256" frameHeight="229"/>
+	<SubTexture name="sustain cover end purple0000" x="776" y="2" width="256" height="229" frameX="-0" frameY="-0" frameWidth="256" frameHeight="229"/>
+	<SubTexture name="sustain cover end purple0001" x="776" y="2" width="256" height="229" frameX="-0" frameY="-0" frameWidth="256" frameHeight="229"/>
+	<SubTexture name="sustain cover end purple0002" x="776" y="233" width="256" height="229" frameX="-0" frameY="-0" frameWidth="256" frameHeight="229"/>
+	<SubTexture name="sustain cover end purple0003" x="776" y="464" width="256" height="229" frameX="-0" frameY="-0" frameWidth="256" frameHeight="229"/>
+	<SubTexture name="sustain cover end purple0004" x="776" y="464" width="256" height="229" frameX="-0" frameY="-0" frameWidth="256" frameHeight="229"/>
+	<SubTexture name="sustain cover end purple0005" x="776" y="695" width="256" height="229" frameX="-0" frameY="-0" frameWidth="256" frameHeight="229"/>
+	<SubTexture name="sustain cover end purple0006" x="2" y="926" width="256" height="229" frameX="-0" frameY="-0" frameWidth="256" frameHeight="229"/>
+	<SubTexture name="sustain cover end purple0007" x="260" y="926" width="256" height="229" frameX="-0" frameY="-0" frameWidth="256" frameHeight="229"/>
+	<SubTexture name="sustain cover green0000" x="328" y="1157" width="161" height="125" frameX="-0" frameY="-0" frameWidth="161" frameHeight="125"/>
+	<SubTexture name="sustain cover green0001" x="491" y="1157" width="161" height="125" frameX="-0" frameY="-0" frameWidth="161" frameHeight="125"/>
+	<SubTexture name="sustain cover green0002" x="654" y="1157" width="161" height="125" frameX="-0" frameY="-0" frameWidth="161" frameHeight="125"/>
+	<SubTexture name="sustain cover pre0000" x="1034" y="1053" width="98" height="98" frameX="-0" frameY="-0" frameWidth="98" frameHeight="98"/>
+	<SubTexture name="sustain cover purple0000" x="817" y="1157" width="161" height="125" frameX="-0" frameY="-0" frameWidth="161" frameHeight="125"/>
+	<SubTexture name="sustain cover purple0001" x="980" y="1157" width="161" height="125" frameX="-0" frameY="-0" frameWidth="161" frameHeight="125"/>
+	<SubTexture name="sustain cover purple0002" x="2" y="1284" width="161" height="125" frameX="-0" frameY="-0" frameWidth="161" frameHeight="125"/>
+</TextureAtlas>

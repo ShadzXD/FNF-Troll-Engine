@@ -1,15 +1,14 @@
 package funkin.objects.huds;
 
-import math.CoolMath;
-import funkin.objects.hud.JudgementCounter.JudgementCounters;
-import funkin.objects.hud.JudgementCounter.JudgeCounterSettings;
 import flixel.text.FlxText;
-import flixel.util.FlxColor;
 import flixel.tweens.FlxTween;
+import flixel.util.FlxColor;
 import flixel.util.FlxStringUtil;
-
-import funkin.objects.playfields.PlayField;
 import funkin.data.JudgmentManager.JudgmentData;
+import funkin.objects.hud.JudgementCounter.JudgeCounterSettings;
+import funkin.objects.hud.JudgementCounter.JudgementCounters;
+import funkin.objects.playfields.PlayField;
+import math.CoolMath;
 
 typedef PsychHUD = TraditionalHUD;
 
@@ -19,9 +18,8 @@ class TraditionalHUD extends CommonHUD
 	public var hitbar:Hitbar;
 
 	var hitbarTween:FlxTween;
-	var scoreTxtTween:FlxTween;
 
-	public var separator:String = ' • ';
+	public var separator:String = ' // ';
 	// cached because dont wanna be doing that shit every update cycle lmao
 	// even though it probably doesnt matter since it caches it the first time
 	// i feel like this is probably faster than going through map.get each time
@@ -56,12 +54,12 @@ class TraditionalHUD extends CommonHUD
 
 		showJudgeCounter = ClientPrefs.judgeCounter != "Off";
 		////
-		scoreTxt = new FlxText(0, healthBarBG.y + 48, FlxG.width, "", 20);
+		scoreTxt = new FlxText(0, healthBarBG.y + 45, FlxG.width, "", 19);
 		scoreTxt.scrollFactor.set();
 
 
-		scoreTxt.setFormat(Paths.font('vcr.ttf'), 18, FlxColor.WHITE, CENTER);
-		scoreTxt.setBorderStyle(OUTLINE, FlxColor.BLACK, 1.5);
+		scoreTxt.setFormat(Paths.font('vcr.ttf'), 20, FlxColor.WHITE, CENTER);
+		scoreTxt.setBorderStyle(OUTLINE, FlxColor.BLACK, 1.75);
 		
 		////
 		hitbar = new Hitbar();
@@ -122,7 +120,7 @@ class TraditionalHUD extends CommonHUD
 		super.changedOptions(changed);
 
 		scoreTxt.y = healthBarBG.y + 48;
-		ClientPrefs.showWifeScore ? onWifeScoreUpdate() : onScoreUpdate();
+		onScoreUpdate();
 
 		if (hitbar.visible = ClientPrefs.hitbar) {
 			hitbar.screenCenter(XY);
@@ -158,10 +156,7 @@ class TraditionalHUD extends CommonHUD
 		shownScore =  Std.string(FlxStringUtil.formatMoney(score,false, true));
 		isHighscore = songHighscore != 0 && score > songHighscore;
 	}
-	function onWifeScoreUpdate(){
-		shownScore = Std.string(Math.floor(totalNotesHit * 100));
-		isHighscore = songWifeHighscore != 0 && totalNotesHit > songWifeHighscore;
-	}
+
 
 	function getStatusText():String {
 		if (PlayState.instance.cpuControlled && useSubtleMark)
@@ -172,10 +167,10 @@ class TraditionalHUD extends CommonHUD
 		if (!showJudgeCounter) 
 			text += separator + getComboBreaksText();
 
-		text += separator + '$ratingString: ';
+		text += separator + 'Rank: ';
 
 		if (grade != "?")
-			text += getRatingText() + separator + getGradeText() + separator + getClearTypeText();
+			text += getGradeText() + ' (' + getRatingText() + ')' + separator + getClearTypeText();
 		else
 			text += getGradeText();
 
@@ -295,23 +290,6 @@ class TraditionalHUD extends CommonHUD
 		var hitDiff = note.hitResult.hitDiff + ClientPrefs.ratingOffset;
 		if (ClientPrefs.hitbar)
 			hitbar.addHit(hitDiff);
-		
-		if (ClientPrefs.scoreZoom)
-		{
-			if (scoreTxtTween != null)
-				scoreTxtTween.cancel();
-			if (judgeCounters != null)
-				judgeCounters.bump(judge.internalName);
-
-			scoreTxt.scale.x = 1.075;
-			scoreTxt.scale.y = 1.075;
-			scoreTxtTween = FlxTween.tween(scoreTxt.scale, {x: 1, y: 1}, 0.2, {
-				onComplete: function(twn:FlxTween)
-				{
-					scoreTxtTween = null;
-				}
-			});
-		}
 	}
 
 	function statChanged(stat:String, val:Dynamic)
@@ -324,14 +302,9 @@ class TraditionalHUD extends CommonHUD
 					judgeCounters.bump('miss');
 					judgeCounters.setCount('miss', val);
 				}
-			
-			case 'totalNotesHit':
-				if (ClientPrefs.showWifeScore)
-					onWifeScoreUpdate();
-			
+
 			case 'score':
-				if (!ClientPrefs.showWifeScore)
-					onScoreUpdate();
+				onScoreUpdate();
 		}
 	}
 

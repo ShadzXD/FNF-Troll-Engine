@@ -1,71 +1,70 @@
 package funkin.states;
 
-import funkin.data.content.PackManager;
-import funkin.objects.notes.NoteAnimations;
-import funkin.objects.cutscenes.Cutscene;
-#if VIDEOS_ALLOWED
-import hxvlc.flixel.FlxVideo;
-import funkin.objects.cutscenes.VideoCutscene;
-#end
-import funkin.objects.cutscenes.DialogueCutscene;
-import funkin.objects.playfields.PlayField.NoteCallback;
-import funkin.data.Cache;
-import funkin.data.Level;
+import flixel.*;
+import flixel.group.FlxGroup;
+import flixel.group.FlxSpriteGroup;
+import flixel.input.gamepad.FlxGamepadInputID;
+import flixel.input.keyboard.FlxKey;
+import flixel.math.*;
+import flixel.system.FlxAssets.FlxSoundAsset;
+import flixel.text.FlxText;
+import flixel.tweens.FlxEase;
+import flixel.tweens.FlxTween;
+import flixel.util.*;
+import flixel.util.FlxSignal;
 import funkin.data.BaseSong;
-import funkin.data.ChartData;
-import funkin.data.StageData;
+import funkin.data.Cache;
 import funkin.data.CharacterData;
+import funkin.data.ChartData;
+import funkin.data.Highscore;
+import funkin.data.JudgmentManager;
+import funkin.data.Level;
 import funkin.data.SongEventData;
+import funkin.data.StageData;
+import funkin.data.Stats;
+import funkin.data.content.PackManager;
+import funkin.modchart.ModManager;
+import funkin.objects.Character;
+import funkin.objects.Stage;
+import funkin.objects.cutscenes.Cutscene;
+import funkin.objects.cutscenes.DialogueCutscene;
+import funkin.objects.hud.Countdown;
+import funkin.objects.hud.RatingGroup;
+import funkin.objects.huds.*;
 import funkin.objects.notes.Note;
+import funkin.objects.notes.NoteAnimations;
 import funkin.objects.notes.NoteSplash;
 import funkin.objects.notes.StrumNote;
-import funkin.objects.Stage;
-import funkin.objects.Character;
-import funkin.objects.huds.*;
-import funkin.objects.hud.RatingGroup;
-import funkin.objects.hud.Countdown;
 import funkin.objects.playfields.*;
-import funkin.data.Stats;
-import funkin.data.JudgmentManager;
-import funkin.data.Highscore;
+import funkin.objects.playfields.PlayField.NoteCallback;
+import funkin.scripts.*;
 import funkin.states.GameOverSubstate;
 import funkin.states.PauseSubState;
-import funkin.modchart.ModManager;
+import funkin.states.base.TransitionableState;
+import funkin.states.base.VideoPlayerState;
 import funkin.states.editors.CharacterEditorState;
 import funkin.states.editors.ChartingState;
 import funkin.states.options.OptionsSubstate;
-import funkin.scripts.*;
-import flixel.*;
-import flixel.util.*;
-import flixel.util.FlxSignal;
-import flixel.math.*;
-import flixel.tweens.FlxTween;
-import flixel.tweens.FlxEase;
-import flixel.system.FlxAssets.FlxSoundAsset;
-import funkin.states.base.TransitionableState;
-import flixel.group.FlxGroup;
-import flixel.group.FlxSpriteGroup;
-import flixel.input.keyboard.FlxKey;
-import flixel.input.gamepad.FlxGamepadInputID;
-import flixel.text.FlxText;
+import openfl.events.KeyboardEvent;
 
+using CoolerStringTools;
+using StringTools;
+
+#if VIDEOS_ALLOWED
+import funkin.objects.cutscenes.VideoCutscene;
+import hxvlc.flixel.FlxVideo;
+#end
 
 #if lime_openal
 import lime.media.openal.AL;
-import lime.media.openal.ALFilter;
 import lime.media.openal.ALEffect;
+import lime.media.openal.ALFilter;
 #end
-
-import openfl.events.KeyboardEvent;
-
-using StringTools;
-using CoolerStringTools;
 
 #if DISCORD_ALLOWED
 using funkin.api.Discord;
 #end
 
-import funkin.states.base.VideoPlayerState;
 
 enum abstract CharacterType(Int) from Int to Int {
 	var BF = 0;
@@ -2129,7 +2128,6 @@ class PlayState extends MusicBeatState
 		callOnScripts("onHoldPress", [note, field]);
 		note.noteScript?.call("onHoldPress", [note, field]);
 		note.genScript?.call("onHoldPress", [note, field]);
-
 		if (cpuControlled && note.isRoll && ClientPrefs.hitsoundBehav == 'Key Press')
 			playShithound();
 
@@ -3412,6 +3410,8 @@ class PlayState extends MusicBeatState
 		note.wasGoodHit = true;
 
 		if (note.isSustainNote) {
+			spawnSustainSplashOnStrum(note, field);
+
 			if (note.parent != null)
 				note.parent.unhitTail.remove(note);
 		}
@@ -3508,6 +3508,13 @@ class PlayState extends MusicBeatState
 		field ??= getFieldFromNote(note);
 		if (field.strumNotes[note.column] != null)
 			return field.spawnSplash(note, splashSkin)
+		else
+			return null;
+	}
+	public function spawnSustainSplashOnStrum(note:Note, ?field:PlayField) {
+		field ??= getFieldFromNote(note);
+		if (field.strumNotes[note.column] != null)
+			return field.spawnSustainSplash(note, splashSkin)
 		else
 			return null;
 	}

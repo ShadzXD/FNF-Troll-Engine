@@ -1,23 +1,23 @@
 package funkin.states;
 
-import flixel.math.FlxPoint;
-import flixel.util.FlxTimer;
+import flixel.FlxCamera;
 import flixel.FlxG;
 import flixel.FlxObject;
 import flixel.FlxSprite;
-import flixel.FlxCamera;
-import funkin.states.base.TransitionableState;
 import flixel.effects.FlxFlicker;
 import flixel.group.FlxGroup.FlxTypedGroup;
-import flixel.text.FlxText;
+import flixel.input.keyboard.FlxKey;
 import flixel.math.FlxMath;
+import flixel.math.FlxPoint;
+import flixel.text.FlxText;
 import flixel.tweens.FlxEase;
 import flixel.tweens.FlxTween;
 import flixel.util.FlxColor;
-import lime.app.Application;
-import funkin.states.editors.MasterEditorMenu;
-import flixel.input.keyboard.FlxKey;
+import flixel.util.FlxTimer;
 import funkin.states.base.MusicBeatState.switchState;
+import funkin.states.base.TransitionableState;
+import funkin.states.editors.MasterEditorMenu;
+import lime.app.Application;
 
 using StringTools;
 
@@ -32,25 +32,15 @@ class MainMenuState extends MusicBeatState
 	var optionShit:Array<String> = [
 		'storymode',
 		'freeplay',
-		//'credits',
+		'credits',
 		//'donate',
 		#if MODS_ALLOWED
 		'content',
-		'content',
-		'content',
-		'content',
-		'content',
-		'content',
-		'content',
-		'content',
-		'content',
-		'content',
-		'content',
-		'content',
-		'content',
-		'content',
 		#end
-		//'options',
+		#if ACHIEVEMENTS_ALLOWED
+		'achievements',
+		#end
+		'options',
 	];
 
 	var menuItems:FlxTypedGroup<FlxSprite>;

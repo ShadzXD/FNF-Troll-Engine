@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TextureAtlas imagePath="sparks.png">
+	<!-- Created with Adobe Animate version 21.0.5.40714 -->
+	<!-- http://www.adobe.com/products/animate.html -->
+	<SubTexture name="sparks0000" x="2" y="122" width="120" height="103" frameX="-5" frameY="-2" frameWidth="127" frameHeight="127"/>
+	<SubTexture name="sparks0001" x="2" y="122" width="120" height="103" frameX="-5" frameY="-2" frameWidth="127" frameHeight="127"/>
+	<SubTexture name="sparks0002" x="2" y="2" width="125" height="118" frameX="0" frameY="0" frameWidth="127" frameHeight="127"/>
+	<SubTexture name="sparks0003" x="2" y="2" width="125" height="118" frameX="0" frameY="0" frameWidth="127" frameHeight="127"/>
+	<SubTexture name="sparks0004" x="231" y="2" width="75" height="88" frameX="-42" frameY="-8" frameWidth="127" frameHeight="127"/>
+	<SubTexture name="sparks0005" x="231" y="2" width="75" height="88" frameX="-42" frameY="-8" frameWidth="127" frameHeight="127"/>
+	<SubTexture name="sparks0006" x="129" y="2" width="100" height="93" frameX="-23" frameY="-23" frameWidth="127" frameHeight="127"/>
+	<SubTexture name="sparks0007" x="129" y="2" width="100" height="93" frameX="-23" frameY="-23" frameWidth="127" frameHeight="127"/>
+	<SubTexture name="sparks0008" x="124" y="122" width="115" height="97" frameX="-12" frameY="-30" frameWidth="127" frameHeight="127"/>
+	<SubTexture name="sparks0009" x="124" y="122" width="115" height="97" frameX="-12" frameY="-30" frameWidth="127" frameHeight="127"/>
+</TextureAtlas>

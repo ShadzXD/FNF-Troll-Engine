@@ -400,7 +400,7 @@ class FreeplayState extends MusicBeatSubstate
 		final rating = formatRating(Math.ffloor(lerpRating * 100.0) / 100.0);
 		final fcDisplay = (fcDisplay.length==0 ? fcDisplay : ' • [$fcDisplay]');
 
-		scoreText.text = 'PERSONAL BEST • $score • ($rating%)' + fcDisplay;
+		scoreText.text = 'PERSONAL BEST • ${FlxStringUtil.formatMoney(score, false)} • ($rating%)' + fcDisplay;
 		positionHighscore();
 
 		super.draw();

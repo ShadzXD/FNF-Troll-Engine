@@ -333,7 +333,7 @@ class StoryModeState extends MusicBeatState {
 		var lerpVal:Float = 1.0 - Math.exp(-elapsed * 16.0);
 
 		lerpHighscore = CoolMath.coolLerp(lerpHighscore, targetHighscore, elapsed * 12);
-		scoreText.text = 'HIGH SCORE: ${Math.round(lerpHighscore)}';
+		scoreText.text = 'HIGH SCORE: ${FlxStringUtil.formatMoney(Math.round(lerpHighscore), false)}';
 		
 		for(idx in 0...levelTitles.members.length){
 			var title:LevelTitle = levelTitles.members[idx];

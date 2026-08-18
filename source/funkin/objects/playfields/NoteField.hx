@@ -144,7 +144,7 @@ class NoteField extends FieldBase
 				if (visPos > drawDist)
 					continue; // don't draw
 
-				if (daNote.isSustainNote && !daNote.isSustainEnd)
+				if (daNote.isSustainNote)
 				{
 					holds.push(daNote);
 				}

@@ -3512,11 +3512,11 @@ class PlayState extends MusicBeatState
 			return null;
 	}
 	public function spawnSustainSplashOnStrum(note:Note, ?field:PlayField) {
-		field ??= getFieldFromNote(note);
-		if (field.strumNotes[note.column] != null)
-			return field.spawnSustainSplash(note, splashSkin)
-		else
-			return null;
+		//field ??= getFieldFromNote(note);
+		//i//f (field.strumNotes[note.column] != null)
+		//	return field.spawnSustainSplash(note, splashSkin)
+		//else
+		//	return null;
 	}
 
 	#if HSCRIPT_ALLOWED

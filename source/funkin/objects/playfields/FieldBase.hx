@@ -34,7 +34,7 @@ class FieldBase extends FlxObject {
 	public var forcePreDraw:Bool = false;
 	
 	public var tryForceHoldsBehind:Bool = false; // Field tries to push holds behind receptors
-
+	
 	public var isProxy:Bool = false; // dumb and hardcoded but oh well
 	
 	/**

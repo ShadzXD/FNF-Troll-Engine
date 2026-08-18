@@ -57,9 +57,12 @@ class ClientPrefs {
 		// public static inline final directionalCam = false;
 		// public static inline final ghostTapping = false;
 	 */
+	 //this is all stuff id rather be chosen by mod rather than by player ngl
 	static var defaultOptionDefinitions = getOptionDefinitions();
 	static var manualLoads = ["gameplaySettings", "quantHSV", "arrowHSV", "comboOffset", "ratingPlacement"];
+	//i dont like the score zoom on the traditional hud, and since thats the one thats default, id rather it just be off ngl
 	public static inline final scoreZoom:Bool = false;
+	//not needed as same reason as above.
 	public static inline final showWifeScore:Bool = false;
 	inline public static function getOptionDefinitions():Map<String, OptionData> {
 		return [
@@ -81,20 +84,6 @@ class ClientPrefs {
 			"directionalCam" => {
 				display: "Directional Camera",
 				desc: "When toggled, the camera will move with the focused character's animations",
-				type: Toggle,
-				value: false,
-				data: []
-			},
-			"bread" => {
-				display: "Garlic Bread",
-				desc: "Garlic Bread. You're welcome, Wolfy.",
-				type: Toggle,
-				value: false,
-				data: []
-			},
-			"fish" => {
-				display: "Giant Fucking Fish",
-				desc: "When toggled, a giant fucking fish appears that covers the game if you get 100% accuracy",
 				type: Toggle,
 				value: false,
 				data: []
@@ -406,7 +395,7 @@ class ClientPrefs {
 				display: "Hold Subdivisions",
 				desc: "How many times each hold note should be subdivided. Higher numbers means more lag, but smoother holds.\nIf your PC is on the lower end, try to keep it below 8!",
 				type: Number,
-				value: 6,
+				value: 4,
 				data: ["min" => 1, "max" => 16, "step" => 1]
 			},
 			/* 			"optimizeHolds" => {

@@ -3350,7 +3350,7 @@ class PlayState extends MusicBeatState
 		if (instakillOnMiss)
 			doDeathCheck(true);
 
-		if(!practiceMode) stats.score -= Scoring.PBOT1_GHOST_TAP_NOTE_MISS_SCORE();
+		if(!practiceMode) stats.score -= 10;
 		if(!endingSong) songMisses++;
 
 		// i dont think this should reduce acc lol

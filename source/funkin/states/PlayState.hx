@@ -46,6 +46,7 @@ import funkin.states.editors.CharacterEditorState;
 import funkin.states.editors.ChartingState;
 import funkin.states.options.OptionsSubstate;
 import openfl.events.KeyboardEvent;
+import funkin.data.Scoring;
 
 using CoolerStringTools;
 using StringTools;
@@ -3024,7 +3025,7 @@ class PlayState extends MusicBeatState
 		if(callOnScripts("onApplyJudgmentData", [judgeData, hitData, show]) == Globals.Function_Stop)
 			return;
 
-		stats.score += Math.floor(judgeData.score * playbackRate);
+		stats.score += Scoring.scoreNoteAccuracy(judgeData.accuracy);
 		stats.calculateAccuracy(judgeData, hitData.hitDiff); // deals with accuracy calculations
 
 		if (!stats.judgements.exists(judgeData.internalName))
@@ -3349,7 +3350,7 @@ class PlayState extends MusicBeatState
 		if (instakillOnMiss)
 			doDeathCheck(true);
 
-		if(!practiceMode) stats.score -= 10;
+		if(!practiceMode) stats.score -= Scoring.PBOT1_GHOST_TAP_NOTE_MISS_SCORE();
 		if(!endingSong) songMisses++;
 
 		// i dont think this should reduce acc lol

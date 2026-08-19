@@ -16,6 +16,8 @@ import flixel.text.FlxText;
 import flixel.util.FlxColor;
 import flixel.util.FlxTimer;
 import haxe.io.Path;
+import flixel.util.FlxStringUtil;
+
 #if USING_FLXANIMATE
 import animate.FlxAnimate;
 import animate.FlxAnimateFrames;

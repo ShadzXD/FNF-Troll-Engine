@@ -17,6 +17,7 @@ import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.math.FlxMath;
 import flixel.tweens.FlxTween;
 import flixel.tweens.FlxEase;
+import flixel.util.FlxStringUtil;
 
 using StringTools;
 using CoolerStringTools;

@@ -69,7 +69,7 @@ class Scoring
 	 *
 	 * @return Int
 	 */
-	public static inline function missGhostTapScore():Int
+	public static function missGhostTapScore():Int
 	{
 		return PBOT1_GHOST_TAP_NOTE_MISS_SCORE;
 	}

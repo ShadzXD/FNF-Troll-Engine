@@ -717,6 +717,9 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			selectTrack(lastSelectedTrack);
 		else
 			waveformTrackDropDown.selectedId = "None";
+
+		utRay.resize(0);
+		new NonAction("Open Chart");
 	}
 
 	private function onLoadMetadata() {
@@ -4050,7 +4053,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 	function undo()
 	{
-		if (utIdx < 0) return;
+		if (utIdx <= 0) return;
 		var action = utRay[utIdx];
 		if (action == null) return;
 		action.undo();
@@ -5135,6 +5138,20 @@ private class GroupAction extends ChartingAction {
 
 	public function toString()
 		return name;
+}
+
+private class NonAction extends ChartingAction {
+	var description:String;
+	
+	public function new(description:String) {
+		this.description = description;
+		super();
+	}
+
+	public function undo() {}
+	public function redo() {}
+	public function toString()
+		return description;
 }
 
 private abstract class ChartingAction

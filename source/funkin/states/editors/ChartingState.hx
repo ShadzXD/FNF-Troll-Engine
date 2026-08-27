@@ -2459,9 +2459,8 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 
 	inline function sectionStartTime(add:Int = 0):Float
 		return getSectionStartTime(curSection + add);
-
-	function getSnappedTime(snap:Float) {
-		var time = Conductor.songPosition;
+	
+	function snapTime(time:Float, snap:Float) {
 		var bmpEventTime = Conductor.getBPMFromSeconds(time).songTime;
 		return CoolMath.snap(time - bmpEventTime, snap) + bmpEventTime;
 	}
@@ -2874,7 +2873,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			pauseTracks();
 
 			var snap:Float = Conductor.stepCrochet * quantizationMult;
-			var feces:Float = getSnappedTime(snap) + (FlxG.keys.justPressed.UP ? -snap : snap);
+			var feces:Float = snapTime(Conductor.songPosition, snap) + (FlxG.keys.justPressed.UP ? -snap : snap);
 
 			FlxTween.tween(Conductor, {songPosition: feces}, 0.1, {ease: FlxEase.circOut});
 		}
@@ -3160,7 +3159,7 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		if (checkCanMouseScroll() && FlxG.mouse.wheel != 0) {
 			var snap = Conductor.stepCrochet;
 			if (options.mouseScrollingQuant) snap *= quantizationMult;
-			Conductor.songPosition = getSnappedTime(snap) - (snap * FlxG.mouse.wheel);
+			Conductor.songPosition = snapTime(Conductor.songPosition, snap) - (snap * FlxG.mouse.wheel);
 
 			pauseTracks();
 		}

@@ -2726,11 +2726,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			if (FlxG.keys.justPressed.S) {
 				saveChartFile();
 			}
-			if (FlxG.keys.justPressed.Q) {
-				// hudskins broke this
-				useQuantNotes = !useQuantNotes;
-				doUpdateGridObjects = true;
-			}
 			if (FlxG.keys.justPressed.O) {
 				openSongSelect();
 			}
@@ -3818,8 +3813,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		}
 	}
 
-	var useQuantNotes:Bool = ClientPrefs.noteSkin == 'Quants';
-
 	function setupNoteData(i:NoteData, sectionNumber:Int):Note {
 		var daField:Int = Math.floor(i.column / _song.keyCount);
 		var note:Note = new Note(i.strumTime, i.column % _song.keyCount, null, daField, (i.sustainLength <= 0 ? TAP : HEAD), true, hudSkin);
@@ -3827,7 +3820,6 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 		note.realColumn = i.column;
 		note.mustPress = i.column < _song.keyCount;
 		note.sustainLength = i.sustainLength;
-		note.canQuant = useQuantNotes;
 		initNoteType(i.noteType);
 		note.noteType = i.noteType;
 

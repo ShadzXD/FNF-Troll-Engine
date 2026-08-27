@@ -4538,7 +4538,7 @@ private class HistoryDisplay extends FlxSpriteGroup {
 	}
 
 	override function update(elapsed:Float) {
-		var scrollChange:Int = FlxG.mouse.overlaps(this) ? -FlxG.mouse.wheel : 0;
+		var scrollChange:Int = FlxG.mouse.overlaps(this) ? FlxG.mouse.wheel : 0;
 
 		if (FlxG.keys.justPressed.V)
 			scrollChange--;

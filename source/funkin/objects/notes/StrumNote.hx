@@ -135,7 +135,6 @@ class StrumNote extends NoteObject {
 		frames != null ? loadNoteAnims() : loadGraphic(Paths.image(textureKey));
 
 		scale.x = scale.y = Note.spriteScale;
-		defScale.copyFrom(scale);
 		updateHitbox();
 	}
 

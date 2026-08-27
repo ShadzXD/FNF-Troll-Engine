@@ -280,8 +280,8 @@ class Note extends NoteObject {
 	public var inEditor:Bool = false;
 	public var chartData:Dynamic = null;
 	public var realColumn:Int;
-	public var mustPress:Bool = true; // perhaps make this a getter for field.isPlayer
 	public var editorHitBeat:Float = 0;
+	public var mustPress:Bool = true; // perhaps make this a getter for field.isPlayer
 
 	// mod manager
 	public var garbage:Bool = false; // if this is true, the note will be removed in the next update cycle
@@ -587,7 +587,6 @@ class Note extends NoteObject {
 		if (inEditor)
 			setGraphicSize(ChartingState.GRID_SIZE, ChartingState.GRID_SIZE);
 
-		defScale.copyFrom(scale);
 		updateHitbox();
 		////
 		genScript?.executeFunc("onReloadNotePost", [this, texture, suffix]);

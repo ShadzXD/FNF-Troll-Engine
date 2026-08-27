@@ -1203,6 +1203,30 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			doUpdateGridObjects = true;
 	}
 
+	function snapSelectedNotes() {
+		if (selectedNotes.length == 0)
+			return;
+
+		var actions:Array<ChartingAction> = [for (note in selectedNotes) {
+			var ogTime:Float = note.strumTime;
+			new DynamicAction(
+				function() {
+					note.strumTime = snapTime(ogTime, Conductor.stepCrochet * quantizationMult);
+				},
+				function() {
+					note.strumTime = ogTime;
+				},
+				"Snap Note Position"
+			);
+		}];
+
+		//// TODO: start caching note objects instead of constantly recreating them when switching sections/doing changes :/
+		var f = () -> doUpdateGridObjects = true;
+		actions.push(new DynamicAction(f, f));
+
+		new GroupAction('Snap Note Positions', actions);
+	}
+
 	function swapNoteSides(notes:Array<ChartObject>) {
 		var shitToDo:Array<ChartingAction> = [];
 
@@ -2724,6 +2748,9 @@ class ChartingState extends funkin.states.base.CustomFlxUIState
 			}
 			if (FlxG.keys.justPressed.S) {
 				saveChartFile();
+			}
+			if (FlxG.keys.justPressed.Q) {
+				snapSelectedNotes();
 			}
 			if (FlxG.keys.justPressed.O) {
 				openSongSelect();

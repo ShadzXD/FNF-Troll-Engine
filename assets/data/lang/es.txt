@@ -1,9 +1,10 @@
 difficultyName_normal=Normal
 difficultyName_hard=Dificil
 difficultyName_easy=Facil
-pauseoption_resume=Continuar
+pauseoption_resume-song=Continuar
 pauseoption_restart-song=Reiniciar cancion
-pauseoption_options=Opciones
+pauseoption_change-options=Opciones
+pauseoption_change-difficulty=Cambiar Dificultad
 pauseoption_skip-to=Ir a
 pauseoption_leave-charting-mode=Salir del Charting Mode
 pauseoption_change-modifiers=Cambiar modificadores
@@ -16,3 +17,101 @@ highscore=Record
 rating=Clasificación
 cbplural=Combos Rotos
 cb=Combo Roto
+
+## Options stuff
+opt_value_bool_true=Si
+opt_value_bool_false=No
+
+opt_label_audio=Audio
+opt_label_gameplay=Jugabilidad
+opt_label_advanced=Avanzado
+opt_label_notes=Notas
+opt_label_hud=HUD
+opt_label_info_displays=Información adicional
+opt_label_video=Video
+opt_label_display=Display
+opt_label_performance=Rendimiento
+opt_label_keyboard=Teclado
+opt_label_controller=Control
+opt_label_updating=Actualizaciones
+opt_label_misc=Misceláneo
+opt_label_accessibility=Accesibilidad
+opt_label_discord=Discord
+opt_tabName_game=Juego
+opt_tabName_ui=IU
+opt_tabName_video=Video
+opt_tabName_controls=Controles
+opt_tabName_updating=Actualizaciones
+opt_tabName_misc=Misc
+
+### Menu controles
+controls_gameplay=Jugabilidad
+controls_ui=IU
+controls_misc=Misc.
+controls_debug=Debug
+control_note_left=Izquierda
+control_note_right=Derecha
+control_note_up=Arriba
+control_note_down=Abajo
+control_reset=Reiniciar
+control_pause=Pausa
+control_ui_left=Izquierda
+control_ui_right=Derecha
+control_ui_up=Arriba
+control_ui_down=Abajo
+control_accept=Aceptar
+control_back=Atrás
+control_volume_mute=Silenciar
+control_volume_up=Subir volúmen
+control_volume_down=Bajar volumen
+control_fullscreen=Pantalla completa
+control_debug_1=Editor de charts
+control_debug_2=Editor de personajes
+control_botplay=Modo Automático
+control_default=Restablecer valores predeterminados
+control_rebind=Presiona una tecla para asignar, o presiona {cancelKey} para cancelar.
+control_unbind=Presiona {unbindKey} para desasignar.
+control_binding=ASIGNANDO {controlNameUpper}
+
+## Freeplay
+action_openGameplayChangers=Modificadores de Jugabilidad
+action_resetScore=Reiniciar record
+action_listenToSong=Escuchar canción
+
+reset_score_dialog=Reiniciar el puntaje de {name}?
+
+### Gameplay modifiers
+gameplay_modifier_botplay=Modo Automático
+gameplay_modifier_healthgain=Mult. De Salud
+gameplay_modifier_healthloss=Mult. De pérdida de Salud
+gameplay_modifier_instaRespawn=Reaparición instantánea
+gameplay_modifier_instakill=Morir al fallar
+gameplay_modifier_opponentPlay=Jugar como oponente
+gameplay_modifier_perfect=Modo perfecto
+gameplay_modifier_practice=Modo práctica
+gameplay_modifier_scrollspeed=Velocidad de Scroll
+gameplay_modifier_scrolltype=Tipo de Scroll
+gameplay_modifier_songspeed=Velocidad de reproducción
+gameplay_modifier_disableModcharts=Desactivar Modcharts
+### I don't know what to call Holds lol
+gameplay_modifier_holdsgivehp=Holds dan Salud
+gameplay_modifier_noDropPenalty=Sin penalización por soltar Holds
+
+## Pause Menu
+pauseoption_resume-song=Continuar
+pauseoption_restart-song=Reiniciar canción
+pauseoption_restart-level=Reiniciar nivel
+pauseoption_change-difficulty=Cambiar Dificultad
+pauseoption_change-modifiers=Cambiar Modificadores
+pauseoption_change-options=Opciones
+pauseoption_exit-to-menu=Volver al menu
+## Debug / Charting mode
+pauseoption_restart-from-last-time=Reiniciar desde el ultimo tiempo
+pauseoption_skip-to-time=Ir a
+pauseoption_end-song=Terminar canción
+pauseoption_leave-charting-mode=Salir del modo charter
+pauseoption_toggle-botplay=Toggle botplay
+## Cutscene pause menu
+pauseoption_resume-cutscene=Continuar
+pauseoption_skip-cutscene=Saltar escena
+pauseoption_restart-cutscene=Reiniciar escena

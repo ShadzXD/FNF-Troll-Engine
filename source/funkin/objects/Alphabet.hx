@@ -203,6 +203,23 @@ class AlphaCharacter extends FlxSprite
 	public static var numbers:String = "1234567890";
 	public static var symbols:String = "|~#$%()*+-:;<=>@[]^_.,'!?";
 
+	public static var withoutAccents = [
+        'à' => 'a', 'á' => 'a', 'â' => 'a', 'ã' => 'a', 'ä' => 'a', 'å' => 'a',
+        'è' => 'e', 'é' => 'e', 'ê' => 'e', 'ë' => 'e',
+        'ì' => 'i', 'í' => 'i', 'î' => 'i', 'ï' => 'i',
+        'ò' => 'o', 'ó' => 'o', 'ô' => 'o', 'õ' => 'o', 'ö' => 'o',
+        'ù' => 'u', 'ú' => 'u', 'û' => 'u', 'ü' => 'u',
+        'ý' => 'y', 'ÿ' => 'y',
+        'À' => 'A', 'Á' => 'A', 'Â' => 'A', 'Ã' => 'A', 'Ä' => 'A', 'Å' => 'A',
+        'È' => 'E', 'É' => 'E', 'Ê' => 'E', 'Ë' => 'E',
+        'Ì' => 'I', 'Í' => 'I', 'Î' => 'I', 'Ï' => 'I',
+        'Ò' => 'O', 'Ó' => 'O', 'Ô' => 'O', 'Õ' => 'O', 'Ö' => 'O',
+        'Ù' => 'U', 'Ú' => 'U', 'Û' => 'U', 'Ü' => 'U',
+        'Ý' => 'Y', 'Ÿ' => 'Y',
+        'ñ' => 'n', 'Ñ' => 'N',
+        'ç' => 'c', 'Ç' => 'C'
+    ];
+
 	private static function isAlpha(char:String):Bool
 		return char.toUpperCase() != char.toLowerCase(); // alphabet.contains(char);
 
@@ -211,6 +228,13 @@ class AlphaCharacter extends FlxSprite
 
 	private static function isSymbol(char:String):Bool
 		return symbols.contains(char);
+
+	private static function removeAccent(char:String):String {
+		if (!isAlpha(char) || !withoutAccents.exists(char))
+			return char;
+		else
+			return withoutAccents.get(char);
+	}
 
 	// this fucking sucks
 
@@ -264,6 +288,11 @@ class AlphaCharacter extends FlxSprite
 		animation.remove('normal');
 		animation.addByPrefix('normal', prefix, 24);
 		
+		if (!animation.exists('normal')) {
+			prefix = getCharacterXmlPrefix(removeAccent(character));
+			animation.addByPrefix('normal', prefix, 24);
+		}
+
 		if (animation.exists('normal')) {
 			animation.play('normal');
 		}else {
@@ -296,6 +325,11 @@ class AlphaCharacter extends FlxSprite
 		
 		animation.remove('bold');
 		animation.addByPrefix('bold', prefix, 24);
+
+		if (!animation.exists('bold')) {
+			prefix = getBoldCharacterXmlPrefix(removeAccent(character));
+			animation.addByPrefix('bold', prefix, 24);
+		}
 		
 		if (animation.exists('bold')) {
 			animation.play('bold');

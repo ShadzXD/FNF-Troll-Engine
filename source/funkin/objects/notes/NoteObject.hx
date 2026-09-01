@@ -25,7 +25,6 @@ class NoteObject extends FlxSprite {
 	public var colorSwap:NoteColorSwap;
 	public var offsetX:Float = 0;
 	public var offsetY:Float = 0;
-	public var defScale:FlxPoint = FlxPoint.get(); // for modcharts to keep the scaling
 
 	/** Prevents the default FlxSprite `draw` function from being called. **/
 	public var handleRendering:Bool = true;
@@ -62,7 +61,6 @@ class NoteObject extends FlxSprite {
 	}
 
 	override function destroy() {
-		defScale = FlxDestroyUtil.put(defScale);
 		vec3Cache = FlxDestroyUtil.put(vec3Cache);
 		super.destroy();
 	}

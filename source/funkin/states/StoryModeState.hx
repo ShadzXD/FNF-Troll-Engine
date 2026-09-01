@@ -2,7 +2,6 @@ package funkin.states;
 
 import math.CoolMath;
 import funkin.data.Highscore;
-import funkin.data.Song;
 import funkin.data.Level;
 import flixel.util.FlxSignal;
 import flixel.system.FlxAssets.FlxGraphicAsset;

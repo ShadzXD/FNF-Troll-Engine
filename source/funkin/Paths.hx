@@ -448,6 +448,15 @@ class Paths
 		);
 	}
 
+	inline static public function asepriteAtlas(key:String, ?library:String, ?allowGPU:Bool = true):FlxAtlasFrames
+	{
+		var raw:String = Paths.getContent(getPath('images/$key.json'));
+		return raw == null ? null : FlxAtlasFrames.fromTexturePackerJson(
+			image(key, library, allowGPU),
+			raw
+		);		
+	}
+
 	inline static public function animateAtlas(key:String, ?library:String)
 	{
 		#if USING_FLXANIMATE
@@ -469,6 +478,12 @@ class Paths
 	inline static public function getPackerAtlas(key:String, ?library:String, allowGPU:Bool = true):FlxAtlasFrames
 	{
 		return packerAtlas(key, library, allowGPU);
+	}
+
+	@:deprecated("getAsepriteAtlas is deprecated, use asepriteAtlas instead.")
+	inline static public function getAsepriteAtlas(key:String, ?library:String, allowGPU:Bool = true)
+	{
+		return asepriteAtlas(key, library, allowGPU);
 	}
 
 	@:deprecated("getTextureAtlas is deprecated, use animateAtlas instead.")

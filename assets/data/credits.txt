@@ -5,10 +5,11 @@ Nebula The Zorua::nebulazorua::True and Honest programmer
 Engine Contirbutors
 4mbr0s3 2::4mbr0s3_2::Modchart system::https://www.youtube.com/@4mbr0s3-2
 Lat::latzephr::Made the Week 6 UI concept::https://twitter.com/latzephr/status/1771139155881234576
+SrtHero278::srt::NoteField optimizations and fixes::https://github.com/SrtHero278
+Vortex::vortex::Extra Keys implementation::https://github.com/Vortex2Oblivion
+Shadz::shadz::Flixel-animate implementation & the dialogue system::https://github.com/ShadzXD
 Psych Engine::psychengine::Dad engine::https://github.com/ShadowMario/FNF-PsychEngine
 
 Funkin' Crew
-ninjamuffin99::ninjamuffin99::Programmer of Friday Night Funkin'::https://twitter.com/ninja_muffin99::CF2D2D
-PhantomArcade::phantomarcade::Animator of Friday Night Funkin'::https://twitter.com/PhantomArcade3K::FADC45
-evilsk8r::evilsk8r::Artist of Friday Night Funkin'::https://twitter.com/evilsk8r::5ABD4B
-kawaisprite::kawaisprite::Composer of Friday Night Funkin'::https://twitter.com/kawaisprite::378FC7
+PhantomArcade::phantomarcade::Director of Friday Night Funkin'::https://twitter.com/PhantomArcade3K::FADC45
+ninjamuffin99::ninjamuffin99::Co-Director of Friday Night Funkin'::https://twitter.com/ninja_muffin99::CF2D2D
